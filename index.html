@@ -12,7 +12,8 @@
 <body>
   <div id="root"></div>
   <script type="text/babel" data-type="module">
-    const { useState, useEffect, useMemo } = React;
+    const { useState, useEffect, useMemo, useRef } = React;
+    const AVATAR_COLORS = ['#fca5a5', '#fdba74', '#fcd34d', '#86efac', '#93c5fd', '#c4b5fd', '#f0abfc'];
 
 // ============================================================================
 // 1. MOTOR DE DADOS E TOPOLOGIA ESPACIAL
@@ -31,9 +32,8 @@ const ROOM_COLORS = {
 
 // Geração Vetorial de Avatares (SVG Inline para performance e independência de assets externos)
 const AvatarGraphic = ({ seed, trait, className }) => {
-  const colors = ['#fca5a5', '#fdba74', '#fcd34d', '#86efac', '#93c5fd', '#c4b5fd', '#f0abfc'];
   const skin = ['#fde047', '#fed7aa', '#ffedd5', '#f3cfaa', '#d97706'];
-  const bgColor = colors[seed % colors.length];
+  const bgColor = AVATAR_COLORS[seed % AVATAR_COLORS.length];
   const skinColor = skin[seed % skin.length];
   
   return (
@@ -65,11 +65,11 @@ const AvatarGraphic = ({ seed, trait, className }) => {
 // Ícones de Mobiliário em SVG (Utilizando Assets Oficiais)
 const FurnitureIcon = ({ type }) => {
   const assetMap = {
-    'table': 'assets/obj_shelf-DW4s9BDU.svg',     // Using shelf as table
-    'chair': 'assets/obj_barrel-BrivFWNA.svg',    // Using barrel as chair
+    'shelf': 'assets/obj_shelf-DW4s9BDU.svg',
+    'barrel': 'assets/obj_barrel-BrivFWNA.svg',
     'tv': 'assets/obj_tv-B-td_p6V.svg',
     'plant': 'assets/obj_plant-lqsU7Mb1.svg',
-    'carpet': 'assets/texture_floor_grass-n85FOBUF.svg', // Using grass as carpet
+    'grass': 'assets/texture_floor_grass-n85FOBUF.svg',
     'box': 'assets/obj_crate-C9EwUpcm.svg'
   };
 
@@ -111,7 +111,7 @@ const MAP_TEMPLATES = {
       { id: 'main', name: 'Main Area', rect: { x: 2, y: 0, w: 2, h: 4 } }
     ],
     items: [
-      { x: 0, y: 0, type: 'table' }, { x: 3, y: 3, type: 'plant' }, { x: 1, y: 2, type: 'chair' }
+      { x: 0, y: 0, type: 'shelf' }, { x: 3, y: 3, type: 'plant' }, { x: 1, y: 2, type: 'barrel' }
     ]
   },
   medium: {
@@ -125,8 +125,8 @@ const MAP_TEMPLATES = {
     ],
     items: [
       { x: 1, y: 0, type: 'box' }, { x: 4, y: 0, type: 'tv' },
-      { x: 2, y: 2, type: 'table' }, { x: 5, y: 3, type: 'chair' },
-      { x: 3, y: 5, type: 'plant' }, { x: 0, y: 3, type: 'carpet' }
+      { x: 2, y: 2, type: 'shelf' }, { x: 5, y: 3, type: 'barrel' },
+      { x: 3, y: 5, type: 'plant' }, { x: 0, y: 3, type: 'grass' }
     ]
   }
 };
@@ -141,10 +141,10 @@ const LOGIC_SEEDS = {
     {
       target: { A: {x:0, y:1}, B: {x:1, y:3}, C: {x:3, y:0}, D: {x:2, y:2} },
       clueGenerators: [
-        (c) => ({ text: `He was beside the table in the ${c.A.room}.`, eval: p => p[c.A.id] ? isBeside(p[c.A.id], {x:0, y:0}) : null }),
+        (c) => ({ text: `He was beside the shelf in the ${c.A.room}.`, eval: p => p[c.A.id] ? isBeside(p[c.A.id], {x:0, y:0}) : null }),
         (c) => ({ text: `No one in his area had a ${c.B.trait}.`, eval: p => evaluateRoomExclusivity(p, c.B.id, c.B.trait, ALL_CHARACTERS, c.map) }),
         (c) => ({ text: `He was beside a plant.`, eval: p => p[c.C.id] ? isBeside(p[c.C.id], {x:3, y:3}) : null }),
-        (c) => ({ text: `He was sitting in a chair.`, eval: p => p[c.D.id] ? (p[c.D.id].x === 1 && p[c.D.id].y === 2) : null })
+        (c) => ({ text: `He was sitting on a barrel.`, eval: p => p[c.D.id] ? (p[c.D.id].x === 1 && p[c.D.id].y === 2) : null })
       ]
     }
   ],
@@ -152,11 +152,11 @@ const LOGIC_SEEDS = {
     {
       target: { A: {x:4, y:3}, B: {x:1, y:1}, C: {x:2, y:2}, D: {x:3, y:0}, E: {x:0, y:3}, F: {x:5, y:5}, H: {x:2, y:5} },
       clueGenerators: [
-        (c) => ({ text: `He was beside the chair in the ${c.A.room}.`, eval: p => p[c.A.id] ? isBeside(p[c.A.id], {x:5, y:3}) : null }),
+        (c) => ({ text: `He was beside the barrel in the ${c.A.room}.`, eval: p => p[c.A.id] ? isBeside(p[c.A.id], {x:5, y:3}) : null }),
         (c) => ({ text: `No one in his area had a ${c.B.trait}.`, eval: p => evaluateRoomExclusivity(p, c.B.id, c.B.trait, ALL_CHARACTERS, c.map) }),
-        (c) => ({ text: `He was sitting on a table.`, eval: p => p[c.C.id] ? (p[c.C.id].x === 2 && p[c.C.id].y === 2) : null }),
+        (c) => ({ text: `He was sitting on a shelf.`, eval: p => p[c.C.id] ? (p[c.C.id].x === 2 && p[c.C.id].y === 2) : null }),
         (c) => ({ text: `He was beside a TV. He was alone.`, eval: p => p[c.D.id] ? (isBeside(p[c.D.id], {x:4, y:0}) && isRoomEmpty(p, c.D.id, c.map)) : null }),
-        (c) => ({ text: `He was on a carpet.`, eval: p => p[c.E.id] ? (p[c.E.id].x === 0 && p[c.E.id].y === 3) : null }),
+        (c) => ({ text: `He was on the grass.`, eval: p => p[c.E.id] ? (p[c.E.id].x === 0 && p[c.E.id].y === 3) : null }),
         (c) => ({ text: `He was beside a plant.`, eval: p => p[c.F.id] ? isBeside(p[c.F.id], {x:3, y:5}) : null }),
         (c) => ({ text: `The Victim. He was alone with the murderer.`, eval: p => p[c.H.id] ? checkVictimCondition(p, c.H.id, c.map) : null })
       ]
@@ -208,19 +208,19 @@ function MurdokuApp() {
   const [levelData, setLevelData] = useState(null);
   
   const [placements, setPlacements] = useState({});
+  const [notes, setNotes] = useState({}); // Stores array of entity IDs for notes per cell key "x,y"
   const [selectedEntity, setSelectedEntity] = useState(null);
+  const pressTimer = useRef(null);
 
   // Inicializador de Nível (O(1) Isomorphic Mapper)
   const startLevel = (diff) => {
     setDifficulty(diff);
     
-    // Mapear dificuldade visual para lógica (simplificado para a demo)
     const logicKey = (diff === 'Very Easy' || diff === 'Easy') ? 'easy' : 'medium';
     const mapTemplate = MAP_TEMPLATES[logicKey];
     const seeds = LOGIC_SEEDS[logicKey];
-    const seed = seeds[Math.floor(Math.random() * seeds.length)]; // Randomização determinística
+    const seed = seeds[Math.floor(Math.random() * seeds.length)]; 
     
-    // Selecionar avatares aleatórios para preencher as variáveis abstratas (A, B, C...)
     const charsObj = {};
     const availableChars = [...ALL_CHARACTERS.filter(c => !c.isVictim)].sort(() => 0.5 - Math.random());
     const victimChar = ALL_CHARACTERS.find(c => c.isVictim);
@@ -238,10 +238,8 @@ function MurdokuApp() {
       context[key] = charsObj[key];
     }
 
-    // Instanciar Pistas (Clues) baseadas nos geradores da semente
     const clues = seed.clueGenerators.map(gen => gen(context));
     
-    // Configurar estado do jogo
     const entities = Object.keys(seed.target).map((key, idx) => ({
       ...charsObj[key],
       abstractId: key,
@@ -249,38 +247,96 @@ function MurdokuApp() {
       isPlaced: false
     }));
 
-    setLevelData({
-      map: mapTemplate,
-      entities: entities,
-      target: seed.target // Utilizado internamente para validação rápida se necessário, embora o sistema baseie-se em restrições lógicas
-    });
+    setLevelData({ map: mapTemplate, entities: entities, target: seed.target });
     
     setPlacements({});
+    setNotes({});
     setSelectedEntity(null);
     setGameState('playing');
   };
 
   // Interações de Grelha e UI
-  const handleCellClick = (x, y) => {
+  const handlePointerDown = (x, y) => {
     if (gameState === 'victory') return;
+    pressTimer.current = setTimeout(() => {
+      handleLongPress(x, y);
+      pressTimer.current = null;
+    }, 350); // 350ms para diferenciar click curto (nota) de press longo (colocar)
+  };
 
-    const map = levelData.map;
-    // Evitar sobreposição com mobília (opcional dependendo das regras exatas, mas o jogo original permite colocar "beside")
-    // Aqui permitimos colocar em qualquer lado para manter a lógica fluida.
-    
+  const handlePointerUp = (x, y) => {
+    if (gameState === 'victory') return;
+    if (pressTimer.current) {
+      clearTimeout(pressTimer.current);
+      pressTimer.current = null;
+      handleShortClick(x, y);
+    }
+  };
+
+  const handlePointerLeave = () => {
+    if (pressTimer.current) {
+      clearTimeout(pressTimer.current);
+      pressTimer.current = null;
+    }
+  };
+
+  const handleShortClick = (x, y) => {
+    const existingEntityId = Object.keys(placements).find(id => placements[id].x === x && placements[id].y === y);
+
+    if (existingEntityId) {
+      setSelectedEntity(existingEntityId);
+      return;
+    }
+
+    if (selectedEntity) {
+      const cellKey = `${x},${y}`;
+      setNotes(prev => {
+        const cellNotes = prev[cellKey] || [];
+        if (cellNotes.includes(selectedEntity)) {
+          return { ...prev, [cellKey]: cellNotes.filter(id => id !== selectedEntity) };
+        } else {
+          return { ...prev, [cellKey]: [...cellNotes, selectedEntity] };
+        }
+      });
+    }
+  };
+
+  const blockedCells = useMemo(() => {
+    const blocked = new Set();
+    Object.values(placements).forEach(pos => {
+      for (let i = 0; i < levelData?.map?.size; i++) {
+        if (i !== pos.x) blocked.add(`${i},${pos.y}`);
+        if (i !== pos.y) blocked.add(`${pos.x},${i}`);
+      }
+    });
+    return blocked;
+  }, [placements, levelData]);
+
+  const handleLongPress = (x, y) => {
     const existingEntityId = Object.keys(placements).find(id => placements[id].x === x && placements[id].y === y);
 
     if (selectedEntity) {
-      // Mover ou colocar
       setPlacements(prev => {
         const next = { ...prev };
-        if (existingEntityId) delete next[existingEntityId]; // Substituir
+        if (existingEntityId) delete next[existingEntityId];
         next[selectedEntity] = { x, y };
         return next;
       });
+      setNotes(prev => {
+        const nextNotes = { ...prev };
+        for (let key in nextNotes) {
+          nextNotes[key] = nextNotes[key].filter(id => id !== selectedEntity);
+          if (nextNotes[key].length === 0) delete nextNotes[key];
+        }
+        return nextNotes;
+      });
       setSelectedEntity(null);
     } else if (existingEntityId) {
-      // Selecionar entidade já colocada
+      setPlacements(prev => {
+        const next = { ...prev };
+        delete next[existingEntityId];
+        return next;
+      });
       setSelectedEntity(existingEntityId);
     }
   };
@@ -296,6 +352,7 @@ function MurdokuApp() {
 
   const handleClear = () => {
     setPlacements({});
+    setNotes({});
     setSelectedEntity(null);
   };
 
@@ -425,23 +482,6 @@ function MurdokuApp() {
               gridTemplateRows: `repeat(${levelData.map.size}, 1fr)`,
             }}
           >
-            {/* Renderização das Salas (Fundo) */}
-            {levelData.map.rooms.map(room => (
-              <div 
-                key={room.id}
-                className="absolute border-4 border-black pointer-events-none flex items-center justify-center overflow-hidden z-0"
-                style={{
-                  gridColumn: `${room.rect.x + 1} / span ${room.rect.w}`,
-                  gridRow: `${room.rect.y + 1} / span ${room.rect.h}`,
-                  backgroundColor: ROOM_COLORS[room.id] || '#ccc',
-                }}
-              >
-                <span className="font-black text-black/20 text-3xl tracking-widest uppercase rotate-[-15deg] whitespace-nowrap select-none">
-                  {room.name}
-                </span>
-              </div>
-            ))}
-
             {/* Renderização das Células Individuais e Interatividade */}
             {Array.from({ length: levelData.map.size * levelData.map.size }).map((_, idx) => {
               const x = idx % levelData.map.size;
@@ -450,16 +490,74 @@ function MurdokuApp() {
               const occupantId = Object.keys(placements).find(id => placements[id].x === x && placements[id].y === y);
               const occupant = occupantId ? levelData.entities.find(e => e.id === occupantId) : null;
               
+              const cellKey = `${x},${y}`;
+              const isBlocked = blockedCells.has(cellKey);
+              const cellNotes = notes[cellKey] || [];
+              
+              const room = getRoomAt(x, y, levelData.map);
+              const rightRoom = getRoomAt(x + 1, y, levelData.map);
+              const bottomRoom = getRoomAt(x, y + 1, levelData.map);
+              
+              const borderClasses = `
+                ${rightRoom && rightRoom.id !== room?.id ? 'border-r-[4px] border-r-black' : 'border-r-[1px] border-r-black/20'}
+                ${bottomRoom && bottomRoom.id !== room?.id ? 'border-b-[4px] border-b-black' : 'border-b-[1px] border-b-black/20'}
+                ${x === 0 || (getRoomAt(x - 1, y, levelData.map) && getRoomAt(x - 1, y, levelData.map).id !== room?.id) ? 'border-l-[4px] border-l-black' : 'border-l-[1px] border-l-black/20'}
+                ${y === 0 || (getRoomAt(x, y - 1, levelData.map) && getRoomAt(x, y - 1, levelData.map).id !== room?.id) ? 'border-t-[4px] border-t-black' : 'border-t-[1px] border-t-black/20'}
+              `;
+              
+              const isRoomBottomLeft = room && room.rect.x === x && (room.rect.y + room.rect.h - 1) === y;
+
               return (
                 <div 
                   key={idx}
-                  onClick={() => handleCellClick(x, y)}
-                  className="border-[1px] border-black/20 relative flex items-center justify-center cursor-pointer hover:bg-white/40 transition-colors z-10"
-                  style={{ gridColumn: x + 1, gridRow: y + 1 }}
+                  onPointerDown={() => handlePointerDown(x, y)}
+                  onPointerUp={() => handlePointerUp(x, y)}
+                  onPointerLeave={handlePointerLeave}
+                  onContextMenu={(e) => e.preventDefault()}
+                  className={`relative flex items-center justify-center cursor-pointer transition-colors z-10 select-none ${borderClasses}`}
+                  style={{ 
+                    gridColumn: x + 1, 
+                    gridRow: y + 1, 
+                    touchAction: 'none',
+                    backgroundColor: room ? ROOM_COLORS[room.id] : '#fff'
+                  }}
                 >
+                  {/* Room Label Badge */}
+                  {isRoomBottomLeft && (
+                    <span 
+                      className="absolute bottom-1 left-1.5 font-black text-white text-xs md:text-[14px] leading-tight tracking-widest z-0 pointer-events-none" 
+                      style={{ WebkitTextStroke: '3px black', paintOrder: 'stroke fill' }}
+                    >
+                      {room.name.toUpperCase()}
+                    </span>
+                  )}
                   {/* Item Dinâmico */}
                   {item && <FurnitureIcon type={item.type} />}
                   
+                  {/* Blocked "X" Overlay */}
+                  {isBlocked && !occupant && (
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10 opacity-90 p-[15%]">
+                      <svg viewBox="0 0 100 100" className="w-full h-full">
+                        <path d="M 15 15 L 85 85 M 85 15 L 15 85" stroke="#000" strokeWidth="22" strokeLinecap="square" />
+                      </svg>
+                    </div>
+                  )}
+
+                  {/* Notes Overlay */}
+                  {cellNotes.length > 0 && !occupant && !isBlocked && (
+                    <div className="absolute inset-0 flex flex-wrap content-start justify-start gap-0.5 p-1 pointer-events-none z-10">
+                      {cellNotes.map(id => {
+                        const entity = levelData.entities.find(e => e.id === id);
+                        const color = AVATAR_COLORS[entity.name.charCodeAt(0) % AVATAR_COLORS.length];
+                        return (
+                          <span key={id} className="font-black text-xl leading-none" style={{ color: color, WebkitTextStroke: '1px black' }}>
+                            {entity.name.charAt(0)}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  )}
+
                   {/* Entidade Colocada */}
                   {occupant && (
                     <div className="absolute inset-1 shadow-[2px_2px_0px_rgba(0,0,0,1)] cursor-grab z-20 rounded border-2 border-black bg-white">
@@ -468,7 +566,7 @@ function MurdokuApp() {
                   )}
 
                   {/* Indicador de Seleção Hover */}
-                  {selectedEntity && !occupant && (
+                  {selectedEntity && !occupant && !isBlocked && (
                     <div className="absolute inset-2 border-4 border-dashed border-blue-500/50 rounded-lg opacity-0 hover:opacity-100 transition-opacity"></div>
                   )}
                 </div>
