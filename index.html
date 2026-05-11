@@ -376,13 +376,49 @@ function MurdokuApp() {
         </div>
       </header>
 
-      {/* ÁREA PRINCIPAL (SPLIT VIEW EM DESKTOP) */}
-      <main className="flex-1 flex flex-col md:flex-row overflow-hidden relative">
+      {/* ÁREA PRINCIPAL */}
+      <main className="flex-1 flex flex-col md:flex-row p-4 gap-6 bg-slate-200 overflow-y-auto">
         
-        {/* ESQUERDA: Grelha do Jogo */}
-        <section className="flex-1 flex items-center justify-center p-4 md:p-8 bg-slate-50 md:border-r-2 border-slate-900 relative">
+        {/* ESQUERDA: Bandeja de Suspeitos */}
+        <section className="flex-1 max-w-sm flex flex-col">
+          <div className="font-black text-2xl uppercase mb-4 text-slate-800 tracking-tighter">Suspects</div>
+          <div className="flex-1 overflow-y-auto flex flex-col gap-4 pr-2">
+            {levelData.entities.map(entity => {
+              const isPlaced = placements[entity.id] !== undefined;
+              const isSelected = selectedEntity === entity.id;
+
+              return (
+                <div 
+                  key={entity.id}
+                  onClick={() => handleTrayClick(entity.id)}
+                  className={`
+                    relative flex items-center p-3 bg-white border-4 border-black rounded-xl cursor-pointer
+                    transition-transform duration-100
+                    ${isPlaced ? 'opacity-40 grayscale scale-95 shadow-none' : 'shadow-[4px_4px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:translate-x-[-2px] hover:shadow-[6px_6px_0px_rgba(0,0,0,1)]'}
+                    ${isSelected ? 'ring-4 ring-blue-500 scale-105 z-10' : ''}
+                    ${entity.isVictim ? 'bg-rose-100' : ''}
+                  `}
+                >
+                  <div className="h-16 w-16 shrink-0 mr-4">
+                    <AvatarGraphic seed={entity.name.charCodeAt(0)} trait={entity.trait} />
+                  </div>
+                  <div className="flex-1">
+                    <div className="font-black text-lg leading-none mb-1 text-black">{entity.name}</div>
+                    <div className="text-sm font-bold text-slate-600 leading-tight">
+                      {entity.clue.text}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+
+        {/* CENTRO: Grelha do Jogo */}
+        <section className="flex-[2] flex flex-col items-center justify-center relative min-w-[300px]">
+          <div className="font-black text-2xl uppercase mb-4 text-slate-800 tracking-tighter">Crime Scene</div>
           <div 
-            className="relative border-4 border-slate-900 bg-white shadow-[8px_8px_0px_#0f172a] w-full max-w-lg aspect-square"
+            className="relative border-4 border-black bg-white shadow-[8px_8px_0px_rgba(0,0,0,1)] w-full max-w-2xl aspect-square"
             style={{
               display: 'grid',
               gridTemplateColumns: `repeat(${levelData.map.size}, 1fr)`,
@@ -393,15 +429,14 @@ function MurdokuApp() {
             {levelData.map.rooms.map(room => (
               <div 
                 key={room.id}
-                className="absolute border-2 border-slate-900 pointer-events-none flex items-center justify-center overflow-hidden"
+                className="absolute border-4 border-black pointer-events-none flex items-center justify-center overflow-hidden z-0"
                 style={{
                   gridColumn: `${room.rect.x + 1} / span ${room.rect.w}`,
                   gridRow: `${room.rect.y + 1} / span ${room.rect.h}`,
                   backgroundColor: ROOM_COLORS[room.id] || '#ccc',
-                  opacity: 0.8
                 }}
               >
-                <span className="font-black text-slate-900/20 text-xl tracking-widest uppercase rotate-[-20deg] whitespace-nowrap">
+                <span className="font-black text-black/20 text-3xl tracking-widest uppercase rotate-[-15deg] whitespace-nowrap select-none">
                   {room.name}
                 </span>
               </div>
@@ -419,7 +454,7 @@ function MurdokuApp() {
                 <div 
                   key={idx}
                   onClick={() => handleCellClick(x, y)}
-                  className="border-[0.5px] border-slate-900/30 relative flex items-center justify-center cursor-pointer hover:bg-white/30 transition-colors z-10"
+                  className="border-[1px] border-black/20 relative flex items-center justify-center cursor-pointer hover:bg-white/40 transition-colors z-10"
                   style={{ gridColumn: x + 1, gridRow: y + 1 }}
                 >
                   {/* Item Dinâmico */}
@@ -427,14 +462,14 @@ function MurdokuApp() {
                   
                   {/* Entidade Colocada */}
                   {occupant && (
-                    <div className="absolute inset-1 shadow-lg cursor-grab z-20">
+                    <div className="absolute inset-1 shadow-[2px_2px_0px_rgba(0,0,0,1)] cursor-grab z-20 rounded border-2 border-black bg-white">
                       <AvatarGraphic seed={occupant.name.charCodeAt(0)} trait={occupant.trait} className={selectedEntity === occupant.id ? 'ring-4 ring-blue-500 scale-105 transition-transform' : ''} />
                     </div>
                   )}
 
                   {/* Indicador de Seleção Hover */}
                   {selectedEntity && !occupant && (
-                    <div className="absolute inset-0 bg-blue-500/20 opacity-0 hover:opacity-100 transition-opacity"></div>
+                    <div className="absolute inset-2 border-4 border-dashed border-blue-500/50 rounded-lg opacity-0 hover:opacity-100 transition-opacity"></div>
                   )}
                 </div>
               );
@@ -442,72 +477,24 @@ function MurdokuApp() {
           </div>
         </section>
 
-        {/* DIREITA: Bandeja de Suspeitos e Controlos */}
-        <section className="flex-1 flex flex-col bg-slate-100 overflow-hidden">
+        {/* DIREITA: Controlos */}
+        <section className="w-full md:w-48 flex flex-col gap-4">
+          <div className="font-black text-2xl uppercase mb-0 md:mb-4 text-slate-800 tracking-tighter hidden md:block">Tools</div>
           
-          <div className="p-4 text-center font-bold text-slate-400 text-sm tracking-widest uppercase border-b-2 border-slate-900 bg-white">
-            Suspects Data
-          </div>
-
-          {/* Scroller de Cartas */}
-          <div className="flex-1 overflow-y-auto p-4 md:p-8 flex flex-col gap-4">
-            <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-              {levelData.entities.map(entity => {
-                const isPlaced = placements[entity.id] !== undefined;
-                const isSelected = selectedEntity === entity.id;
-
-                return (
-                  <div 
-                    key={entity.id}
-                    onClick={() => handleTrayClick(entity.id)}
-                    className={`
-                      relative flex flex-col bg-white border-2 border-slate-900 rounded-lg overflow-hidden cursor-pointer
-                      transition-all duration-200
-                      ${isPlaced ? 'opacity-50 grayscale' : 'shadow-[4px_4px_0px_#0f172a] hover:-translate-y-1 hover:shadow-[6px_6px_0px_#0f172a]'}
-                      ${isSelected ? 'ring-4 ring-blue-500 scale-105 z-10 shadow-xl' : ''}
-                      ${entity.isVictim ? 'bg-rose-50' : ''}
-                    `}
-                  >
-                    {/* Cabeçalho do Avatar */}
-                    <div className="h-20 w-full flex items-center justify-center p-2 bg-slate-50 border-b-2 border-slate-900">
-                      <div className="h-16 w-16">
-                        <AvatarGraphic seed={entity.name.charCodeAt(0)} trait={entity.trait} />
-                      </div>
-                    </div>
-                    
-                    {/* Corpo da Carta (Clue) */}
-                    <div className="p-3 flex-1 flex flex-col">
-                      <div className="font-black text-center border-b border-slate-200 pb-1 mb-2 text-slate-800">
-                        {entity.name}
-                      </div>
-                      <div className="text-xs text-center font-semibold text-slate-600 leading-tight">
-                        {entity.clue.text}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Painel de Ações Inferior */}
-          <div className="bg-white border-t-2 border-slate-900 p-4 shrink-0 flex flex-col gap-3">
-            <div className="flex gap-3">
-              <button 
-                onClick={handleClear}
-                className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold border-2 border-slate-900 rounded shadow-[4px_4px_0px_#0f172a] active:translate-y-1 active:shadow-none transition-all flex justify-center items-center gap-2"
-              >
-                <span className="text-xl">⌫</span> CLEAR
-              </button>
-            </div>
+          <div className="flex flex-row md:flex-col gap-4">
+            <button 
+              onClick={handleClear}
+              className="flex-1 py-4 bg-white hover:bg-slate-50 text-black font-black border-4 border-black rounded-xl shadow-[4px_4px_0px_rgba(0,0,0,1)] active:translate-y-1 active:translate-x-1 active:shadow-none transition-all flex flex-col justify-center items-center gap-2"
+            >
+              <span className="text-3xl">🗑️</span> CLEAR ALL
+            </button>
             <button 
               onClick={handleSubmit}
-              className="w-full py-4 bg-blue-500 hover:bg-blue-400 text-white font-black text-lg tracking-widest border-2 border-slate-900 rounded shadow-[4px_4px_0px_#0f172a] active:translate-y-1 active:shadow-none transition-all"
+              className="flex-1 py-6 bg-blue-500 hover:bg-blue-400 text-white font-black text-xl tracking-widest border-4 border-black rounded-xl shadow-[4px_4px_0px_rgba(0,0,0,1)] active:translate-y-1 active:translate-x-1 active:shadow-none transition-all flex flex-col justify-center items-center gap-2"
             >
-              SUBMIT
+              <span className="text-3xl">✅</span> SUBMIT
             </button>
           </div>
-
         </section>
 
         {/* OVERLAY DE VITÓRIA */}
