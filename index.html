@@ -1,4 +1,18 @@
-import React, { useState, useEffect, useMemo } from 'react';
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Murdoku Clone</title>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel" data-type="module">
+    const { useState, useEffect, useMemo } = React;
 
 // ============================================================================
 // 1. MOTOR DE DADOS E TOPOLOGIA ESPACIAL
@@ -188,7 +202,7 @@ const checkVictimCondition = (placements, victimId, map) => {
 // 4. CONTROLADOR PRINCIPAL DA APLICAÇÃO (REACT)
 // ============================================================================
 
-export default function MurdokuApp() {
+function MurdokuApp() {
   const [gameState, setGameState] = useState('menu'); // 'menu', 'playing', 'victory'
   const [difficulty, setDifficulty] = useState('Medium');
   const [levelData, setLevelData] = useState(null);
@@ -518,3 +532,9 @@ export default function MurdokuApp() {
     </div>
   );
 }
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<MurdokuApp />);
+  </script>
+</body>
+</html>
