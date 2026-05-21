@@ -3,10 +3,8 @@
 // PRIVATE — never log or expose the API key
 // ============================================================
 
-// ⚠️  Replace with your actual Gemini API key
-const GEMINI_API_KEY = 'AIzaSyBx6053QGQFU_LkMupofj4y2d4Gv-3fXds';
-
-const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+// 🔐 Secure API backend — Gemini key is securely loaded on the server side (/api/generate)
+const GEMINI_API_URL = '/api/generate';
 
 
 // --- Prompt builder ---
@@ -331,31 +329,17 @@ const buildValidatorForClue = (clue) => {
 
 // --- Main generate function ---
 const generateLevelWithGemini = async (theme, difficulty, sizeLabel, onProgress) => {
-  if (!GEMINI_API_KEY || GEMINI_API_KEY === 'YOUR_GEMINI_API_KEY_HERE') {
-    throw new Error('No Gemini API key configured. Please add your key to gemini.js');
-  }
-
-  onProgress?.('Sending request to Gemini...');
-
-  const prompt = buildLevelPrompt(theme, difficulty, sizeLabel);
+  onProgress?.('Sending request to secure AI generator...');
 
   const response = await fetch(GEMINI_API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: {
-        temperature: 0.7,
-        maxOutputTokens: 65536,
-
-        // No responseMimeType — plain text is more reliable and avoids mid-JSON truncation
-      },
-    }),
+    body: JSON.stringify({ theme, difficulty, sizeLabel }),
   });
 
   if (!response.ok) {
     const err = await response.json().catch(() => ({}));
-    throw new Error(err?.error?.message || `API error ${response.status}`);
+    throw new Error(err?.error || `API error ${response.status}`);
   }
 
   onProgress?.('Parsing level data...');

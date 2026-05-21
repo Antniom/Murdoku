@@ -13,6 +13,9 @@ server.js
 # Logs
 *.log
 
+# Environment variables (credentials, API keys)
+.env
+
 # OS files
 .DS_Store
 Thumbs.db
