@@ -582,6 +582,9 @@ const GameGrid = ({ level, placements, notes, xMarks, autoXMarks, selectedEntity
   const W = cols * cellSize;
   const H = rows * cellSize;
   const [hoveredRoomId, setHoveredRoomId] = useState(null);
+  const [tooltip, setTooltip] = useState(null); // { x, y, label }
+  const tooltipTimerRef = useRef(null);
+  const obsLabels = typeof OBSTACLE_LABELS !== 'undefined' ? OBSTACLE_LABELS : {};
 
   const roomBorderPath = useMemo(() => {
     let p = '';
@@ -639,7 +642,7 @@ const GameGrid = ({ level, placements, notes, xMarks, autoXMarks, selectedEntity
   }, [hoveredRoomId, level, cellSize]);
 
   return (
-    <div className="grid-wrapper" style={{ width:W, height:H }} onPointerLeave={() => setHoveredRoomId(null)}>
+    <div className="grid-wrapper" style={{ width:W, height:H }} onPointerLeave={() => { setHoveredRoomId(null); clearTimeout(tooltipTimerRef.current); setTooltip(null); }}>
       <div
         className="grid-container"
         style={{ gridTemplateColumns:`repeat(${cols},${cellSize}px)`, gridTemplateRows:`repeat(${rows},${cellSize}px)` }}
@@ -698,8 +701,21 @@ const GameGrid = ({ level, placements, notes, xMarks, autoXMarks, selectedEntity
 
               {/* Obstacle */}
               {!void_ && obstacle && (
-                <div className="cell-asset">
+                <div className="cell-asset"
+                  onPointerEnter={() => {
+                    clearTimeout(tooltipTimerRef.current);
+                    const label = obsLabels[obstacle.type] || obstacle.type;
+                    tooltipTimerRef.current = setTimeout(() => setTooltip({ x, y, label }), 800);
+                  }}
+                  onPointerLeave={() => {
+                    clearTimeout(tooltipTimerRef.current);
+                    setTooltip(null);
+                  }}
+                >
                   <SvgAsset type={obstacle.type} size="100%"/>
+                  {tooltip?.x === x && tooltip?.y === y && (
+                    <div className="obstacle-tooltip">{tooltip.label}</div>
+                  )}
                 </div>
               )}
 

@@ -268,6 +268,7 @@ const colorizeSvg = (svgStr, assetType) => {
 // Asset map: type → filename
 const ASSET_FILES = {
   barrel:    'assets/obj_barrel-BrivFWNA.svg',
+  bed:       'assets/obj_bed.svg',
   boar:      'assets/obj_boar-CD77EEZv.svg',
   boat:      'assets/obj_boat-Cr-wrbuM.svg',
   bonsai:    'assets/obj_bonsai-C8BMonb_.svg',
@@ -275,8 +276,11 @@ const ASSET_FILES = {
   camera:    'assets/obj_camera-qOKUfWYf.svg',
   car:       'assets/obj_car-Dd4QxSKP.svg',
   car_rev:   'assets/obj_car_reverse-D9KBA0Km.svg',
+  carpet:    'assets/obj_carpet.svg',
   catapult:  'assets/obj_catapult-ehLMXWCS.svg',
+  chair:     'assets/obj_chair.svg',
   crate:     'assets/obj_crate-C9EwUpcm.svg',
+  easel:     'assets/obj_easel.svg',
   elephant:  'assets/obj_elephant-DFmKgtSe.svg',
   flowers:   'assets/obj_flowers-B089sm9T.svg',
   flowers_02:'assets/obj_flowers_02-BVVkAQ2W.svg',
@@ -285,21 +289,72 @@ const ASSET_FILES = {
   horse_rev: 'assets/obj_horse_reverse-DUhzo4tG.svg',
   house:     'assets/obj_house-DNGDwJ0-.svg',
   lion:      'assets/obj_lion-Bq_TmEPN.svg',
+  painting:  'assets/obj_painting.svg',
   palmtree:  'assets/obj_palmtree-DrP-_3J7.svg',
   palmtree_02:'assets/obj_palmtree_02-C0jmsuJX.svg',
   plant:     'assets/obj_plant-lqsU7Mb1.svg',
   plant_02:  'assets/obj_plant_02-B8FocpTF.svg',
   present:   'assets/obj_present_02-7tNpaSos.svg',
   pumpkin:   'assets/obj_pumpkin-CIl3BQ8v.svg',
+  register:  'assets/obj_register.svg',
   rowboat:   'assets/obj_rowboat-CEmXtggY.svg',
   shelf:     'assets/obj_shelf-DW4s9BDU.svg',
   shell:     'assets/obj_shell-CeZP6-gx.svg',
   shrub:     'assets/obj_shrub-DZfZCPwd.svg',
   shrub_02:  'assets/obj_shrub_02-DmhRFGzb.svg',
+  table:     'assets/obj_table.svg',
   teddy:     'assets/obj_teddy_bear-DsZiE5Yz.svg',
+  trashcan:  'assets/obj_trashcan.svg',
   tv:        'assets/obj_tv-B-td_p6V.svg',
+  window:    'assets/obj_window.svg',
   grass:     'assets/texture_floor_grass-n85FOBUF.svg',
   grass_tall:'assets/texture_floor_grass_tall-BU8A12fG.svg',
+};
+
+// Human-readable labels for obstacle tooltips
+const OBSTACLE_LABELS = {
+  barrel:     'Barrel',
+  bed:        'Bed',
+  boar:       'Wild Boar',
+  boat:       'Boat',
+  bonsai:     'Bonsai Tree',
+  cactus:     'Cactus',
+  camera:     'Camera',
+  car:        'Car',
+  car_rev:    'Car',
+  carpet:     'Carpet',
+  catapult:   'Catapult',
+  chair:      'Chair',
+  crate:      'Crate',
+  easel:      'Easel',
+  elephant:   'Elephant',
+  flowers:    'Flowers',
+  flowers_02: 'Flowers',
+  golf_cart:  'Golf Cart',
+  horse:      'Horse',
+  horse_rev:  'Horse',
+  house:      'House',
+  lion:       'Lion',
+  painting:   'Painting',
+  palmtree:   'Palm Tree',
+  palmtree_02:'Palm Tree',
+  plant:      'Plant',
+  plant_02:   'Plant',
+  present:    'Gift Box',
+  pumpkin:    'Pumpkin',
+  register:   'Cash Register',
+  rowboat:    'Rowboat',
+  shelf:      'Shelf',
+  shell:      'Shell',
+  shrub:      'Shrub',
+  shrub_02:   'Shrub',
+  table:      'Table',
+  teddy:      'Teddy Bear',
+  trashcan:   'Trash Can',
+  tv:         'Television',
+  window:     'Window',
+  grass:      'Grass',
+  grass_tall: 'Tall Grass',
 };
 
 // ---- Difficulty badge colors ----
@@ -354,11 +409,27 @@ const LEVEL_1 = (() => {
   ];
 
   const obstacles = [
+    // Workshop room decorations
     { x:0, y:0, type:'barrel'  }, // A(1,0) beside this ✓
+    { x:2, y:1, type:'crate'   }, // decorative
+    { x:0, y:2, type:'shelf'   }, // decorative
+    { x:1, y:2, type:'plant'   }, // decorative
+    // Office room decorations
     { x:4, y:0, type:'tv'      }, // B(4,1) directly below ✓
-    { x:0, y:3, type:'shrub'   }, // C(0,2) beside this (above clue) ✓ and D beside it too
+    { x:3, y:0, type:'shelf'   }, // decorative
+    { x:5, y:1, type:'plant_02'}, // decorative
+    { x:3, y:2, type:'bonsai'  }, // decorative
+    // Garage room decorations
+    { x:0, y:3, type:'shrub'   }, // C(0,2) above this ✓
+    { x:2, y:3, type:'car'     }, // decorative
+    { x:0, y:4, type:'barrel'  }, // decorative
     { x:1, y:4, type:'crate'   }, // D(2,3) beside this ✓
-    { x:4, y:3, type:'shelf'   }, // E(3,4) beside this ✓ and left of it
+    { x:2, y:5, type:'car_rev' }, // decorative
+    // Lounge room decorations
+    { x:4, y:3, type:'shelf'   }, // E(3,4) beside this ✓
+    { x:5, y:3, type:'flowers' }, // decorative
+    { x:3, y:4, type:'tv'      }, // decorative
+    { x:5, y:5, type:'plant'   }, // decorative
   ];
 
   // All validators return fn(placements, level) => bool|null
@@ -466,15 +537,22 @@ const LEVEL_2 = (() => {
 
   const obstacles = [
     { x:3,  y:0,  type:'flowers'  }, // A(2,0) beside → |2-3|=1 ✓
+    { x:1,  y:0,  type:'bonsai'   }, // decorative — greenhouse
+    { x:5,  y:0,  type:'plant_02' }, // decorative — greenhouse
     { x:0,  y:1,  type:'plant'    }, // B(0,2) beside → |2-1|=1 ✓
     { x:5,  y:1,  type:'cactus'   }, // C(4,1) beside → |4-5|=1 ✓
+    { x:3,  y:1,  type:'flowers_02'},// decorative — greenhouse
+    { x:1,  y:2,  type:'pumpkin'  }, // decorative — terrace
     { x:6,  y:2,  type:'palmtree' }, // D(6,3) beside → |3-2|=1, same x ✓
+    { x:0,  y:3,  type:'shrub'    }, // decorative — terrace
     { x:2,  y:4,  type:'pumpkin'  }, // E(1,4) beside → |1-2|=1 ✓
-    { x:5,  y:6,  type:'shrub'    }, // F(5,5) beside → |5-6|=1 ✓ ... this is void! move
+    { x:4,  y:4,  type:'shrub_02' }, // decorative — garden
+    { x:5,  y:4,  type:'cactus'   }, // decorative — conservatory
+    { x:3,  y:5,  type:'plant_02' }, // G(3,6) beside this ✓
+    { x:5,  y:6,  type:'shrub'    }, // F(5,5) beside → |5-6|=1 ✓
+    { x:4,  y:6,  type:'flowers'  }, // decorative — lobby
+    { x:2,  y:6,  type:'grass'    }, // decorative — lobby
   ];
-  // Fix: (5,6) is a real cell in shape (non-void). Let me verify: voids are [0,0],[0,6],[6,0],[6,6]. (5,6) is NOT voided. ✓
-  // Also (3,5) for G(3,6): G beside plant_02 at (3,5)? G(3,6) → |6-5|=1, same x ✓
-  obstacles.push({ x:3, y:5, type:'plant_02' }); // G(3,6) beside this ✓
 
   const clues = [
     {
@@ -603,17 +681,30 @@ const LEVEL_3 = (() => {
   // I(3,8) → camp ✓  — I and H in camp → murderer is H!
 
   const obstacles = [
+    // Savanna
     { x:5, y:0, type:'boar'      }, // A(4,0): adjacent ✓
+    { x:3, y:0, type:'grass_tall'}, // decorative
+    { x:6, y:0, type:'grass'     }, // decorative
     { x:0, y:1, type:'shrub'     }, // B(1,1): |1-0|=1 ✓
-    { x:8, y:3, type:'elephant'  }, // C(7,2): above this ✓
+    { x:3, y:1, type:'grass'     }, // decorative
     { x:1, y:2, type:'shrub_02'  }, // D(0,3): beside → |0-1|=1, |3-2|=1 ✓
+    // Watering Hole / Open Plains
+    { x:8, y:3, type:'elephant'  }, // C(7,2): above this ✓
     { x:6, y:3, type:'lion'      }, // E(6,4): directly below ✓
+    { x:4, y:2, type:'grass_tall'}, // decorative
+    { x:7, y:4, type:'horse_rev' }, // decorative — plains
+    { x:8, y:4, type:'flowers'   }, // decorative — plains
+    // Safari Lodge / Riverbank
     { x:3, y:5, type:'grass'     }, // F(2,5): beside → |2-3|=1 ✓
+    { x:5, y:5, type:'plant'     }, // decorative — lodge
+    { x:4, y:6, type:'bonsai'    }, // decorative — lodge
+    // Camp
     { x:7, y:5, type:'horse'     }, // G(8,6): beside → |8-7|=1, |6-5|=1 ✓
     { x:4, y:7, type:'plant'     }, // H(5,7): beside → |5-4|=1 ✓
-    { x:2, y:8, type:'flowers'   }, // I(3,8): beside → |3-2|=1 ✓ ... (2,8) valid? shape check needed
+    { x:2, y:8, type:'flowers'   }, // I(3,8): beside → |3-2|=1 ✓
+    { x:5, y:7, type:'shrub'     }, // decorative — camp
+    { x:6, y:7, type:'crate'     }, // decorative — camp
   ];
-  // (2,8): row 8, col 2 → not in voids list → ✓
 
   const clues = [
     {
@@ -991,15 +1082,41 @@ const LEVEL_4 = (() => {
 
   // Obstacles beside solution cells
   const obstacles = [
+    // Main Dock
     { x:3, y:0, type:'rowboat'  }, // A(2,0): beside ✓
+    { x:4, y:0, type:'barrel'   }, // decorative
+    { x:1, y:1, type:'shell'    }, // decorative
+    { x:2, y:1, type:'crate'    }, // decorative
+    // Harbor
     { x:6, y:1, type:'barrel'   }, // B(7,1): beside ✓
+    { x:8, y:1, type:'boat'     }, // decorative
+    { x:5, y:2, type:'shell'    }, // decorative
+    // Fish Market
     { x:2, y:2, type:'shell'    }, // C(1,2): beside ✓
-    { x:6, y:3, type:'crate'    }, // D(5,3): beside ✓ (but D=x:5 → beside x:6 ✓)
+    { x:0, y:3, type:'crate'    }, // decorative
+    { x:2, y:3, type:'barrel'   }, // decorative
+    // Warehouse
+    { x:6, y:3, type:'crate'    }, // D(5,3): beside ✓
+    { x:7, y:2, type:'barrel'   }, // decorative
+    { x:4, y:4, type:'plant'    }, // decorative
+    // Boathouse
     { x:8, y:4, type:'plant'    }, // E(9,4): beside ✓
+    { x:9, y:3, type:'rowboat'  }, // decorative
+    // Tavern
     { x:1, y:5, type:'shrub'    }, // F(0,5): beside ✓
+    { x:3, y:5, type:'flowers'  }, // decorative
+    { x:2, y:5, type:'crate'    }, // decorative
+    // Beach
     { x:5, y:6, type:'flowers'  }, // G(4,6): beside ✓
+    { x:6, y:4, type:'shell'    }, // decorative
+    // Lighthouse
     { x:7, y:7, type:'boat'     }, // H(6,7): beside ✓
+    { x:8, y:5, type:'flowers'  }, // decorative
+    { x:7, y:6, type:'barrel'   }, // decorative
+    // Hidden Cove
     { x:4, y:8, type:'barrel'   }, // I(3,8): beside ✓
+    { x:2, y:7, type:'shell'    }, // decorative
+    { x:3, y:7, type:'plant'    }, // decorative
   ];
 
   const clues = [
@@ -1042,7 +1159,448 @@ const LEVEL_4 = (() => {
 })();
 
 
-const BUILT_IN_LEVELS = [LEVEL_1, LEVEL_2, LEVEL_3, LEVEL_4];
+// ---- LEVEL 5: Your First Case — Very Easy — 6×6 ----
+const LEVEL_5 = (() => {
+  // Four 3×3 quadrant rooms
+  const living_room = { id:'living_room', name:'Living Room', color:'#e8c9a0',
+    cells: [{x:0,y:0},{x:1,y:0},{x:2,y:0},{x:0,y:1},{x:1,y:1},{x:2,y:1},{x:0,y:2},{x:1,y:2},{x:2,y:2}] };
+  const bedroom = { id:'bedroom', name:'Bedroom', color:'#b8d4e8',
+    cells: [{x:3,y:0},{x:4,y:0},{x:5,y:0},{x:3,y:1},{x:4,y:1},{x:5,y:1},{x:3,y:2},{x:4,y:2},{x:5,y:2}] };
+  const dining_room = { id:'dining_room', name:'Dining Room', color:'#c8e0b8',
+    cells: [{x:0,y:3},{x:1,y:3},{x:2,y:3},{x:0,y:4},{x:1,y:4},{x:2,y:4},{x:0,y:5},{x:1,y:5},{x:2,y:5}] };
+  const lounge = { id:'lounge', name:'Main Lounge', color:'#e0c0d0',
+    cells: [{x:3,y:3},{x:4,y:3},{x:5,y:3},{x:3,y:4},{x:4,y:4},{x:5,y:4},{x:3,y:5},{x:4,y:5},{x:5,y:5}] };
+
+  // Solution (verified unique): Window:(0,1) Bed:(3,2) Carpet:(4,4) Plant:(2,5)
+  // Axel(0,0) Bella(5,3) Cora(4,4) Douglas(3,2) Ella(1,5) Vincent(2,1)
+  const solution = { A:{x:0,y:0}, B:{x:5,y:3}, C:{x:4,y:4}, D:{x:3,y:2}, E:{x:1,y:5}, V:{x:2,y:1} };
+
+  const suspects = [
+    { id:'A', name:'Axel',    trait:'none',    color: SUSPECT_COLORS[0], isVictim: false },
+    { id:'B', name:'Bella',   trait:'none',    color: SUSPECT_COLORS[1], isVictim: false },
+    { id:'C', name:'Cora',    trait:'glasses', color: SUSPECT_COLORS[2], isVictim: false },
+    { id:'D', name:'Douglas', trait:'beard',   color: SUSPECT_COLORS[3], isVictim: false },
+    { id:'E', name:'Ella',    trait:'none',    color: SUSPECT_COLORS[4], isVictim: false },
+    { id:'V', name:'Vincent', trait:'none',    color: SUSPECT_COLORS[5], isVictim: true  },
+  ];
+
+  const obstacles = [
+    // Living Room
+    { x:0, y:1, type:'window'  },  // Axel(0,0) beside this ✓
+    { x:1, y:0, type:'painting' }, // decorative
+    { x:2, y:2, type:'plant'   },  // decorative corner
+    // Bedroom
+    { x:3, y:2, type:'bed'     },  // Douglas ON this ✓
+    { x:5, y:0, type:'shelf'   },  // decorative
+    { x:4, y:1, type:'bonsai'  },  // decorative
+    // Dining Room
+    { x:2, y:5, type:'plant_02'},  // Ella(1,5) beside ✓
+    { x:0, y:3, type:'table'   },  // decorative
+    { x:1, y:4, type:'chair'   },  // decorative
+    // Main Lounge
+    { x:4, y:4, type:'carpet'  },  // Cora ON this ✓
+    { x:3, y:3, type:'tv'      },  // decorative
+    { x:5, y:5, type:'flowers' },  // decorative corner
+  ];
+
+  const clues = [
+    {
+      suspectId: 'A',
+      text: 'He was <strong>beside</strong> the <strong>window</strong> in the Living Room.',
+      validate: (placements, level) => {
+        const pos = placements['A']; if (!pos) return null;
+        return isAdjacent(pos, {x:0,y:1});
+      },
+    },
+    {
+      suspectId: 'B',
+      text: 'She was in the <strong>Main Lounge</strong>.',
+      validate: VALIDATORS.in_room('B', 'lounge'),
+    },
+    {
+      suspectId: 'C',
+      text: 'She was <strong>on the carpet</strong>.',
+      validate: (placements) => {
+        const pos = placements['C']; if (!pos) return null;
+        return pos.x === 4 && pos.y === 4;
+      },
+    },
+    {
+      suspectId: 'D',
+      text: 'He was <strong>lying on the bed</strong>.',
+      validate: (placements) => {
+        const pos = placements['D']; if (!pos) return null;
+        return pos.x === 3 && pos.y === 2;
+      },
+    },
+    {
+      suspectId: 'E',
+      text: 'She was <strong>beside</strong> a <strong>plant</strong> in the Dining Room.',
+      validate: (placements, level) => {
+        const pos = placements['E']; if (!pos) return null;
+        return isAdjacent(pos, {x:2,y:5}) && getRoomForCell(pos.x,pos.y,level)?.id === 'dining_room';
+      },
+    },
+    {
+      suspectId: 'V',
+      text: '★ <strong>Victim.</strong> He was alone with the murderer — the last free square.',
+      validate: VALIDATORS.victim_clue('V'),
+    },
+  ];
+
+  return {
+    id: 'your_first_case',
+    name: 'Your First Case',
+    theme: 'apartment',
+    difficulty: 'Very Easy',
+    cols: 6,
+    rows: 6,
+    cellSize: 80,
+    shape: fullShape(6, 6),
+    rooms: [living_room, bedroom, dining_room, lounge],
+    obstacles,
+    suspects,
+    solution,
+    clues,
+  };
+})();
+
+// ---- LEVEL 6: Vacation Rental — Easy — 6×6 ----
+const LEVEL_6 = (() => {
+  // Layout: Lounge x:0..1 y:0..3, Bathroom x:2..3 y:0..3, Guest Room x:4..5 y:0..3, Bedroom full row y:4..5
+  const lounge = { id:'lounge', name:'Lounge', color:'#f0e0c8',
+    cells: [{x:0,y:0},{x:1,y:0},{x:0,y:1},{x:1,y:1},{x:0,y:2},{x:1,y:2},{x:0,y:3},{x:1,y:3}] };
+  const bathroom = { id:'bathroom', name:'Bathroom', color:'#c0dce8',
+    cells: [{x:2,y:0},{x:3,y:0},{x:2,y:1},{x:3,y:1},{x:2,y:2},{x:3,y:2},{x:2,y:3},{x:3,y:3}] };
+  const guest_room = { id:'guest_room', name:'Guest Room', color:'#d4e8c0',
+    cells: [{x:4,y:0},{x:5,y:0},{x:4,y:1},{x:5,y:1},{x:4,y:2},{x:5,y:2},{x:4,y:3},{x:5,y:3}] };
+  const bedroom = { id:'bedroom', name:'Bedroom', color:'#e0c8d8',
+    cells: [{x:0,y:4},{x:1,y:4},{x:2,y:4},{x:3,y:4},{x:4,y:4},{x:5,y:4},{x:0,y:5},{x:1,y:5},{x:2,y:5},{x:3,y:5},{x:4,y:5},{x:5,y:5}] };
+
+  // Solution (verified unique): TV:(1,1) Chair:(0,2) Bed1:(4,0) Bed2:(1,5) Plant:(5,1)
+  // Arianna(2,1) Brycen(0,2) Colleen(3,3) Dan(1,4) Evan(4,0) Virgil(5,5)
+  const solution = { A:{x:2,y:1}, B:{x:0,y:2}, C:{x:3,y:3}, D:{x:1,y:4}, E:{x:4,y:0}, V:{x:5,y:5} };
+
+  const suspects = [
+    { id:'A', name:'Arianna', trait:'none',    color: SUSPECT_COLORS[0], isVictim: false },
+    { id:'B', name:'Brycen',  trait:'bald',    color: SUSPECT_COLORS[1], isVictim: false },
+    { id:'C', name:'Colleen', trait:'glasses', color: SUSPECT_COLORS[2], isVictim: false },
+    { id:'D', name:'Dan',     trait:'beard',   color: SUSPECT_COLORS[3], isVictim: false },
+    { id:'E', name:'Evan',    trait:'none',    color: SUSPECT_COLORS[4], isVictim: false },
+    { id:'V', name:'Virgil',  trait:'none',    color: SUSPECT_COLORS[5], isVictim: true  },
+  ];
+
+  const obstacles = [
+    // Lounge
+    { x:1, y:1, type:'tv'      },  // Arianna(2,1) beside ✓
+    { x:0, y:2, type:'chair'   },  // Brycen ON this ✓
+    { x:1, y:0, type:'shelf'   },  // decorative
+    { x:0, y:3, type:'plant'   },  // decorative
+    // Bathroom
+    { x:2, y:0, type:'window'  },  // decorative
+    { x:3, y:1, type:'bonsai'  },  // decorative
+    { x:2, y:3, type:'easel'   },  // decorative
+    // Guest Room
+    { x:4, y:0, type:'bed'     },  // Evan ON this ✓
+    { x:5, y:1, type:'plant_02'},  // Arianna(2,1)? No — decorative. Virgil in Bedroom beside Plant
+    { x:5, y:2, type:'flowers' },  // decorative
+    { x:4, y:3, type:'cactus'  },  // decorative
+    // Bedroom
+    { x:1, y:5, type:'bed'     },  // Dan(1,4) beside ✓ (bed2)
+    { x:3, y:4, type:'plant_02'},  // decorative
+    { x:0, y:4, type:'shelf'   },  // decorative
+    { x:5, y:4, type:'painting'},  // decorative
+  ];
+
+  const clues = [
+    {
+      suspectId: 'A',
+      text: 'She was <strong>beside</strong> the <strong>TV</strong>.',
+      validate: VALIDATORS.beside_obstacle('A', {x:1,y:1}),
+    },
+    {
+      suspectId: 'B',
+      text: 'He was <strong>sitting</strong> in the <strong>chair</strong>.',
+      validate: (placements) => {
+        const pos = placements['B']; if (!pos) return null;
+        return pos.x === 0 && pos.y === 2;
+      },
+    },
+    {
+      suspectId: 'C',
+      text: 'She was in the <strong>Bathroom</strong>.',
+      validate: VALIDATORS.in_room('C', 'bathroom'),
+    },
+    {
+      suspectId: 'D',
+      text: 'He was <strong>beside</strong> a <strong>bed</strong> in the Bedroom.',
+      validate: (placements, level) => {
+        const pos = placements['D']; if (!pos) return null;
+        return isAdjacent(pos, {x:1,y:5}) && getRoomForCell(pos.x,pos.y,level)?.id === 'bedroom';
+      },
+    },
+    {
+      suspectId: 'E',
+      text: 'He was <strong>lying</strong> on a <strong>bed</strong> in the Guest Room.',
+      validate: (placements) => {
+        const pos = placements['E']; if (!pos) return null;
+        return pos.x === 4 && pos.y === 0;
+      },
+    },
+    {
+      suspectId: 'V',
+      text: '★ <strong>Victim.</strong> He was in the last free square.',
+      validate: VALIDATORS.victim_clue('V'),
+    },
+  ];
+
+  return {
+    id: 'vacation_rental',
+    name: 'Vacation Rental',
+    theme: 'apartment',
+    difficulty: 'Easy',
+    cols: 6,
+    rows: 6,
+    cellSize: 80,
+    shape: fullShape(6, 6),
+    rooms: [lounge, bathroom, guest_room, bedroom],
+    obstacles,
+    suspects,
+    solution,
+    clues,
+  };
+})();
+
+// ---- LEVEL 7: The English Breakfast — Easy — 6×6 ----
+const LEVEL_7 = (() => {
+  // Irregular rooms
+  const lounge = { id:'lounge', name:'Lounge', color:'#e8d4b8',
+    cells: [{x:0,y:0},{x:0,y:1},{x:0,y:2},{x:0,y:3},{x:0,y:4},{x:1,y:4},{x:0,y:5},{x:1,y:5}] };
+  const kitchen = { id:'kitchen', name:'Kitchen', color:'#c8e4c8',
+    cells: [{x:1,y:0},{x:2,y:0},{x:3,y:0},{x:1,y:1},{x:2,y:1},{x:3,y:1}] };
+  const guest_room = { id:'guest_room', name:'Guest Room', color:'#b8cce8',
+    cells: [{x:4,y:0},{x:5,y:0},{x:4,y:1},{x:5,y:1},{x:4,y:2},{x:5,y:2}] };
+  const bathroom = { id:'bathroom', name:'Bathroom', color:'#d8e8f0',
+    cells: [{x:1,y:2},{x:2,y:2},{x:3,y:2},{x:1,y:3},{x:2,y:3},{x:3,y:3}] };
+  const bedroom = { id:'bedroom', name:'Bedroom', color:'#e8c8d8',
+    cells: [{x:4,y:3},{x:5,y:3},{x:2,y:4},{x:3,y:4},{x:4,y:4},{x:5,y:4},{x:2,y:5},{x:3,y:5},{x:4,y:5},{x:5,y:5}] };
+
+  // Solution (verified unique): Window:(0,0) Bed:(2,4) Table:(1,3) TV:(3,1)
+  // Alexander(2,4) Briggs(3,0) Carissa(0,3) Diana(4,2) Elsa(1,1) Vin(5,5)
+  const solution = { A:{x:2,y:4}, B:{x:3,y:0}, C:{x:0,y:3}, D:{x:4,y:2}, E:{x:1,y:1}, V:{x:5,y:5} };
+
+  const suspects = [
+    { id:'A', name:'Alexander', trait:'beard',   color: SUSPECT_COLORS[0], isVictim: false },
+    { id:'B', name:'Briggs',    trait:'bald',    color: SUSPECT_COLORS[1], isVictim: false },
+    { id:'C', name:'Carissa',   trait:'none',    color: SUSPECT_COLORS[2], isVictim: false },
+    { id:'D', name:'Diana',     trait:'glasses', color: SUSPECT_COLORS[3], isVictim: false },
+    { id:'E', name:'Elsa',      trait:'none',    color: SUSPECT_COLORS[4], isVictim: false },
+    { id:'V', name:'Vin',       trait:'none',    color: SUSPECT_COLORS[5], isVictim: true  },
+  ];
+
+  const obstacles = [
+    // Lounge
+    { x:0, y:0, type:'window'  },  // Elsa(1,1) beside ✓
+    { x:0, y:2, type:'painting'},  // decorative
+    { x:1, y:4, type:'plant'   },  // decorative
+    { x:0, y:5, type:'shelf'   },  // decorative
+    // Kitchen
+    { x:3, y:1, type:'tv'      },  // decorative
+    { x:1, y:0, type:'table'   },  // decorative (table in kitchen)
+    { x:2, y:1, type:'crate'   },  // decorative
+    // Guest Room
+    { x:5, y:0, type:'bed'     },  // decorative
+    { x:4, y:1, type:'flowers' },  // decorative
+    { x:5, y:2, type:'shelf'   },  // decorative
+    // Bathroom
+    { x:1, y:3, type:'table'   },  // Carissa(0,3) beside ✓
+    { x:3, y:2, type:'window'  },  // decorative
+    { x:2, y:3, type:'easel'   },  // decorative
+    // Bedroom
+    { x:2, y:4, type:'bed'     },  // Alexander ON this ✓
+    { x:4, y:3, type:'tv'      },  // Diana(4,2) beside ✓
+    { x:3, y:5, type:'bonsai'  },  // decorative
+    { x:5, y:4, type:'plant_02'},  // decorative
+    { x:4, y:5, type:'flowers' },  // decorative
+  ];
+
+  const clues = [
+    {
+      suspectId: 'A',
+      text: 'He was <strong>lying on the bed</strong>.',
+      validate: (placements) => {
+        const pos = placements['A']; if (!pos) return null;
+        return pos.x === 2 && pos.y === 4;
+      },
+    },
+    {
+      suspectId: 'B',
+      text: 'He was in the <strong>Kitchen</strong>.',
+      validate: VALIDATORS.in_room('B', 'kitchen'),
+    },
+    {
+      suspectId: 'C',
+      text: 'She was <strong>beside</strong> the <strong>table</strong>.',
+      validate: VALIDATORS.beside_obstacle('C', {x:1,y:3}),
+    },
+    {
+      suspectId: 'D',
+      text: 'She was <strong>beside</strong> the <strong>TV</strong>.',
+      validate: VALIDATORS.beside_obstacle('D', {x:4,y:3}),
+    },
+    {
+      suspectId: 'E',
+      text: 'She was <strong>beside</strong> the <strong>window</strong>.',
+      validate: VALIDATORS.beside_obstacle('E', {x:0,y:0}),
+    },
+    {
+      suspectId: 'V',
+      text: '★ <strong>Victim.</strong> He was alone with the murderer — the last free square.',
+      validate: VALIDATORS.victim_clue('V'),
+    },
+  ];
+
+  return {
+    id: 'english_breakfast',
+    name: 'The English Breakfast',
+    theme: 'apartment',
+    difficulty: 'Easy',
+    cols: 6,
+    rows: 6,
+    cellSize: 80,
+    shape: fullShape(6, 6),
+    rooms: [lounge, kitchen, guest_room, bathroom, bedroom],
+    obstacles,
+    suspects,
+    solution,
+    clues,
+  };
+})();
+
+// ---- LEVEL 8: Four Windows — Easy — 6×6 ----
+const LEVEL_8 = (() => {
+  // Four equal 3×3 quadrant rooms
+  const lounge = { id:'lounge', name:'Lounge', color:'#e0d4c0',
+    cells: [{x:0,y:0},{x:1,y:0},{x:2,y:0},{x:0,y:1},{x:1,y:1},{x:2,y:1},{x:0,y:2},{x:1,y:2},{x:2,y:2}] };
+  const bathroom = { id:'bathroom', name:'Bathroom', color:'#c0d8e8',
+    cells: [{x:3,y:0},{x:4,y:0},{x:5,y:0},{x:3,y:1},{x:4,y:1},{x:5,y:1},{x:3,y:2},{x:4,y:2},{x:5,y:2}] };
+  const guest_room = { id:'guest_room', name:'Guest Room', color:'#c8e0c8',
+    cells: [{x:0,y:3},{x:1,y:3},{x:2,y:3},{x:0,y:4},{x:1,y:4},{x:2,y:4},{x:0,y:5},{x:1,y:5},{x:2,y:5}] };
+  const bedroom = { id:'bedroom', name:'Bedroom', color:'#e0c8d8',
+    cells: [{x:3,y:3},{x:4,y:3},{x:5,y:3},{x:3,y:4},{x:4,y:4},{x:5,y:4},{x:3,y:5},{x:4,y:5},{x:5,y:5}] };
+
+  // Solution (verified unique): Windows:(0,1)(5,1)(0,5)(5,4) Chair:(2,2) Plant:(5,3) Bed:(4,3)
+  // Antonio(0,3) Ben(2,2) Chelsea(5,0) Dahlia(1,1) Emmy(4,4) Valeria(3,5)
+  const solution = { A:{x:0,y:3}, B:{x:2,y:2}, C:{x:5,y:0}, D:{x:1,y:1}, E:{x:4,y:4}, V:{x:3,y:5} };
+
+  const suspects = [
+    { id:'A', name:'Antonio', trait:'beard',   color: SUSPECT_COLORS[0], isVictim: false },
+    { id:'B', name:'Ben',     trait:'bald',    color: SUSPECT_COLORS[1], isVictim: false },
+    { id:'C', name:'Chelsea', trait:'none',    color: SUSPECT_COLORS[2], isVictim: false },
+    { id:'D', name:'Dahlia',  trait:'glasses', color: SUSPECT_COLORS[3], isVictim: false },
+    { id:'E', name:'Emmy',    trait:'none',    color: SUSPECT_COLORS[4], isVictim: false },
+    { id:'V', name:'Valeria', trait:'none',    color: SUSPECT_COLORS[5], isVictim: true  },
+  ];
+
+  // Room corners (internal 4 per room) for Antonio's clue
+  const roomCorners = new Set([
+    '0,0','2,0','0,2','2,2', // Lounge
+    '3,0','5,0','3,2','5,2', // Bathroom
+    '0,3','2,3','0,5','2,5', // Guest Room
+    '3,3','5,3','3,5','5,5'  // Bedroom
+  ]);
+
+  const obstacles = [
+    // Lounge — 4 windows (one on each room wall)
+    { x:0, y:1, type:'window'  },  // Chelsea(5,0) beside window ✓ (Bathroom window)
+    { x:1, y:0, type:'painting'},  // decorative
+    { x:2, y:1, type:'shelf'   },  // decorative
+    { x:0, y:2, type:'plant'   },  // decorative
+    // Bathroom
+    { x:5, y:1, type:'window'  },  // Chelsea(5,0) beside ✓
+    { x:3, y:0, type:'bonsai'  },  // decorative
+    { x:4, y:2, type:'flowers' },  // decorative
+    { x:3, y:1, type:'shelf'   },  // decorative
+    // Guest Room
+    { x:0, y:5, type:'window'  },  // decorative (4th window)
+    { x:2, y:3, type:'plant_02'},  // decorative
+    { x:1, y:4, type:'chair'   },  // decorative
+    { x:2, y:4, type:'trashcan'},  // decorative
+    // Bedroom
+    { x:5, y:4, type:'window'  },  // decorative (4th window)
+    { x:2, y:2, type:'chair'   },  // Ben ON this ✓
+    { x:4, y:3, type:'bed'     },  // decorative
+    { x:5, y:3, type:'plant'   },  // Emmy(4,4) beside ✓
+    { x:3, y:4, type:'tv'      },  // decorative
+    { x:4, y:5, type:'flowers' },  // decorative
+  ];
+
+  const clues = [
+    {
+      suspectId: 'A',
+      text: 'He was in a <strong>corner</strong> of a room.',
+      validate: (placements) => {
+        const pos = placements['A']; if (!pos) return null;
+        return roomCorners.has(`${pos.x},${pos.y}`);
+      },
+    },
+    {
+      suspectId: 'B',
+      text: 'He was <strong>sitting</strong> in the <strong>chair</strong>.',
+      validate: (placements) => {
+        const pos = placements['B']; if (!pos) return null;
+        return pos.x === 2 && pos.y === 2;
+      },
+    },
+    {
+      suspectId: 'C',
+      text: 'She was <strong>beside</strong> a <strong>window</strong>.',
+      validate: (placements) => {
+        const pos = placements['C']; if (!pos) return null;
+        const windows = [{x:0,y:1},{x:5,y:1},{x:0,y:5},{x:5,y:4}];
+        return windows.some(w => isAdjacent(pos, w));
+      },
+    },
+    {
+      suspectId: 'D',
+      text: 'She was <strong>not</strong> beside any <strong>wall</strong>.',
+      validate: (placements) => {
+        const pos = placements['D']; if (!pos) return null;
+        // Not adjacent to any grid edge: x must be 1..4, y must be 1..4
+        return pos.x >= 1 && pos.x <= 4 && pos.y >= 1 && pos.y <= 4;
+      },
+    },
+    {
+      suspectId: 'E',
+      text: 'She was <strong>beside</strong> a <strong>plant</strong>.',
+      validate: VALIDATORS.beside_obstacle('E', {x:5,y:3}),
+    },
+    {
+      suspectId: 'V',
+      text: '★ <strong>Victim.</strong> She was alone with the murderer — the last free square.',
+      validate: VALIDATORS.victim_clue('V'),
+    },
+  ];
+
+  return {
+    id: 'four_windows',
+    name: 'Four Windows',
+    theme: 'apartment',
+    difficulty: 'Easy',
+    cols: 6,
+    rows: 6,
+    cellSize: 80,
+    shape: fullShape(6, 6),
+    rooms: [lounge, bathroom, guest_room, bedroom],
+    obstacles,
+    suspects,
+    solution,
+    clues,
+  };
+})();
+
+
+const BUILT_IN_LEVELS = [LEVEL_1, LEVEL_2, LEVEL_3, LEVEL_4, LEVEL_5, LEVEL_6, LEVEL_7, LEVEL_8];
 
 // ---- Validation runner ----
 const validateAllClues = (placements, level) => {
