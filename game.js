@@ -443,15 +443,9 @@ const HowToPlayModal = ({ onClose }) => (
 // ============================================================
 // LEVEL SELECTOR SCREEN
 // ============================================================
-const LevelSelector = ({ onSelectLevel, onShowGenerate }) => {
+const LevelSelector = ({ onSelectLevel, onShowGenerate, generatedLevels }) => {
   const [filter, setFilter] = useState('All');
-  const [generatedLevels, setGeneratedLevels] = useState([]);
   const completed = getCompletedLevels();
-
-  useEffect(() => {
-    // Load from server (shared) + localStorage fallback
-    loadGeneratedLevels().then(levels => setGeneratedLevels(levels));
-  }, []);
 
   const allLevels = [...BUILT_IN_LEVELS, ...generatedLevels];
   const filters = ['All','Very Easy','Easy','Medium','Hard','Expert','AI Generated'];
@@ -852,6 +846,11 @@ const MurdokuApp = () => {
   const [showHowToPlay, setShowHowToPlay] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isSoundMuted, setIsSoundMuted] = useState(false);
+  const [generatedLevels, setGeneratedLevels] = useState([]);
+
+  useEffect(() => {
+    loadGeneratedLevels().then(levels => setGeneratedLevels(levels));
+  }, []);
 
   // Game state
   const [placements, setPlacements] = useState({});
@@ -1009,7 +1008,7 @@ const MurdokuApp = () => {
   if (view === 'selector') {
     return (
       <>
-        <LevelSelector onSelectLevel={startLevel} onShowGenerate={() => setShowGenerate(true)}/>
+        <LevelSelector onSelectLevel={startLevel} onShowGenerate={() => setShowGenerate(true)} generatedLevels={generatedLevels}/>
         {showGenerate && <GenerateModal onClose={() => setShowGenerate(false)} onGenerate={handleGenerated}/>}
       </>
     );
