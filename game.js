@@ -181,7 +181,7 @@ const useTimer = (running) => {
     return () => clearInterval(intervalRef.current);
   }, [running]);
 
-  const reset = useCallback(() => setSeconds(0), []);
+  const reset = useCallback((val = 0) => setSeconds(val), []);
   const formatted = useMemo(() => {
     const m = Math.floor(seconds / 60).toString().padStart(2, '0');
     const s = (seconds % 60).toString().padStart(2, '0');
@@ -278,7 +278,7 @@ const GridPreview = ({ level, size = 160 }) => {
 // ============================================================
 // LEVEL CARD (selector) — matches original puzzle-card-tilt style
 // ============================================================
-const LevelCard = ({ level, isCompleted, bestTime, onClick }) => {
+const LevelCard = ({ level, isCompleted, bestTime, isInProgress, onClick }) => {
   const dc = DIFFICULTY_COLORS[level.difficulty] || DIFFICULTY_COLORS['Medium'];
   const [hovered, setHovered] = useState(false);
 
@@ -304,6 +304,22 @@ const LevelCard = ({ level, isCompleted, bestTime, onClick }) => {
           transition:'box-shadow 0.15s', overflow:'visible',
         }}
       >
+        {/* Status Badge */}
+        {(isCompleted || isInProgress) && (
+          <div style={{
+            position:'absolute', top:12, right:12, zIndex:15,
+            padding:'4px 8px', borderRadius:6, fontSize:9, fontWeight:800,
+            textTransform:'uppercase', letterSpacing:0.5,
+            background: isCompleted ? 'rgba(74, 186, 120, 0.15)' : 'rgba(230, 140, 20, 0.15)',
+            color: isCompleted ? 'rgb(50, 160, 90)' : 'rgb(200, 110, 10)',
+            border: isCompleted ? '1px solid rgba(74, 186, 120, 0.3)' : '1px solid rgba(230, 140, 20, 0.3)',
+            boxShadow:'0 1px 2px rgba(0,0,0,0.05)',
+            display:'flex', alignItems:'center', gap:4
+          }}>
+            {isCompleted ? '✓ Solved' : '✏ In Progress'}
+          </div>
+        )}
+
         {/* Pin */}
         <svg width="14" height="14" viewBox="0 0 20 20"
           style={{ position:'absolute', top:-1, left:'50%', marginLeft:-7, zIndex:10, pointerEvents:'none', filter:'drop-shadow(3px 3px 0 rgba(0,0,0,0.3))' }}>
@@ -447,6 +463,14 @@ const LevelSelector = ({ onSelectLevel, onShowGenerate, generatedLevels }) => {
   const [filter, setFilter] = useState('All');
   const completed = getCompletedLevels();
 
+  const inProgressMap = useMemo(() => {
+    try {
+      return JSON.parse(localStorage.getItem('murdoku_level_progress') || '{}');
+    } catch {
+      return {};
+    }
+  }, []);
+
   const allLevels = [...BUILT_IN_LEVELS, ...generatedLevels];
   const filters = ['All','Very Easy','Easy','Medium','Hard','Expert','AI Generated'];
   const filtered = allLevels.filter(l => {
@@ -532,7 +556,17 @@ const LevelSelector = ({ onSelectLevel, onShowGenerate, generatedLevels }) => {
 
           {filtered.map(level => {
             const comp = completed.find(c => c.id === level.id);
-            return <LevelCard key={level.id} level={level} isCompleted={!!comp} bestTime={comp?.time} onClick={() => onSelectLevel(level)}/>;
+            const inProg = !!inProgressMap[level.id];
+            return (
+              <LevelCard 
+                key={level.id} 
+                level={level} 
+                isCompleted={!!comp} 
+                bestTime={comp?.time} 
+                isInProgress={inProg} 
+                onClick={() => onSelectLevel(level)}
+              />
+            );
           })}
         </div>
       </div>
@@ -852,6 +886,23 @@ const MurdokuApp = () => {
     loadGeneratedLevels().then(levels => setGeneratedLevels(levels));
   }, []);
 
+  // Auto-save active level progress in localStorage
+  useEffect(() => {
+    if (!level || isVictory) return;
+    try {
+      const progress = JSON.parse(localStorage.getItem('murdoku_level_progress') || '{}');
+      if (Object.keys(placements).length > 0 || Object.keys(notes).length > 0 || Object.keys(xMarks).length > 0) {
+        progress[level.id] = { placements, notes, xMarks, elapsed };
+        localStorage.setItem('murdoku_level_progress', JSON.stringify(progress));
+      } else {
+        if (progress[level.id]) {
+          delete progress[level.id];
+          localStorage.setItem('murdoku_level_progress', JSON.stringify(progress));
+        }
+      }
+    } catch (e) {}
+  }, [level, placements, notes, xMarks, elapsed, isVictory]);
+
   // Game state
   const [placements, setPlacements] = useState({});
   const [notes, setNotes]           = useState({});
@@ -885,9 +936,34 @@ const MurdokuApp = () => {
   }, [undoStack]);
 
   const startLevel = useCallback((lvl) => {
-    setLevel(lvl); setPlacements({}); setNotes({}); setXMarks({});
-    setUndoStack([]); setSelectedEntity(null); setToolMode('select');
-    setIsVictory(false); setPressingCell(null); resetTimer(); setView('playing');
+    setLevel(lvl);
+    setSelectedEntity(null);
+    setToolMode('select');
+    setIsVictory(false);
+    setPressingCell(null);
+
+    let loaded = false;
+    try {
+      const progress = JSON.parse(localStorage.getItem('murdoku_level_progress') || '{}');
+      const saved = progress[lvl.id];
+      if (saved) {
+        setPlacements(saved.placements || {});
+        setNotes(saved.notes || {});
+        setXMarks(saved.xMarks || {});
+        setUndoStack([]);
+        resetTimer(saved.elapsed || 0);
+        loaded = true;
+      }
+    } catch (e) {}
+
+    if (!loaded) {
+      setPlacements({});
+      setNotes({});
+      setXMarks({});
+      setUndoStack([]);
+      resetTimer(0);
+    }
+    setView('playing');
   }, [resetTimer]);
 
   const handleGenerated = useCallback(async (lvl) => {
@@ -998,7 +1074,15 @@ const MurdokuApp = () => {
     const hard = checkHardConstraints(placements, level);
     if (!hard.valid) { alert(`Invalid: ${hard.reason}`); return; }
     const { allPass } = validateAllClues(placements, level);
-    if (allPass) { setIsVictory(true); markLevelComplete(level.id, elapsed); }
+    if (allPass) {
+      setIsVictory(true);
+      markLevelComplete(level.id, elapsed);
+      try {
+        const progress = JSON.parse(localStorage.getItem('murdoku_level_progress') || '{}');
+        delete progress[level.id];
+        localStorage.setItem('murdoku_level_progress', JSON.stringify(progress));
+      } catch (e) {}
+    }
     else alert('Some clues are not satisfied. Review your placement and try again.');
   }, [level, placements, elapsed]);
 
