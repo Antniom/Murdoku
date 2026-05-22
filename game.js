@@ -766,8 +766,25 @@ const GameGrid = ({ level, placements, notes, xMarks, autoXMarks, selectedEntity
                     {occupant.name.charAt(0).toUpperCase()}
                   </div>
 
-                  <div className="occupant-container">
-                    <div className="occupant-inner">
+                  <div className="occupant-container" style={{
+                    position: 'absolute',
+                    width: '80%',
+                    height: '80%',
+                    left: '10%',
+                    bottom: 0,
+                    display: 'flex',
+                    alignItems: 'flex-end',
+                    justifyContent: 'center',
+                    pointerEvents: 'none',
+                    zIndex: 15,
+                  }}>
+                    <div className="occupant-inner" style={{
+                      width: '100%',
+                      height: '100%',
+                      display: 'flex',
+                      alignItems: 'flex-end',
+                      justifyContent: 'center',
+                    }}>
                       <AvatarSVG color={occupant.color} name={occupant.name} isGrid={true} size="100%" />
                     </div>
                   </div>
