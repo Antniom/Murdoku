@@ -804,43 +804,40 @@ const GameGrid = ({ level, placements, notes, xMarks, autoXMarks, selectedEntity
         )}
       </svg>
 
-      {/* Room labels (small corner label always visible) */}
+      {/* Room labels (small corner label always visible, glows and scales on hover) */}
       <div style={{ position:'absolute', inset:0, pointerEvents:'none', zIndex:25 }}>
         {level.rooms.map(room => {
           const cells = room.cells.filter(c => !isVoidCell(c.x, c.y, level));
           if (!cells.length) return null;
+          
+          // Find leftmost column among room cells
           const minX = Math.min(...cells.map(c => c.x));
-          const maxY = Math.max(...cells.map(c => c.y));
+          // Filter cells to only those in the leftmost column
+          const leftmostCells = cells.filter(c => c.x === minX);
+          // Find the bottommost cell in that leftmost column to guarantee it is in a valid room cell
+          const targetCellY = Math.max(...leftmostCells.map(c => c.y));
+          
+          const isHovered = room.id === hoveredRoomId;
           return (
-            <div key={room.id} style={{ position:'absolute', left: minX*cellSize+4, top: (maxY+1)*cellSize-5, whiteSpace:'nowrap' }}>
+            <div key={room.id} style={{ position:'absolute', left: minX*cellSize+4, top: (targetCellY+1)*cellSize-5, whiteSpace:'nowrap' }}>
               <span style={{
-                fontSize:11, fontWeight:900, letterSpacing:0.4,
-                color:'rgba(255,255,255,0.92)', lineHeight:1,
-                textShadow:'-1px -1px 0 #000,-1px 0 0 #000,-1px 1px 0 #000,0 -1px 0 #000,0 1px 0 #000,1px -1px 0 #000,1px 0 0 #000,1px 1px 0 #000',
+                display: 'inline-block',
+                fontSize: 11,
+                fontWeight: 900,
+                letterSpacing: 0.4,
+                color: isHovered ? 'rgb(99, 180, 255)' : 'rgba(255, 255, 255, 0.92)',
+                lineHeight: 1,
+                textShadow: isHovered 
+                  ? '0 0 8px rgba(99, 180, 255, 0.8), 0 0 15px rgba(99, 180, 255, 0.5), -1px -1px 0 #000, -1px 0 0 #000, -1px 1px 0 #000, 0 -1px 0 #000, 0 1px 0 #000, 1px -1px 0 #000, 1px 0 0 #000, 1px 1px 0 #000'
+                  : '-1px -1px 0 #000, -1px 0 0 #000, -1px 1px 0 #000, 0 -1px 0 #000, 0 1px 0 #000, 1px -1px 0 #000, 1px 0 0 #000, 1px 1px 0 #000',
+                transition: 'all 0.15s ease',
+                transform: isHovered ? 'scale(1.08)' : 'scale(1)',
+                transformOrigin: 'left bottom',
               }}>{room.name.toUpperCase()}</span>
             </div>
           );
         })}
       </div>
-
-      {/* Room hover name tooltip */}
-      {hoveredRoomId && (() => {
-        const room = (level.rooms || []).find(r => r.id === hoveredRoomId);
-        if (!room) return null;
-        const cells = room.cells.filter(c => !isVoidCell(c.x, c.y, level));
-        if (!cells.length) return null;
-        // Center of hovered room
-        const cx = (cells.reduce((s,c) => s + c.x, 0) / cells.length + 0.5) * cellSize;
-        const cy = (cells.reduce((s,c) => s + c.y, 0) / cells.length + 0.5) * cellSize;
-        // Clamp so tooltip stays inside grid
-        const tooltipLeft = Math.min(Math.max(cx - 60, 4), W - 124);
-        const tooltipTop  = Math.min(Math.max(cy - 18, 4), H - 40);
-        return (
-          <div className="room-name-tooltip" style={{ left: tooltipLeft, top: tooltipTop }} key={room.id}>
-            {room.name}
-          </div>
-        );
-      })()}
     </div>
   );
 };
@@ -882,27 +879,6 @@ const MurdokuApp = () => {
   const [isSoundMuted, setIsSoundMuted] = useState(false);
   const [generatedLevels, setGeneratedLevels] = useState([]);
 
-  useEffect(() => {
-    loadGeneratedLevels().then(levels => setGeneratedLevels(levels));
-  }, []);
-
-  // Auto-save active level progress in localStorage
-  useEffect(() => {
-    if (!level || isVictory) return;
-    try {
-      const progress = JSON.parse(localStorage.getItem('murdoku_level_progress') || '{}');
-      if (Object.keys(placements).length > 0 || Object.keys(notes).length > 0 || Object.keys(xMarks).length > 0) {
-        progress[level.id] = { placements, notes, xMarks, elapsed };
-        localStorage.setItem('murdoku_level_progress', JSON.stringify(progress));
-      } else {
-        if (progress[level.id]) {
-          delete progress[level.id];
-          localStorage.setItem('murdoku_level_progress', JSON.stringify(progress));
-        }
-      }
-    } catch (e) {}
-  }, [level, placements, notes, xMarks, elapsed, isVictory]);
-
   // Game state
   const [placements, setPlacements] = useState({});
   const [notes, setNotes]           = useState({});
@@ -923,6 +899,27 @@ const MurdokuApp = () => {
   const { seconds: elapsed, formatted: timerStr, reset: resetTimer } = useTimer(view === 'playing' && !isVictory);
   const pressTimerRef = useRef(null);
   const pressStartPos = useRef(null);
+
+  useEffect(() => {
+    loadGeneratedLevels().then(levels => setGeneratedLevels(levels));
+  }, []);
+
+  // Auto-save active level progress in localStorage
+  useEffect(() => {
+    if (!level || isVictory) return;
+    try {
+      const progress = JSON.parse(localStorage.getItem('murdoku_level_progress') || '{}');
+      if (Object.keys(placements).length > 0 || Object.keys(notes).length > 0 || Object.keys(xMarks).length > 0) {
+        progress[level.id] = { placements, notes, xMarks, elapsed };
+        localStorage.setItem('murdoku_level_progress', JSON.stringify(progress));
+      } else {
+        if (progress[level.id]) {
+          delete progress[level.id];
+          localStorage.setItem('murdoku_level_progress', JSON.stringify(progress));
+        }
+      }
+    } catch (e) {}
+  }, [level, placements, notes, xMarks, elapsed, isVictory]);
 
   const saveUndoState = useCallback(() => {
     setUndoStack(prev => [...prev.slice(-49), { placements, notes, xMarks }]);
