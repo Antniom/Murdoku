@@ -751,29 +751,31 @@ const GameGrid = ({ level, placements, notes, xMarks, autoXMarks, selectedEntity
               {!void_ && !occupant && !hasAnyX && cellNotes.length > 0 && (
                 <div className="notes-container" style={{ 
                   position: 'absolute',
-                  inset: '4px',
+                  top: '4px',
+                  left: '4px',
                   zIndex: 20,
-                  display: 'grid',
-                  gridTemplateColumns: `repeat(${cellNotes.length === 1 ? 1 : cellNotes.length <= 4 ? 2 : 3}, 1fr)`,
-                  gridGap: '2px',
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  gap: '3px',
                   pointerEvents: 'none'
                 }}>
                   {cellNotes.map(id => {
                     const s = level.suspects.find(s => s.id === id);
                     if (!s) return null;
-                    const len = cellNotes.length;
-                    const fontSize = len === 1 ? 40 : len === 2 ? 22 : len <= 4 ? 14 : 10;
-                    const borderRadius = len === 1 ? 8 : len === 2 ? 4 : 3;
                     return (
                       <div key={id} style={{ 
-                        borderRadius: borderRadius, 
+                        width: '18px',
+                        height: '18px',
+                        borderRadius: '50%',
                         background: s.color, 
                         display:'flex', alignItems:'center', justifyContent:'center', 
-                        fontSize: fontSize, fontWeight:900, color:'#fff', 
-                        textShadow:'0 0 2px rgba(0,0,0,0.5)',
-                        transition: 'font-size 0.15s, border-radius 0.15s'
+                        fontSize: '11px', fontWeight: 900, color: '#fff', 
+                        textShadow: '0 0 2px rgba(0,0,0,0.5)',
+                        boxShadow: '0 1px 2px rgba(0,0,0,0.3)',
+                        border: '1px solid rgba(255,255,255,0.4)',
+                        transition: 'all 0.15s'
                       }}>
-                        {s.name.charAt(0)}
+                        {s.name.charAt(0).toUpperCase()}
                       </div>
                     );
                   })}

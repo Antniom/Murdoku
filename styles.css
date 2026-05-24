@@ -648,7 +648,7 @@ button.mrdHoverGlow:focus-visible { outline: 4px solid rgb(99,180,255); outline-
   display: flex;
   align-items: center;
   justify-content: center;
-  pointer-events: all;
+  pointer-events: none;
   filter: drop-shadow(0px 2px 0px rgba(0,0,0,0.35));
   cursor: default;
 }
