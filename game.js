@@ -700,24 +700,35 @@ const GameGrid = ({ level, placements, notes, xMarks, autoXMarks, selectedEntity
               )}
 
               {/* Obstacle */}
-              {!void_ && obstacle && (
-                <div className="cell-asset"
-                  onPointerEnter={() => {
-                    clearTimeout(tooltipTimerRef.current);
-                    const label = obsLabels[obstacle.type] || obstacle.type;
-                    tooltipTimerRef.current = setTimeout(() => setTooltip({ x, y, label }), 800);
-                  }}
-                  onPointerLeave={() => {
-                    clearTimeout(tooltipTimerRef.current);
-                    setTooltip(null);
-                  }}
-                >
-                  <SvgAsset type={obstacle.type} size="100%"/>
-                  {tooltip?.x === x && tooltip?.y === y && (
-                    <div className="obstacle-tooltip">{tooltip.label}</div>
-                  )}
-                </div>
-              )}
+              {!void_ && obstacle && (() => {
+                const isDoubleBedTop = obstacle.type === 'bed_top' || obstacle.type === 'bed_top_02';
+                const isDoubleBedBottom = obstacle.type === 'bed' || obstacle.type === 'bed_02';
+                return (
+                  <div className="cell-asset"
+                    style={
+                      isDoubleBedTop 
+                        ? { height: 'calc(200% + 20px)' } 
+                        : isDoubleBedBottom 
+                        ? { display: 'none' } 
+                        : undefined
+                    }
+                    onPointerEnter={() => {
+                      clearTimeout(tooltipTimerRef.current);
+                      const label = obsLabels[obstacle.type] || obstacle.type;
+                      tooltipTimerRef.current = setTimeout(() => setTooltip({ x, y, label }), 800);
+                    }}
+                    onPointerLeave={() => {
+                      clearTimeout(tooltipTimerRef.current);
+                      setTooltip(null);
+                    }}
+                  >
+                    <SvgAsset type={obstacle.type} size="100%"/>
+                    {tooltip?.x === x && tooltip?.y === y && (
+                      <div className="obstacle-tooltip">{tooltip.label}</div>
+                    )}
+                  </div>
+                );
+              })()}
 
               {/* X marks (auto or manual) */}
               {!void_ && hasAnyX && (
