@@ -1201,3 +1201,785 @@ button.mrdHoverGlow:focus-visible { outline: 4px solid rgb(99,180,255); outline-
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border-soft); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--border); }
+
+/* ============================================================
+   IPAD PRO 2022 MOCKUP FRAME
+   ============================================================ */
+.ipad-wrapper {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at center, #2e2820 0%, #171410 100%);
+  z-index: 1000;
+  overflow: hidden;
+  font-family: var(--font-body);
+}
+
+.ipad-frame {
+  position: relative;
+  background: #09090b; /* Deep Space Gray/Black */
+  border-radius: 46px;
+  box-shadow: 
+    0 25px 50px -12px rgba(0, 0, 0, 0.7),
+    0 0 0 4px #27272a, /* Zinc border */
+    0 0 40px rgba(255, 215, 0, 0.05); /* Very subtle gold ambient glow */
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: width 0.3s ease, height 0.3s ease, transform 0.1s ease;
+  transform-origin: center center;
+}
+
+/* Screen Bezel and Inner Container */
+.ipad-screen-container {
+  position: relative;
+  width: 95.8%;
+  height: 96.8%;
+  background: #fbf9f4;
+  border-radius: 32px;
+  overflow: hidden;
+  box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
+  border: 1px solid #18181b;
+}
+
+/* iPad Camera Lens Notch */
+.ipad-camera {
+  position: absolute;
+  background: #18181b;
+  border-radius: 50%;
+  box-shadow: inset 0 1px 3px rgba(255,255,255,0.2);
+  z-index: 9999;
+}
+/* Landscape camera (centered top) */
+.ipad-frame.landscape .ipad-camera {
+  top: 10px;
+  left: 50%;
+  width: 10px;
+  height: 10px;
+  transform: translateX(-50%);
+}
+/* Portrait camera (centered top) */
+.ipad-frame.portrait .ipad-camera {
+  top: 10px;
+  left: 50%;
+  width: 10px;
+  height: 10px;
+  transform: translateX(-50%);
+}
+
+/* Top Control buttons for emulator */
+.ipad-emulator-toolbar {
+  position: absolute;
+  top: 18px;
+  left: 24px;
+  display: flex;
+  gap: 10px;
+  z-index: 1050;
+}
+
+.ipad-emulator-btn {
+  background: rgba(255,255,255,0.08);
+  color: #f4f4f5;
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s;
+}
+.ipad-emulator-btn:hover {
+  background: rgba(255,255,255,0.18);
+  transform: translateY(-1px);
+}
+.ipad-emulator-btn:active {
+  transform: translateY(0);
+}
+
+/* ============================================================
+   BOOK STYLE SKEUOMORPHIC LAYOUT
+   ============================================================ */
+.book-view {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  background: radial-gradient(circle at center, #f5f2eb 0%, #e2dac9 100%);
+  position: relative;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+/* Landscape Book layout (Spread) */
+.book-view.landscape {
+  flex-direction: row;
+}
+
+/* Portrait Book layout (Top/Bottom Stacked) */
+.book-view.portrait {
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+/* Central Crease Shadow for open book */
+.book-crease {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 32px;
+  transform: translateX(-50%);
+  background: linear-gradient(90deg, 
+    rgba(0,0,0,0.14) 0%, 
+    rgba(0,0,0,0.02) 40%, 
+    rgba(0,0,0,0.08) 50%, 
+    rgba(0,0,0,0.02) 60%, 
+    rgba(0,0,0,0.14) 100%);
+  z-index: 100;
+  pointer-events: none;
+}
+
+/* Central notebook binding rings */
+.book-rings-container {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 20px;
+  transform: translateX(-50%);
+  z-index: 110;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  padding: 40px 0;
+  pointer-events: none;
+}
+.notebook-ring {
+  width: 36px;
+  height: 12px;
+  background: linear-gradient(to bottom, #f3f4f6 0%, #9ca3af 45%, #4b5563 80%, #1f2937 100%);
+  border-radius: 6px;
+  border: 1px solid #1e293b;
+  box-shadow: 
+    0 4px 6px -1px rgba(0, 0, 0, 0.4),
+    3px 2px 4px rgba(0, 0, 0, 0.2);
+  transform: translateX(-8px) rotate(-3deg);
+}
+
+/* Book pages */
+.book-page {
+  flex: 1;
+  height: 100%;
+  padding: 24px clamp(16px, 3.5vw, 36px);
+  overflow-y: auto;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0,0,0,0.15) transparent;
+}
+
+.book-view.portrait .book-page {
+  flex: none;
+  height: auto;
+  min-height: 50%;
+}
+
+/* Separator between stacked pages in Portrait */
+.book-page-separator {
+  width: 100%;
+  height: 8px;
+  background: linear-gradient(to bottom, rgba(0,0,0,0.08) 0%, rgba(0,0,0,0) 100%);
+  border-bottom: 2px dashed rgba(60,42,16,0.15);
+  box-sizing: border-box;
+}
+
+/* Left Page (The Problem & References) Styling */
+.problem-page {
+  background: #fbf9f4;
+  border-right: 1px solid rgba(0,0,0,0.05);
+}
+
+.problem-header {
+  margin-bottom: 16px;
+  border-bottom: 2px solid #5a452a;
+  padding-bottom: 12px;
+}
+.problem-title {
+  font-family: var(--font-handwritten);
+  font-size: 40px;
+  font-weight: 700;
+  line-height: 1;
+  color: #402f1b;
+  margin-bottom: 4px;
+}
+.problem-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* Reference map component */
+.reference-map-card {
+  background: #fcfcfc;
+  border: 2px solid #000;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 20px;
+  box-shadow: 4px 4px 0 rgba(60,42,16,0.15);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.reference-map-title {
+  font-family: var(--font-handwritten);
+  font-size: 26px;
+  font-weight: 700;
+  color: #5a452a;
+  margin-bottom: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Left Page Suspects & Clues integration */
+.book-suspects-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.book-portrait-group {
+  display: flex;
+  flex-direction: column;
+  background: #faf8f5;
+  border: 2.5px solid #000;
+  border-radius: 12px;
+  padding: 8px;
+  cursor: pointer;
+  transition: all 0.15s cubic-bezier(0.34,1.56,0.64,1);
+  box-shadow: 2px 3px 0 rgba(0,0,0,0.85);
+}
+.book-portrait-group:hover:not(.placed) {
+  transform: translateY(-2px);
+  box-shadow: 4px 5px 0 rgba(0,0,0,0.85);
+  border-color: rgb(99,180,255);
+}
+.book-portrait-group.selected {
+  transform: scale(1.02);
+  border-color: rgb(99,180,255);
+  background: #fffbef;
+  box-shadow: 3px 4px 0 rgb(99,180,255);
+}
+.book-portrait-group.placed {
+  opacity: 0.45;
+  filter: grayscale(0.5);
+  cursor: default;
+}
+
+.book-portrait-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.book-portrait-avatar-wrap {
+  width: 48px;
+  height: 48px;
+  border-radius: 6px;
+  border: 2px solid #000;
+  overflow: hidden;
+  background: #fbfbfd;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+.book-portrait-name {
+  font-family: var(--font-handwritten);
+  font-size: 26px;
+  font-weight: 700;
+  color: #000;
+  line-height: 1;
+}
+.book-portrait-name.victim {
+  color: #c0392b;
+}
+
+.book-clue-box {
+  background: rgba(0,0,0,0.02);
+  border: 1.5px dashed rgba(0,0,0,0.2);
+  border-radius: 8px;
+  padding: 6px 8px;
+  font-size: 11px;
+  line-height: 1.35;
+  color: #3f2f1e;
+  text-align: left;
+}
+
+/* Right Page (Your Worksheet Notebook) Styling */
+.worksheet-page {
+  background-color: #faf9f6;
+  /* Red margin line */
+  background-image: linear-gradient(90deg, transparent 59px, #ff8585 59px, #ff8585 61px, transparent 61px);
+  position: relative;
+}
+
+.worksheet-notebook-paper {
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 10px 10px 10px 48px; /* Offset for red margin line */
+  box-sizing: border-box;
+}
+
+.worksheet-header {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+.worksheet-title {
+  font-family: var(--font-handwritten);
+  font-size: 32px;
+  font-weight: 700;
+  color: #274060;
+  margin: 0;
+  letter-spacing: -0.5px;
+}
+
+/* ============================================================
+   CANVAS DRAWING AND WORKGRID OVERLAY
+   ============================================================ */
+.worksheet-grid-wrapper {
+  position: relative;
+  border-radius: 8px;
+  box-shadow: 
+    0 1px 3px rgba(0,0,0,0.1),
+    0 10px 20px -5px rgba(60,42,16,0.15);
+  background: #fbfbfd;
+  margin-bottom: 24px;
+}
+
+/* The styled empty grid (silhouettes and names only) */
+.worksheet-grid-cell {
+  background-color: #ffffff !important;
+}
+
+.worksheet-grid-cell-bg {
+  position: absolute;
+  inset: 0;
+  background-color: #ffffff;
+  z-index: 0;
+}
+
+/* Silhouette overlay for obstacles in empty grid mode */
+.worksheet-obstacle-silhouette {
+  opacity: 0.12 !important; /* Extremely faint silhouettes */
+  filter: grayscale(1) contrast(0.5) brightness(0.2) !important;
+}
+
+/* Drawing HTML5 canvas layer */
+.drawing-canvas {
+  position: absolute;
+  inset: 0;
+  z-index: 80; /* Sits above grid elements but under placements if we want, or fully on top */
+  pointer-events: auto; /* Active for stylus/drawing */
+  touch-action: none; /* Prevents scrolling while drawing */
+}
+
+/* Suspect Avatar with high-fidelity handwritten badge styles */
+.handwritten-occupant-badge {
+  position: absolute;
+  top: 4px;
+  left: 6px;
+  font-size: 32px;
+  font-weight: 900;
+  font-family: var(--font-handwritten);
+  color: #1d3557;
+  z-index: 25;
+  pointer-events: none;
+  line-height: 1;
+}
+
+/* Custom stylus tool holder (floating panel) */
+.pen-toolbar {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: linear-gradient(135deg, #f2ead8 0%, #dfcea7 100%);
+  border: 3px solid #4a341b;
+  border-radius: 14px;
+  padding: 14px 10px;
+  box-shadow: 
+    0 10px 20px -3px rgba(0,0,0,0.3),
+    inset 0 1px 0 rgba(255,255,255,0.4);
+  z-index: 250;
+  align-items: center;
+}
+
+.pen-toolbar-label {
+  font-family: var(--font-handwritten);
+  font-size: 18px;
+  font-weight: 800;
+  color: #4a341b;
+  margin-bottom: 2px;
+  border-bottom: 1.5px solid #4a341b;
+  width: 100%;
+  text-align: center;
+  padding-bottom: 2px;
+}
+
+.pen-tool-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  border: 1.5px solid #4a341b;
+  background: #fafafa;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  transition: all 0.15s;
+  color: #000;
+}
+.pen-tool-btn:hover {
+  background: #f1ebd9;
+  transform: translateY(-1px);
+}
+.pen-tool-btn.active {
+  background: #4a341b;
+  color: #fff;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
+}
+
+.pen-color-dot {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1px solid rgba(0,0,0,0.35);
+  cursor: pointer;
+  transition: transform 0.1s;
+}
+.pen-color-dot:hover {
+  transform: scale(1.2);
+}
+.pen-color-dot.active {
+  transform: scale(1.25);
+  box-shadow: 0 0 0 2.5px #4a341b;
+}
+
+/* ============================================================
+   EL ASESINO ES... HANDWRITTEN NOTE
+   ============================================================ */
+.killer-note-paper {
+  background: #fdfdfd;
+  border: 2px solid #33261a;
+  border-radius: 4px;
+  box-shadow: 
+    3px 3px 0 rgba(0,0,0,0.85),
+    inset 0 0 10px rgba(0,0,0,0.03);
+  padding: 10px 16px;
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  position: absolute;
+  bottom: 24px;
+  right: 24px;
+  z-index: 95;
+  transform: rotate(-1.5deg);
+}
+
+.killer-note-label {
+  font-family: var(--font-handwritten);
+  font-size: 26px;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
+.killer-note-underline {
+  border-bottom: 2px solid #000;
+  width: 160px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  position: relative;
+}
+
+.killer-note-value {
+  font-family: var(--font-handwritten);
+  font-size: 28px;
+  font-weight: 900;
+  color: #1d3557;
+  text-align: center;
+  margin-bottom: -4px;
+}
+
+.killer-dropdown {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #fbf9f4;
+  border: 2px solid #000;
+  border-radius: 8px;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.18);
+  width: 170px;
+  z-index: 500;
+  display: flex;
+  flex-direction: column;
+  padding: 4px 0;
+  overflow: hidden;
+  animation: tooltipFadeIn 0.15s ease-out forwards;
+}
+
+.killer-dropdown-item {
+  padding: 8px 12px;
+  font-family: var(--font-handwritten);
+  font-size: 24px;
+  font-weight: 700;
+  text-align: center;
+  cursor: pointer;
+  color: #333;
+  transition: all 0.1s;
+  border-bottom: 1px dashed rgba(0,0,0,0.06);
+}
+.killer-dropdown-item:last-child {
+  border-bottom: none;
+}
+.killer-dropdown-item:hover {
+  background: #4a341b;
+  color: #fff;
+}
+
+.ipad-submit-btn {
+  background: #e63946;
+  color: #fff;
+  border: 2px solid #000;
+  box-shadow: 3px 3px 0 #000;
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.ipad-submit-btn:hover {
+  background: #f14653;
+  transform: translateY(-1px);
+  box-shadow: 4px 4px 0 #000;
+}
+.ipad-submit-btn:active {
+  transform: translateY(0);
+  box-shadow: 2px 2px 0 #000;
+}
+.ipad-submit-btn:disabled {
+  background: #d1d5db;
+  color: #9ca3af;
+  border-color: #9ca3af;
+  box-shadow: 1px 1px 0 #9ca3af;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ============================================================
+   SIDE-BY-SIDE SOLUTION COMPARISON PANEL
+   ============================================================ */
+.comparison-container {
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle at center, #2e2820 0%, #171410 100%);
+  padding: 24px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  color: #fff;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+.comparison-header {
+  text-align: center;
+  margin-bottom: 24px;
+  animation: fadeIn 0.4s ease-out forwards;
+}
+
+.comparison-title {
+  font-family: var(--font-handwritten);
+  font-size: 48px;
+  color: #ffca3a;
+  margin: 0 0 6px;
+  line-height: 1;
+}
+
+.comparison-subtitle {
+  font-size: 13px;
+  color: rgba(255,255,255,0.7);
+  max-width: 600px;
+  margin: 0 auto;
+  line-height: 1.4;
+}
+
+.comparison-grids-spread {
+  display: flex;
+  gap: 28px;
+  justify-content: center;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+  flex: 1;
+}
+
+.comparison-sheet {
+  background: #faf8f4;
+  border: 3px solid #000;
+  border-radius: 16px;
+  padding: 18px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  animation: fadeIn 0.5s ease-out forwards;
+}
+
+.comparison-sheet-title {
+  font-family: var(--font-handwritten);
+  font-size: 32px;
+  font-weight: 700;
+  color: #33261a;
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+/* Custom annotations in the side-by-side solutions */
+.comparison-cell-badge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  z-index: 25;
+  color: #fff;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  font-weight: 900;
+}
+.comparison-cell-badge.correct {
+  background: #2ecc71;
+  border: 1.5px solid #fff;
+}
+.comparison-cell-badge.incorrect {
+  background: #e74c3c;
+  border: 1.5px solid #fff;
+}
+
+/* Verdict modal floating action row */
+.comparison-actions {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  margin-top: 10px;
+  margin-bottom: 20px;
+}
+
+.verdict-success-glow {
+  text-shadow: 0 0 20px rgba(46, 204, 113, 0.4);
+  color: #2ecc71 !important;
+}
+
+.verdict-fail-glow {
+  text-shadow: 0 0 20px rgba(231, 76, 60, 0.4);
+  color: #e74c3c !important;
+}
+
+/* Floating Suspect Drawer for Portrait iPad Mode */
+.portrait-suspects-drawer-btn {
+  position: absolute;
+  left: 20px;
+  top: 20px;
+  background: #faf8f5;
+  border: 2px solid #000;
+  border-radius: 10px;
+  padding: 8px 14px;
+  font-family: var(--font-handwritten);
+  font-size: 22px;
+  font-weight: 800;
+  color: #000;
+  cursor: pointer;
+  z-index: 180;
+  box-shadow: 2px 3px 0 #000;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s;
+}
+.portrait-suspects-drawer-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 3px 4px 0 #000;
+}
+
+.portrait-drawer-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 400;
+  display: flex;
+  justify-content: flex-start;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.portrait-drawer-content {
+  width: 320px;
+  height: 100%;
+  background: #fbf9f4;
+  border-right: 3px solid #000;
+  box-sizing: border-box;
+  padding: 24px 20px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 10px 0 30px rgba(0,0,0,0.3);
+  position: relative;
+  overflow-y: auto;
+}
+
+.portrait-drawer-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #4a341b;
+}
+
+.drawer-slide-in {
+  animation: drawerSlideIn 0.25s cubic-bezier(0.2, 0.9, 0.2, 1) forwards;
+}
+
+@keyframes drawerSlideIn {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+

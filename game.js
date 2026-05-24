@@ -278,9 +278,20 @@ const GridPreview = ({ level, size = 160 }) => {
 // ============================================================
 // LEVEL CARD (selector) — matches original puzzle-card-tilt style
 // ============================================================
-const LevelCard = ({ level, isCompleted, bestTime, isInProgress, onClick }) => {
+const LevelCard = ({ level, isCompleted, bestTime, isInProgress, onClick, t }) => {
   const dc = DIFFICULTY_COLORS[level.difficulty] || DIFFICULTY_COLORS['Medium'];
   const [hovered, setHovered] = useState(false);
+
+  const getDifficultyTranslation = (d) => {
+    switch (d) {
+      case 'Very Easy': return t('veryEasyFilter');
+      case 'Easy': return t('easyFilter');
+      case 'Medium': return t('mediumFilter');
+      case 'Hard': return t('hardFilter');
+      case 'Expert': return t('expertFilter');
+      default: return d;
+    }
+  };
 
   return (
     <div
@@ -316,7 +327,7 @@ const LevelCard = ({ level, isCompleted, bestTime, isInProgress, onClick }) => {
             boxShadow:'0 1px 2px rgba(0,0,0,0.05)',
             display:'flex', alignItems:'center', gap:4
           }}>
-            {isCompleted ? '✓ Solved' : '✏ In Progress'}
+            {isCompleted ? t('solvedBadge') : t('inProgressBadge')}
           </div>
         )}
 
@@ -342,21 +353,21 @@ const LevelCard = ({ level, isCompleted, bestTime, isInProgress, onClick }) => {
 
         {/* Name */}
         <div style={{ fontWeight:800, fontSize:14, textAlign:'center', lineHeight:1.2, color:'rgb(42,31,14)', position:'relative', zIndex:12 }}>
-          {level.name}
+          {t('levels.' + level.id + '.name', level.name)}
         </div>
 
         {/* Meta */}
         <div style={{ display:'flex', gap:8, alignItems:'center', flexWrap:'wrap', justifyContent:'center', position:'relative', zIndex:12 }}>
           <span style={{ padding:'3px 8px', fontSize:10, fontWeight:800, textTransform:'uppercase', background:dc.bg, color:dc.color, borderRadius:4, border:`1px solid ${dc.border}` }}>
-            {level.difficulty}
+            {getDifficultyTranslation(level.difficulty)}
           </span>
           <span style={{ fontSize:11, color:'rgba(60,42,16,0.65)', fontWeight:700 }}>{level.cols}×{level.rows}</span>
-          <span style={{ fontSize:11, color:'rgba(60,42,16,0.65)', fontWeight:700 }}>{level.suspects.length} suspects</span>
+          <span style={{ fontSize:11, color:'rgba(60,42,16,0.65)', fontWeight:700 }}>{level.suspects.length} {t('suspectsTitle').toLowerCase()}</span>
         </div>
 
         {isCompleted && bestTime != null && (
           <div style={{ fontSize:11, color:'#c79f2a', fontWeight:700, position:'relative', zIndex:12 }}>
-            ✓ Best: {Math.floor(bestTime/60)}:{String(bestTime%60).padStart(2,'0')}
+            {t('bestTimeText')} {Math.floor(bestTime/60)}:{String(bestTime%60).padStart(2,'0')}
           </div>
         )}
       </div>
@@ -367,7 +378,7 @@ const LevelCard = ({ level, isCompleted, bestTime, isInProgress, onClick }) => {
 // ============================================================
 // GENERATE MODAL
 // ============================================================
-const GenerateModal = ({ onClose, onGenerate }) => {
+const GenerateModal = ({ onClose, onGenerate, lang, t }) => {
   const [theme, setTheme] = useState('');
   const [difficulty, setDifficulty] = useState('Easy');
   const [size, setSize] = useState('medium');
@@ -375,13 +386,13 @@ const GenerateModal = ({ onClose, onGenerate }) => {
   const [error, setError] = useState('');
 
   const handleGenerate = async () => {
-    if (!theme.trim()) { setError('Please enter a theme.'); return; }
+    if (!theme.trim()) { setError(t('pleaseEnterTheme')); return; }
     setStatus('loading'); setError('');
     try {
-      const level = await generateLevelWithGemini(theme.trim(), difficulty, size, msg => console.log('[Gemini]', msg));
+      const level = await generateLevelWithGemini(theme.trim(), difficulty, size, lang, msg => console.log('[Gemini]', msg));
       onGenerate(level);
     } catch (e) {
-      setError(e.message || 'Generation failed. Please try again.');
+      setError(e.message || t('generationFailed'));
       setStatus('error');
     }
   };
@@ -389,42 +400,46 @@ const GenerateModal = ({ onClose, onGenerate }) => {
   return (
     <div className="modal-backdrop" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="modal-card fade-in">
-        <div className="modal-title">✨ Generate Level</div>
-        <div className="modal-sub">Let AI create a unique puzzle just for you</div>
+        <div className="modal-title">{t('generateLevelTitle')}</div>
+        <div className="modal-sub">{t('aiSubtitle')}</div>
         {status === 'loading' ? (
           <div className="generating-state">
             <div className="spinner"/>
-            <div className="generating-text">Generating your puzzle...</div>
-            <div style={{fontSize:12, color:'var(--text-muted)', marginTop:8}}>This takes about 10–20 seconds</div>
+            <div className="generating-text">{t('generatingStateText')}</div>
+            <div style={{fontSize:12, color:'var(--text-muted)', marginTop:8}}>{t('takesSeconds')}</div>
           </div>
         ) : (<>
           <div className="form-field">
-            <label className="form-label">Theme / Setting</label>
-            <input className="form-input" placeholder='e.g. "haunted lighthouse", "medieval castle"'
+            <label className="form-label">{t('themeLabel')}</label>
+            <input className="form-input" placeholder={t('themePlaceholder')}
               value={theme} onChange={e => setTheme(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleGenerate()} autoFocus/>
           </div>
           <div className="form-field">
-            <label className="form-label">Difficulty</label>
+            <label className="form-label">{t('difficultyLabel')}</label>
             <select className="form-select" value={difficulty} onChange={e => setDifficulty(e.target.value)}>
-              <option>Very Easy</option><option>Easy</option><option>Medium</option><option>Hard</option><option>Expert</option>
+              <option value="Very Easy">{t('veryEasyFilter')}</option>
+              <option value="Easy">{t('easyFilter')}</option>
+              <option value="Medium">{t('mediumFilter')}</option>
+              <option value="Hard">{t('hardFilter')}</option>
+              <option value="Expert">{t('expertFilter')}</option>
             </select>
           </div>
           <div className="form-field">
-            <label className="form-label">Approximate Size</label>
+            <label className="form-label">{t('sizeLabel')}</label>
             <select className="form-select" value={size} onChange={e => setSize(e.target.value)}>
-              <option value="small">Small (5–6 suspects)</option>
-              <option value="medium">Medium (7–8 suspects)</option>
-              <option value="large">Large (9–10 suspects)</option>
+              <option value="small">{t('sizeSmall')}</option>
+              <option value="medium">{t('sizeMedium')}</option>
+              <option value="large">{t('sizeLarge')}</option>
             </select>
           </div>
           {error && <div className="error-msg">{error}</div>}
           <div className="modal-actions">
-            <button className="btn-secondary" onClick={onClose}>Cancel</button>
+            <button className="btn-secondary" onClick={onClose}>{t('cancelBtn')}</button>
             <button className="btn-primary" onClick={handleGenerate} disabled={!theme.trim()}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                 <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
               </svg>
-              Generate
+              {t('generateBtn')}
             </button>
           </div>
         </>)}
@@ -436,30 +451,33 @@ const GenerateModal = ({ onClose, onGenerate }) => {
 // ============================================================
 // HOW TO PLAY MODAL
 // ============================================================
-const HowToPlayModal = ({ onClose }) => (
-  <div className="modal-backdrop" onClick={e => e.target === e.currentTarget && onClose()}>
-    <div className="modal-card fade-in">
-      <div className="modal-title">How to Play</div>
-      <ul className="howto-list">
-        <li><span className="howto-icon">🎯</span> Place one suspect per row and one per column — like Sudoku.</li>
-        <li><span className="howto-icon">👆</span> <strong>Click</strong> a portrait, then <strong>click</strong> a grid cell to add a pencil note.</li>
-        <li><span className="howto-icon">⏱️</span> <strong>Hold</strong> a cell (~500ms) to <strong>firmly place</strong> the suspect there.</li>
-        <li><span className="howto-icon">✕</span> Placing a suspect auto-fills their row & column with X marks.</li>
-        <li><span className="howto-icon">🔍</span> Read clues carefully — they reference objects, rooms & positions.</li>
-        <li><span className="howto-icon">🔪</span> The <strong>victim</strong> is alone with exactly one other suspect — the murderer.</li>
-        <li><span className="howto-icon">↩️</span> Use <strong>Undo</strong> to step back any action.</li>
-      </ul>
-      <div className="modal-actions" style={{marginTop:16}}>
-        <button className="btn-primary" onClick={onClose} style={{flex:'none', width:'100%'}}>Got it!</button>
+const HowToPlayModal = ({ onClose, t }) => {
+  const rules = t('tutorialRules') || [];
+  const icons = ['🎯', '👆', '⏱️', '✕', '🔍', '🔪', '↩️'];
+  return (
+    <div className="modal-backdrop" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="modal-card fade-in">
+        <div className="modal-title">{t('howToPlayTitle')}</div>
+        <ul className="howto-list">
+          {rules.map((rule, idx) => (
+            <li key={idx}>
+              <span className="howto-icon">{icons[idx] || '•'}</span>
+              <span dangerouslySetInnerHTML={{ __html: rule }} />
+            </li>
+          ))}
+        </ul>
+        <div className="modal-actions" style={{marginTop:16}}>
+          <button className="btn-primary" onClick={onClose} style={{flex:'none', width:'100%'}}>{t('gotItBtn')}</button>
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 // ============================================================
 // LEVEL SELECTOR SCREEN
 // ============================================================
-const LevelSelector = ({ onSelectLevel, onShowGenerate, generatedLevels }) => {
+const LevelSelector = ({ onSelectLevel, onShowGenerate, generatedLevels, lang, onToggleLang, onToggleIpadMode, t }) => {
   const [filter, setFilter] = useState('All');
   const completed = getCompletedLevels();
 
@@ -473,6 +491,20 @@ const LevelSelector = ({ onSelectLevel, onShowGenerate, generatedLevels }) => {
 
   const allLevels = [...BUILT_IN_LEVELS, ...generatedLevels];
   const filters = ['All','Very Easy','Easy','Medium','Hard','Expert','AI Generated'];
+  
+  const getFilterTranslation = (f) => {
+    switch (f) {
+      case 'All': return t('allFilter');
+      case 'Very Easy': return t('veryEasyFilter');
+      case 'Easy': return t('easyFilter');
+      case 'Medium': return t('mediumFilter');
+      case 'Hard': return t('hardFilter');
+      case 'Expert': return t('expertFilter');
+      case 'AI Generated': return t('aiGeneratedFilter');
+      default: return f;
+    }
+  };
+
   const filtered = allLevels.filter(l => {
     if (filter === 'All') return true;
     if (filter === 'AI Generated') return !BUILT_IN_LEVELS.find(b => b.id === l.id);
@@ -495,16 +527,50 @@ const LevelSelector = ({ onSelectLevel, onShowGenerate, generatedLevels }) => {
         <div style={{ maxWidth:1200, margin:'0 auto', display:'flex', justifyContent:'space-between', alignItems:'center', gap:12, flexWrap:'wrap' }}>
           <div style={{ display:'flex', alignItems:'center', gap:8 }}>
             <div style={{ fontSize:22, fontWeight:900, letterSpacing:-1 }}>MRD<span style={{color:'#ff7171'}}>O</span>KU</div>
-            <span style={{ fontSize:11, color:'var(--text-muted)', fontWeight:500 }}>Murder Mystery meets Sudoku</span>
+            <span style={{ fontSize:11, color:'var(--text-muted)', fontWeight:500 }}>{t('logoSub')}</span>
           </div>
+          
+          {/* Language Selector */}
+          <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+            <button 
+              onClick={() => onToggleLang('pt')} 
+              style={{
+                background: lang === 'pt' ? 'var(--accent-bg)' : 'transparent',
+                color: lang === 'pt' ? 'var(--text)' : 'var(--text-muted)',
+                border: lang === 'pt' ? '2px solid var(--accent)' : '1px solid var(--border-soft)',
+                padding: '4px 8px', borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+                transition: 'all 0.15s', display: 'flex', alignItems: 'center', gap: 3
+              }}>🇵🇹 <span style={{fontSize: 9}}>PT</span></button>
+            <button 
+              onClick={() => onToggleLang('en')} 
+              style={{
+                background: lang === 'en' ? 'var(--accent-bg)' : 'transparent',
+                color: lang === 'en' ? 'var(--text)' : 'var(--text-muted)',
+                border: lang === 'en' ? '2px solid var(--accent)' : '1px solid var(--border-soft)',
+                padding: '4px 8px', borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+                transition: 'all 0.15s', display: 'flex', alignItems: 'center', gap: 3
+              }}>🇬🇧 <span style={{fontSize: 9}}>EN</span></button>
+            
+            <button 
+              onClick={onToggleIpadMode} 
+              style={{
+                background: 'linear-gradient(135deg, #c79f2a 0%, #b08a1d 100%)',
+                color: '#fff',
+                border: '1.5px solid var(--border)',
+                boxShadow: '2px 2px 0 rgba(0,0,0,0.15)',
+                padding: '4px 10px', borderRadius: 6, fontSize: 11, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit',
+                transition: 'all 0.15s', display: 'flex', alignItems: 'center', gap: 4
+              }}>📱 {t('ipadModeBtn')}</button>
+          </div>
+
           <div style={{ fontSize:12, color:'var(--text-muted)', fontWeight:600 }}>
-            <strong style={{color:'rgb(99,220,130)'}}>{completed.length}</strong> / {allLevels.length} completed
+            <strong style={{color:'rgb(99,220,130)'}}>{completed.length}</strong> / {allLevels.length} {t('completedOf')}
           </div>
         </div>
 
         {/* Sub-header */}
         <div style={{ maxWidth:1200, margin:'12px auto 0', textAlign:'center' }}>
-          <p style={{ margin:0, fontSize:13, color:'var(--text-muted)' }}>Select a puzzle to play</p>
+          <p style={{ margin:0, fontSize:13, color:'var(--text-muted)' }}>{t('selectPuzzle')}</p>
         </div>
 
         {/* Filter bar */}
@@ -516,7 +582,7 @@ const LevelSelector = ({ onSelectLevel, onShowGenerate, generatedLevels }) => {
                 border: filter === f ? '2px solid var(--accent)' : '1px solid var(--border-soft)',
                 background: filter === f ? 'var(--accent-bg)' : 'transparent',
                 color:'var(--text)', borderRadius:6, cursor:'pointer', fontFamily:'inherit', whiteSpace:'nowrap',
-              }}>{f}</button>
+              }}>{getFilterTranslation(f)}</button>
             ))}
           </div>
         </div>
@@ -541,13 +607,13 @@ const LevelSelector = ({ onSelectLevel, onShowGenerate, generatedLevels }) => {
                   boxShadow:'6px 6px 0 rgba(15,52,96,0.5)',
                 }}
               >
-                <div style={{ width:80, height:80, borderRadius:'50%', background:'rgba(255,255,255,0.07)', border:'2px solid rgba(255,255,255,0.15)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:36, margin:'20px 0 10px' }}>✨</div>
-                <div style={{ fontWeight:800, fontSize:14, textAlign:'center', color:'#e2e2f0' }}>Create New Level</div>
-                <div style={{ fontSize:11, color:'rgba(200,200,240,0.7)', fontWeight:600 }}>AI-powered, any theme</div>
+                <div style={{ width:80, height:80, borderRadius:'50%', background:'rgba(255,255,255,0.07)', border:'2px solid rgba(255,255,255,0.15)', display:'flex', alignItems:'center', justifycontent:'center', fontSize:36, margin:'20px 0 10px' }}>✨</div>
+                <div style={{ fontWeight:800, fontSize:14, textAlign:'center', color:'#e2e2f0' }}>{t('createNewLevel')}</div>
+                <div style={{ fontSize:11, color:'rgba(200,200,240,0.7)', fontWeight:600 }}>{t('aiPowered')}</div>
                 <div style={{ marginTop:8, display:'flex', gap:6, flexWrap:'wrap', justifyContent:'center' }}>
                   {['Very Easy','Medium','Expert'].map(d => {
                     const dc = DIFFICULTY_COLORS[d];
-                    return <span key={d} style={{ padding:'3px 8px', fontSize:9, fontWeight:800, textTransform:'uppercase', background:dc.bg, color:dc.color, borderRadius:4, border:`1px solid ${dc.border}` }}>{d}</span>;
+                    return <span key={d} style={{ padding:'3px 8px', fontSize:9, fontWeight:800, textTransform:'uppercase', background:dc.bg, color:dc.color, borderRadius:4, border:`1px solid ${dc.border}` }}>{getFilterTranslation(d)}</span>;
                   })}
                 </div>
               </button>
@@ -565,6 +631,7 @@ const LevelSelector = ({ onSelectLevel, onShowGenerate, generatedLevels }) => {
                 bestTime={comp?.time} 
                 isInProgress={inProg} 
                 onClick={() => onSelectLevel(level)}
+                t={t}
               />
             );
           })}
@@ -577,7 +644,21 @@ const LevelSelector = ({ onSelectLevel, onShowGenerate, generatedLevels }) => {
 // ============================================================
 // MAIN GAME GRID
 // ============================================================
-const GameGrid = ({ level, placements, notes, xMarks, autoXMarks, selectedEntity, toolMode, pressingCell, onPointerDown, onPointerUp, onPointerLeave }) => {
+const GameGrid = ({ 
+  level, placements, notes, xMarks, autoXMarks, selectedEntity, toolMode, pressingCell, onPointerDown, onPointerUp, onPointerLeave, t,
+  emptyMode = false,
+  comparisonMode = false,
+  correctPlacements = null,
+  drawingPaths = [],
+  setDrawingPaths = null,
+  currentPath = null,
+  setCurrentPath = null,
+  penColor = '#000000',
+  penWidth = 4,
+  penType = 'pen',
+  drawingHistory = [],
+  setDrawingHistory = null
+}) => {
   const { cols, rows, cellSize = 72 } = level;
   const W = cols * cellSize;
   const H = rows * cellSize;
@@ -680,7 +761,8 @@ const GameGrid = ({ level, placements, notes, xMarks, autoXMarks, selectedEntity
                 if (obstacle) {
                   clearTimeout(tooltipTimerRef.current);
                   const label = obsLabels[obstacle.type] || obstacle.type;
-                  tooltipTimerRef.current = setTimeout(() => setTooltip({ x, y, label }), 800);
+                  const translatedLabel = t('obstacles.' + obstacle.type, label);
+                  tooltipTimerRef.current = setTimeout(() => setTooltip({ x, y, label: translatedLabel }), 800);
                 }
               } : undefined}
               onPointerLeave={() => {
@@ -692,8 +774,8 @@ const GameGrid = ({ level, placements, notes, xMarks, autoXMarks, selectedEntity
               {/* Cell BG (only non-void) */}
               {!void_ && (
                 <div 
-                  className="cell-bg"
-                  style={{
+                  className={emptyMode ? "worksheet-grid-cell-bg" : "cell-bg"}
+                  style={emptyMode ? {} : {
                     backgroundColor: room?.color || '#fbfbfd',
                     opacity: occupant ? 0.4 : 0.65,
                   }}
@@ -701,12 +783,12 @@ const GameGrid = ({ level, placements, notes, xMarks, autoXMarks, selectedEntity
               )}
 
               {/* Room hover glow overlay (subtle bg brighten) */}
-              {!void_ && room && room.id === hoveredRoomId && (
+              {!void_ && room && room.id === hoveredRoomId && !emptyMode && (
                 <div className="room-hover-glow" />
               )}
 
               {/* Hover preview */}
-              {!void_ && (!obstacle || obstacle.walkable) && !occupant && (
+              {!void_ && (!obstacle || obstacle.walkable) && !occupant && !emptyMode && (
                 <div className="hover-preview" />
               )}
 
@@ -714,17 +796,26 @@ const GameGrid = ({ level, placements, notes, xMarks, autoXMarks, selectedEntity
               {!void_ && obstacle && (() => {
                 const isDoubleBedTop = obstacle.type === 'bed_top' || obstacle.type === 'bed_top_02';
                 const isDoubleBedBottom = obstacle.type === 'bed' || obstacle.type === 'bed_02';
+                const isChair = obstacle.type === 'chair' || obstacle.type === 'chair_02';
                 return (
-                  <div className="cell-asset"
+                  <div className={`cell-asset ${emptyMode ? 'worksheet-obstacle-silhouette' : ''}`}
                     style={
                       isDoubleBedTop 
-                        ? { height: 'calc(200% + 20px)', pointerEvents: 'none' } 
+                        ? { height: 'calc(200% + 20px)', pointerEvents: 'none' }
                         : isDoubleBedBottom 
-                        ? { display: 'none' } 
+                        ? { display: 'none' }
+                        : isChair
+                        ? {
+                            display: 'flex',
+                            alignItems: 'flex-end',
+                            justifyContent: 'center',
+                            overflow: 'hidden',
+                            pointerEvents: 'none',
+                          }
                         : undefined
                     }
                   >
-                    <SvgAsset type={obstacle.type} size="100%"/>
+                    <SvgAsset type={obstacle.type} size={isChair ? '72%' : '100%'}/>
                     {tooltip?.x === x && tooltip?.y === y && (
                       <div className="obstacle-tooltip">{tooltip.label}</div>
                     )}
@@ -738,7 +829,7 @@ const GameGrid = ({ level, placements, notes, xMarks, autoXMarks, selectedEntity
                   {hasManualX && <div className="manual-x-bg"/>}
                   <div className="x-mark-container">
                     <svg width={cellSize * 0.8} height={cellSize * 0.8} viewBox="0 0 87.7 95.7"
-                      fill="rgba(25,25,34,0.95)"
+                      fill={emptyMode ? "rgba(25,25,34,0.65)" : "rgba(25,25,34,0.95)"}
                       style={{ filter: hasManualX ? 'drop-shadow(0px 1px 1px rgba(0,0,0,0.2))' : 'none' }}
                     >
                       <path d="M16.5,0l27,29.5L71.1.4c.4-.1.7-.1,1.1,0,.9.2,6.9,6.8,8,8s1.5,1.7,2.4,2.7c1.7,1.8,3.3,3.7,5.2,5.3v.6l-28,29.7.4,1.2c9.5,9.6,18.2,20,27.7,29.6v1.5c-.5,0-.9.4-1.2.7-4.5,4.8-8.7,10-13.4,14.6l-1.1.2-27.5-28.2-27.6,29.5h-1.5c-1-2-2.8-3.7-4.3-5.3-2.9-3.1-5.8-6.2-8.7-9.3-.6-.7-1.4-1.7-2.4-1.9v-2.1l28-29.7L0,16.8v-.3L14.8,0h1.8Z"/>
@@ -767,7 +858,7 @@ const GameGrid = ({ level, placements, notes, xMarks, autoXMarks, selectedEntity
                         width: '18px',
                         height: '18px',
                         borderRadius: '50%',
-                        background: s.color, 
+                        background: emptyMode ? '#274060' : s.color, 
                         display:'flex', alignItems:'center', justifyContent:'center', 
                         fontSize: '11px', fontWeight: 900, color: '#fff', 
                         textShadow: '0 0 2px rgba(0,0,0,0.5)',
@@ -786,20 +877,23 @@ const GameGrid = ({ level, placements, notes, xMarks, autoXMarks, selectedEntity
               {!void_ && occupant && (
                 <>
                   {/* Suspect Name Letter Badge */}
-                  <div style={{
-                    position: 'absolute',
-                    top: '4px',
-                    left: '6px',
-                    fontSize: '28px',
-                    fontWeight: 900,
-                    color: occupant.color,
-                    WebkitTextStroke: '3.5px #000',
-                    textStroke: '3.5px #000',
-                    zIndex: 18,
-                    fontFamily: 'Inter, sans-serif',
-                    lineHeight: 1,
-                    pointerEvents: 'none'
-                  }}>
+                  <div 
+                    className={emptyMode ? "handwritten-occupant-badge" : ""}
+                    style={emptyMode ? {} : {
+                      position: 'absolute',
+                      top: '4px',
+                      left: '6px',
+                      fontSize: '28px',
+                      fontWeight: 900,
+                      color: occupant.color,
+                      WebkitTextStroke: '3.5px #000',
+                      textStroke: '3.5px #000',
+                      zIndex: 18,
+                      fontFamily: 'Inter, sans-serif',
+                      lineHeight: 1,
+                      pointerEvents: 'none'
+                    }}
+                  >
                     {occupant.name.charAt(0).toUpperCase()}
                   </div>
 
@@ -814,6 +908,7 @@ const GameGrid = ({ level, placements, notes, xMarks, autoXMarks, selectedEntity
                     justifyContent: 'center',
                     pointerEvents: 'none',
                     zIndex: 15,
+                    filter: emptyMode ? 'grayscale(0.7) contrast(1.1) brightness(0.95)' : 'none',
                   }}>
                     <div className="occupant-inner" style={{
                       width: '100%',
@@ -902,7 +997,7 @@ const GameGrid = ({ level, placements, notes, xMarks, autoXMarks, selectedEntity
         })}
 
         {/* Hovered room border highlight */}
-        {hoveredRoomPath && (
+        {hoveredRoomPath && !emptyMode && (
           <>
             <path d={hoveredRoomPath} stroke="rgba(99,180,255,0.35)" strokeWidth="8" strokeLinecap="square" fill="none"/>
             <path d={hoveredRoomPath} stroke="rgb(99,180,255)" strokeWidth="3.5" strokeLinecap="square" fill="none" className="room-border-pulse"/>
@@ -926,7 +1021,17 @@ const GameGrid = ({ level, placements, notes, xMarks, autoXMarks, selectedEntity
           const isHovered = room.id === hoveredRoomId;
           return (
             <div key={room.id} style={{ position:'absolute', left: minX*cellSize+4, top: (targetCellY+1)*cellSize-5, whiteSpace:'nowrap' }}>
-              <span style={{
+              <span style={emptyMode ? {
+                display: 'inline-block',
+                fontSize: 14,
+                fontWeight: 900,
+                fontFamily: 'Caveat, cursive',
+                letterSpacing: 0.5,
+                color: '#274060',
+                lineHeight: 1,
+                textShadow: '0 0 1px rgba(255,255,255,0.8)',
+                transform: 'rotate(-2deg)'
+              } : {
                 display: 'inline-block',
                 fontSize: 11,
                 fontWeight: 900,
@@ -939,11 +1044,28 @@ const GameGrid = ({ level, placements, notes, xMarks, autoXMarks, selectedEntity
                 transition: 'all 0.15s ease',
                 transform: isHovered ? 'scale(1.08)' : 'scale(1)',
                 transformOrigin: 'left bottom',
-              }}>{room.name.toUpperCase()}</span>
+              }}>{t('levels.' + level.id + '.rooms.' + room.id, room.name).toUpperCase()}</span>
             </div>
           );
         })}
       </div>
+
+      {/* Canvas Layer for Stylus Drawing */}
+      {emptyMode && !comparisonMode && (
+        <DrawingCanvas
+          paths={drawingPaths}
+          setPaths={setDrawingPaths}
+          currentPath={currentPath}
+          setCurrentPath={setCurrentPath}
+          penColor={penColor}
+          penWidth={penWidth}
+          penType={penType}
+          width={W}
+          height={H}
+          history={drawingHistory}
+          setHistory={setDrawingHistory}
+        />
+      )}
     </div>
   );
 };
@@ -951,23 +1073,207 @@ const GameGrid = ({ level, placements, notes, xMarks, autoXMarks, selectedEntity
 // ============================================================
 // VICTORY OVERLAY
 // ============================================================
-const VictoryOverlay = ({ level, timeSeconds, onNext, onBack }) => {
+const VictoryOverlay = ({ level, timeSeconds, onNext, onBack, t }) => {
   const mins = Math.floor(timeSeconds / 60);
   const secs = timeSeconds % 60;
   const victim = level.suspects.find(s => s.isVictim);
+  const avengedText = victim 
+    ? `${victim.name} ${t('avengedGeneric').toLowerCase()}` 
+    : t('caseSolvedGeneric');
   return (
     <div className="victory-overlay">
       <div className="victory-card">
         <div style={{fontSize:48, marginBottom:12}}>🏆</div>
-        <div style={{fontSize:28, fontWeight:900, letterSpacing:-1, marginBottom:6}}>Case Solved!</div>
+        <div style={{fontSize:28, fontWeight:900, letterSpacing:-1, marginBottom:6}}>{t('caseSolvedTitle')}</div>
         <div style={{fontSize:14, color:'var(--text-muted)', fontWeight:600, marginBottom:8}}>
-          {victim ? `${victim.name} has been avenged.` : 'The murder has been solved.'}
+          {avengedText}
         </div>
         <div style={{fontSize:22, fontWeight:900, color:'var(--accent)', marginBottom:20}}>
           {String(mins).padStart(2,'0')}:{String(secs).padStart(2,'0')}
         </div>
-        <button className="victory-btn" onClick={onNext}>Next Puzzle →</button>
-        <button className="victory-btn-back" onClick={onBack}>← Back to Levels</button>
+        <button className="victory-btn" onClick={onNext}>{t('nextPuzzleBtn')}</button>
+        <button className="victory-btn-back" onClick={onBack}>{t('backToLevelsBtn')}</button>
+      </div>
+    </div>
+  );
+};
+
+// ============================================================
+// APPLE PENCIL DRAWING CANVAS ENGINE
+// ============================================================
+const DrawingCanvas = ({ paths, setPaths, currentPath, setCurrentPath, penColor, penWidth, penType, width, height, history, setHistory }) => {
+  const canvasRef = useRef(null);
+  const isDrawing = useRef(false);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    
+    // Clear canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // Draw all completed paths
+    const drawPath = (path) => {
+      if (path.points.length < 1) return;
+      ctx.beginPath();
+      
+      if (path.type === 'eraser') {
+        ctx.globalCompositeOperation = 'destination-out';
+        ctx.strokeStyle = 'rgba(0,0,0,1)';
+        ctx.lineWidth = path.width * 2.5;
+      } else {
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.strokeStyle = path.color;
+        ctx.lineWidth = path.width;
+        ctx.globalAlpha = path.type === 'highlighter' ? 0.35 : 1.0;
+      }
+      
+      const scaleX = canvas.width / 800;
+      const scaleY = canvas.height / 800;
+      
+      const [firstX, firstY] = path.points[0];
+      ctx.moveTo(firstX * scaleX, firstY * scaleY);
+      
+      for (let i = 1; i < path.points.length; i++) {
+        const [x, y] = path.points[i];
+        ctx.lineTo(x * scaleX, y * scaleY);
+      }
+      
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.stroke();
+      ctx.globalAlpha = 1.0;
+    };
+
+    paths.forEach(drawPath);
+    if (currentPath) {
+      drawPath(currentPath);
+    }
+  }, [paths, currentPath, width, height]);
+
+  const getCanvasCoords = (e) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return [0, 0];
+    const rect = canvas.getBoundingClientRect();
+    
+    const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+    const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+    
+    const x = clientX - rect.left;
+    const y = clientY - rect.top;
+    
+    const logicalX = (x / rect.width) * 800;
+    const logicalY = (y / rect.height) * 800;
+    
+    return [logicalX, logicalY];
+  };
+
+  const handlePointerDown = (e) => {
+    e.stopPropagation();
+    isDrawing.current = true;
+    const [x, y] = getCanvasCoords(e);
+    setCurrentPath({
+      points: [[x, y]],
+      color: penColor,
+      width: penWidth,
+      type: penType
+    });
+  };
+
+  const handlePointerMove = (e) => {
+    if (!isDrawing.current || !currentPath) return;
+    e.stopPropagation();
+    const [x, y] = getCanvasCoords(e);
+    setCurrentPath(prev => {
+      if (!prev) return null;
+      const lastPoint = prev.points[prev.points.length - 1];
+      if (lastPoint && Math.abs(lastPoint[0] - x) < 1.0 && Math.abs(lastPoint[1] - y) < 1.0) {
+        return prev;
+      }
+      return {
+        ...prev,
+        points: [...prev.points, [x, y]]
+      };
+    });
+  };
+
+  const handlePointerUp = (e) => {
+    if (!isDrawing.current) return;
+    e.stopPropagation();
+    isDrawing.current = false;
+    if (currentPath && currentPath.points.length > 0) {
+      setPaths(prev => [...prev, currentPath]);
+      setHistory([]); // Reset redo history on new stroke
+    }
+    setCurrentPath(null);
+  };
+
+  const dpr = window.devicePixelRatio || 1;
+
+  return (
+    <canvas
+      ref={canvasRef}
+      className="drawing-canvas"
+      width={width * dpr}
+      height={height * dpr}
+      style={{ width: width, height: height, pointerEvents: penType === 'play' ? 'none' : 'auto' }}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+    />
+  );
+};
+
+// ============================================================
+// IPAD PRO 2022 SIMULATED HARDWARE FRAME
+// ============================================================
+const IpadFrame = ({ children, orientation, onToggleOrientation, onExit }) => {
+  const [scale, setScale] = useState(1);
+
+  useEffect(() => {
+    const handleResize = () => {
+      const padding = 50;
+      const ipadW = orientation === 'landscape' ? 1366 : 1024;
+      const ipadH = orientation === 'landscape' ? 1024 : 1366;
+      
+      const scaleX = window.innerWidth / (ipadW + padding);
+      const scaleY = window.innerHeight / (ipadH + padding);
+      
+      setScale(Math.min(1, scaleX, scaleY));
+    };
+
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [orientation]);
+
+  const ipadW = orientation === 'landscape' ? 1366 : 1024;
+  const ipadH = orientation === 'landscape' ? 1024 : 1366;
+
+  return (
+    <div className="ipad-wrapper">
+      <div className="ipad-emulator-toolbar">
+        <button className="ipad-emulator-btn" onClick={onToggleOrientation}>
+          🔄 Rotate Device
+        </button>
+        <button className="ipad-emulator-btn" onClick={onExit}>
+          🚪 Exit iPad Mode
+        </button>
+      </div>
+
+      <div 
+        className={`ipad-frame ${orientation}`}
+        style={{
+          width: ipadW,
+          height: ipadH,
+          transform: `scale(${scale})`
+        }}
+      >
+        <div className="ipad-camera" />
+        <div className="ipad-screen-container">
+          {children}
+        </div>
       </div>
     </div>
   );
@@ -984,6 +1290,46 @@ const MurdokuApp = () => {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isSoundMuted, setIsSoundMuted] = useState(false);
   const [generatedLevels, setGeneratedLevels] = useState([]);
+  
+  const [lang, setLang] = useState(() => {
+    try {
+      return localStorage.getItem('murdoku_lang') || 'pt';
+    } catch {
+      return 'pt';
+    }
+  });
+
+  const handleToggleLang = useCallback((newLang) => {
+    setLang(newLang);
+    try {
+      localStorage.setItem('murdoku_lang', newLang);
+    } catch {}
+  }, []);
+
+  const t = useCallback((key, fallback = '') => {
+    const dict = MURDOKU_LOCALES[lang] || MURDOKU_LOCALES.en;
+    if (!dict) return fallback;
+    const keys = key.split('.');
+    let current = dict;
+    for (const k of keys) {
+      if (current && typeof current === 'object' && k in current) {
+        current = current[k];
+      } else {
+        const enDict = MURDOKU_LOCALES.en;
+        let enCurrent = enDict;
+        for (const enK of keys) {
+          if (enCurrent && typeof enCurrent === 'object' && enK in enCurrent) {
+            enCurrent = enCurrent[enK];
+          } else {
+            enCurrent = null;
+            break;
+          }
+        }
+        return enCurrent !== null ? enCurrent : fallback;
+      }
+    }
+    return current;
+  }, [lang]);
 
   // Game state
   const [placements, setPlacements] = useState({});
@@ -995,6 +1341,20 @@ const MurdokuApp = () => {
   const [undoStack, setUndoStack]   = useState([]);
   const [isVictory, setIsVictory]   = useState(false);
   const [pressingCell, setPressingCell] = useState(null);
+
+  // iPad & Drawing states
+  const [ipadMode, setIpadMode]                   = useState(false);
+  const [ipadOrientation, setIpadOrientation]     = useState('landscape');
+  const [drawingPaths, setDrawingPaths]           = useState([]);
+  const [currentPath, setCurrentPath]             = useState(null);
+  const [drawingHistory, setDrawingHistory]       = useState([]);
+  const [penColor, setPenColor]                   = useState('#000000');
+  const [penWidth, setPenWidth]                   = useState(4);
+  const [penType, setPenType]                     = useState('pen'); // 'pen' | 'highlighter' | 'eraser' | 'play'
+  const [selectedKiller, setSelectedKiller]       = useState('');
+  const [isComparingSolution, setIsComparingSolution] = useState(false);
+  const [showPortraitDrawer, setShowPortraitDrawer] = useState(false);
+  const [killerDropdownOpen, setKillerDropdownOpen] = useState(false);
 
   // Compute auto-X marks based on placements
   const autoXMarks = useMemo(() =>
@@ -1015,8 +1375,8 @@ const MurdokuApp = () => {
     if (!level || isVictory) return;
     try {
       const progress = JSON.parse(localStorage.getItem('murdoku_level_progress') || '{}');
-      if (Object.keys(placements).length > 0 || Object.keys(notes).length > 0 || Object.keys(xMarks).length > 0) {
-        progress[level.id] = { placements, notes, xMarks, elapsed };
+      if (Object.keys(placements).length > 0 || Object.keys(notes).length > 0 || Object.keys(xMarks).length > 0 || drawingPaths.length > 0) {
+        progress[level.id] = { placements, notes, xMarks, elapsed, drawingPaths, selectedKiller, ipadMode, ipadOrientation };
         localStorage.setItem('murdoku_level_progress', JSON.stringify(progress));
       } else {
         if (progress[level.id]) {
@@ -1025,7 +1385,7 @@ const MurdokuApp = () => {
         }
       }
     } catch (e) {}
-  }, [level, placements, notes, xMarks, elapsed, isVictory]);
+  }, [level, placements, notes, xMarks, elapsed, isVictory, drawingPaths, selectedKiller, ipadMode, ipadOrientation]);
 
   const saveUndoState = useCallback(() => {
     setUndoStack(prev => [...prev.slice(-49), { placements, notes, xMarks }]);
@@ -1044,6 +1404,13 @@ const MurdokuApp = () => {
     setToolMode('select');
     setIsVictory(false);
     setPressingCell(null);
+    
+    // Clear iPad states for a clean load
+    setDrawingPaths([]);
+    setDrawingHistory([]);
+    setSelectedKiller('');
+    setIsComparingSolution(false);
+    setShowPortraitDrawer(false);
 
     let loaded = false;
     try {
@@ -1053,6 +1420,10 @@ const MurdokuApp = () => {
         setPlacements(saved.placements || {});
         setNotes(saved.notes || {});
         setXMarks(saved.xMarks || {});
+        setDrawingPaths(saved.drawingPaths || []);
+        setSelectedKiller(saved.selectedKiller || '');
+        setIpadMode(!!saved.ipadMode);
+        setIpadOrientation(saved.ipadOrientation || 'landscape');
         setUndoStack([]);
         resetTimer(saved.elapsed || 0);
         loaded = true;
@@ -1063,6 +1434,9 @@ const MurdokuApp = () => {
       setPlacements({});
       setNotes({});
       setXMarks({});
+      setDrawingPaths([]);
+      setSelectedKiller('');
+      setIpadMode(false);
       setUndoStack([]);
       resetTimer(0);
     }
@@ -1195,9 +1569,459 @@ const MurdokuApp = () => {
   if (view === 'selector') {
     return (
       <>
-        <LevelSelector onSelectLevel={startLevel} onShowGenerate={() => setShowGenerate(true)} generatedLevels={generatedLevels}/>
-        {showGenerate && <GenerateModal onClose={() => setShowGenerate(false)} onGenerate={handleGenerated}/>}
+        <LevelSelector 
+          onSelectLevel={startLevel} 
+          onShowGenerate={() => setShowGenerate(true)} 
+          generatedLevels={generatedLevels} 
+          lang={lang} 
+          onToggleLang={handleToggleLang} 
+          onToggleIpadMode={() => setIpadMode(p => !p)}
+          t={t}
+        />
+        {showGenerate && <GenerateModal onClose={() => setShowGenerate(false)} onGenerate={handleGenerated} lang={lang} t={t}/>}
       </>
+    );
+  }
+
+  // ---- RENDER: iPad Mode Book-Style View ----
+  if (ipadMode && view === 'playing' && level) {
+    
+    // Dynamic killer calculation for automatic validation checking
+    const correctKiller = (() => {
+      const victim = level.suspects.find(s => s.isVictim);
+      if (!victim) return null;
+      const victimPos = level.solution[victim.id];
+      if (!victimPos) return null;
+      const victimRoom = getRoomForCell(victimPos.x, victimPos.y, level);
+      if (!victimRoom) return null;
+      
+      const kId = Object.keys(level.solution).find(id => {
+        if (id === victim.id) return false;
+        const pos = level.solution[id];
+        const r = getRoomForCell(pos.x, pos.y, level);
+        return r && r.id === victimRoom.id;
+      });
+      return level.suspects.find(s => s.id === kId) || null;
+    })();
+
+    // Handle check solution
+    const handleCheckSolution = () => {
+      const hard = checkHardConstraints(placements, level);
+      if (!hard.valid) {
+        alert(t('invalidLabel') + ' ' + hard.reason);
+        return;
+      }
+      
+      const { allPass } = validateAllClues(placements, level);
+      setIsComparingSolution(true);
+      
+      if (allPass && selectedKiller === correctKiller?.id) {
+        markLevelComplete(level.id, elapsed);
+        try {
+          const progress = JSON.parse(localStorage.getItem('murdoku_level_progress') || '{}');
+          delete progress[level.id];
+          localStorage.setItem('murdoku_level_progress', JSON.stringify(progress));
+        } catch (e) {}
+      }
+    };
+
+    const isSolvedCorrectly = (() => {
+      const { allPass } = validateAllClues(placements, level);
+      return allPass && selectedKiller === correctKiller?.id;
+    })();
+
+    const penColors = ['#000000', '#555555', '#c72c2c', '#2c6cc7', '#2cc76c'];
+    const brushSizes = [2, 4, 8, 16];
+
+    return (
+      <IpadFrame 
+        orientation={ipadOrientation} 
+        onToggleOrientation={() => setIpadOrientation(o => o === 'landscape' ? 'portrait' : 'landscape')}
+        onExit={() => setIpadMode(false)}
+      >
+        {isComparingSolution ? (
+          // ==========================================
+          // SIDE-BY-SIDE SOLUTION COMPARISON MODE
+          // ==========================================
+          <div className="comparison-container">
+            <div className="comparison-header">
+              <div className={`comparison-title ${isSolvedCorrectly ? 'verdict-success-glow' : 'verdict-fail-glow'}`}>
+                {t('verdictTitle')}: {isSolvedCorrectly ? '✓ SOLVED' : '✗ FAILED'}
+              </div>
+              <div className="comparison-subtitle">
+                {isSolvedCorrectly ? t('verdictSuccess') : t('verdictFail')}
+              </div>
+            </div>
+
+            <div className="comparison-grids-spread">
+              {/* Your Attempt */}
+              <div className="comparison-sheet">
+                <div className="comparison-sheet-title">{t('yourSolution')}</div>
+                <div className="worksheet-grid-wrapper" style={{ padding: 10 }}>
+                  <GameGrid
+                    level={level} placements={placements} notes={notes} xMarks={xMarks} autoXMarks={autoXMarks}
+                    selectedEntity={null} toolMode="select" pressingCell={null}
+                    onPointerDown={() => {}} onPointerUp={() => {}} onPointerLeave={() => {}}
+                    emptyMode={true}
+                    comparisonMode={true}
+                    correctPlacements={level.solution}
+                    drawingPaths={drawingPaths}
+                    t={t}
+                  />
+                </div>
+                {selectedKiller && (
+                  <div style={{ fontFamily: 'Caveat, cursive', fontSize: 26, color: '#333', textAlign: 'center', marginTop: 8 }}>
+                    {t('killerIsText')} <strong style={{ color: selectedKiller === correctKiller?.id ? '#2ecc71' : '#e74c3c' }}>
+                      {level.suspects.find(s => s.id === selectedKiller)?.name}
+                    </strong>
+                  </div>
+                )}
+              </div>
+
+              {/* Correct Solution */}
+              <div className="comparison-sheet">
+                <div className="comparison-sheet-title">{t('correctSolution')}</div>
+                <div className="worksheet-grid-wrapper" style={{ padding: 10 }}>
+                  <GameGrid
+                    level={level} placements={level.solution} notes={{}} xMarks={{}} autoXMarks={new Set()}
+                    selectedEntity={null} toolMode="select" pressingCell={null}
+                    onPointerDown={() => {}} onPointerUp={() => {}} onPointerLeave={() => {}}
+                    emptyMode={false}
+                    comparisonMode={false}
+                    t={t}
+                  />
+                </div>
+                {correctKiller && (
+                  <div style={{ fontFamily: 'Caveat, cursive', fontSize: 26, color: '#333', textAlign: 'center', marginTop: 8 }}>
+                    {t('killerIsText')} <strong style={{ color: '#2ecc71' }}>{correctKiller.name}</strong>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="comparison-actions">
+              <button className="ipad-submit-btn" style={{ background: '#3b82f6' }} onClick={() => setIsComparingSolution(false)}>
+                ✏ {t('keepSolving')}
+              </button>
+              {isSolvedCorrectly && (
+                <button className="ipad-submit-btn" style={{ background: '#2ecc71' }} onClick={() => {
+                  const all = [...BUILT_IN_LEVELS, ...generatedLevels];
+                  const idx = all.findIndex(l => l.id === level.id);
+                  startLevel(all[idx+1] || all[0]);
+                }}>
+                  Próximo Caso →
+                </button>
+              )}
+              <button className="ipad-submit-btn" style={{ background: '#555' }} onClick={() => { setView('selector'); setIsVictory(false); }}>
+                ← {t('backToLevelsBtn')}
+              </button>
+            </div>
+          </div>
+        ) : (
+          // ==========================================
+          // ACTIVE GAMEBOOK SKEUOMORPHIC VIEW
+          // ==========================================
+          <div className={`book-view ${ipadOrientation}`}>
+            {/* CENTRAL SPIRAL BINDER (only in Landscape) */}
+            {ipadOrientation === 'landscape' && (
+              <>
+                <div className="book-crease" />
+                <div className="book-rings-container">
+                  {Array.from({ length: 6 }).map((_, idx) => (
+                    <div key={idx} className="notebook-ring" />
+                  ))}
+                </div>
+              </>
+            )}
+
+            {/* ==========================================
+                LEFT PAGE (THE PROBLEM)
+                ========================================== */}
+            {ipadOrientation === 'portrait' ? (
+              <>
+                <button className="portrait-suspects-drawer-btn" onClick={() => setShowPortraitDrawer(true)}>
+                  📋 {t('suspectsTitle')} & {t('howToPlayTitle')}
+                </button>
+                
+                {showPortraitDrawer && (
+                  <div className="portrait-drawer-backdrop" onClick={() => setShowPortraitDrawer(false)}>
+                    <div className="portrait-drawer-content drawer-slide-in" onClick={e => e.stopPropagation()}>
+                      <button className="portrait-drawer-close" onClick={() => setShowPortraitDrawer(false)}>✕</button>
+                      <div className="problem-header" style={{ marginTop: 20 }}>
+                        <div className="problem-title">{t('levels.' + level.id + '.name', level.name)}</div>
+                        <span style={{ padding: '3px 8px', fontSize: 10, fontWeight: 800, textTransform: 'uppercase', background: '#f3e7c4', color: '#c79f2a', borderRadius: 4, border: '1px solid #c79f2a', display: 'inline-block', marginTop: 4 }}>
+                          {level.difficulty}
+                        </span>
+                      </div>
+                      
+                      <div className="suspects-title" style={{ margin: '10px 0' }}>{t('suspectsTitle')}</div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                        {level.suspects.map(suspect => {
+                          const isPlaced = placedIds.has(suspect.id);
+                          const isSelected = selectedEntity === suspect.id && penType === 'play';
+                          const clue = level.clues.find(c => c.suspectId === suspect.id);
+                          return (
+                            <div 
+                              key={suspect.id} 
+                              className={`book-portrait-group ${isSelected ? 'selected' : ''} ${isPlaced ? 'placed' : ''}`}
+                              onClick={() => { setPenType('play'); setSelectedEntity(prev => prev === suspect.id ? null : suspect.id); setShowPortraitDrawer(false); }}
+                            >
+                              <div className="book-portrait-header">
+                                <div className="book-portrait-avatar-wrap">
+                                  <AvatarSVG color={suspect.color} name={suspect.name} size="90%" />
+                                </div>
+                                <div className={`book-portrait-name ${suspect.isVictim ? 'victim' : ''}`}>{suspect.name}</div>
+                              </div>
+                              <div className="book-clue-box" dangerouslySetInnerHTML={{ __html: t('levels.' + level.id + '.clues.' + suspect.id, clue?.text || '') }} />
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="book-page problem-page">
+                <div className="problem-header">
+                  <button className="back-btn" style={{ marginBottom: 12 }} onClick={() => { setView('selector'); setIsVictory(false); }}>
+                    ← {t('backBtn')}
+                  </button>
+                  <div className="problem-title">{t('levels.' + level.id + '.name', level.name)}</div>
+                  <div className="problem-meta">
+                    <span style={{ padding: '3px 8px', fontSize: 10, fontWeight: 800, textTransform: 'uppercase', background: '#f3e7c4', color: '#c79f2a', borderRadius: 4, border: '1px solid #c79f2a' }}>
+                      {level.difficulty}
+                    </span>
+                    <span className="puzzle-timer" style={{ fontSize: 14 }}>⏱ {timerStr}</span>
+                  </div>
+                </div>
+
+                <div className="reference-map-card">
+                  <div className="reference-map-title">📍 {t('problemPageTitle')}</div>
+                  <GridPreview level={level} size={260} />
+                </div>
+
+                <div className="suspects-title">{t('suspectsTitle')} & {t('toolsTitle')}</div>
+                <div className="suspects-hint" style={{ fontSize: 12, margin: '4px 0 12px' }}>
+                  {t('tapToSelectHint')}
+                </div>
+
+                <div className="book-suspects-grid">
+                  {level.suspects.map(suspect => {
+                    const isPlaced = placedIds.has(suspect.id);
+                    const isSelected = selectedEntity === suspect.id && penType === 'play';
+                    const clue = level.clues.find(c => c.suspectId === suspect.id);
+                    return (
+                      <div 
+                        key={suspect.id} 
+                        className={`book-portrait-group ${isSelected ? 'selected' : ''} ${isPlaced ? 'placed' : ''}`}
+                        onClick={() => { setPenType('play'); setSelectedEntity(prev => prev === suspect.id ? null : suspect.id); }}
+                      >
+                        <div className="book-portrait-header">
+                          <div className="book-portrait-avatar-wrap">
+                            <AvatarSVG color={suspect.color} name={suspect.name} size="90%" />
+                          </div>
+                          <div className={`book-portrait-name ${suspect.isVictim ? 'victim' : ''}`}>{suspect.name}</div>
+                        </div>
+                        <div className="book-clue-box" dangerouslySetInnerHTML={{ __html: t('levels.' + level.id + '.clues.' + suspect.id, clue?.text || '') }} />
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* ==========================================
+                RIGHT PAGE (YOUR WORKSHEET)
+                ========================================== */}
+            <div className="book-page worksheet-page">
+              
+              {/* PEN TOOLBAR (STYLED FLOATING PEN TRAY) */}
+              <div className="pen-toolbar">
+                <div className="pen-toolbar-label">✍ Stylus</div>
+                
+                <button 
+                  className={`pen-tool-btn ${penType === 'pen' ? 'active' : ''}`}
+                  title={t('penTool')}
+                  onClick={() => { setPenType('pen'); setSelectedEntity(null); }}
+                >
+                  ✏
+                </button>
+
+                <button 
+                  className={`pen-tool-btn ${penType === 'highlighter' ? 'active' : ''}`}
+                  title={t('highlighterTool')}
+                  onClick={() => { setPenType('highlighter'); setSelectedEntity(null); }}
+                >
+                  🖍
+                </button>
+
+                <button 
+                  className={`pen-tool-btn ${penType === 'eraser' ? 'active' : ''}`}
+                  title={t('eraserTool')}
+                  onClick={() => { setPenType('eraser'); setSelectedEntity(null); }}
+                >
+                  🧼
+                </button>
+
+                <button 
+                  className={`pen-tool-btn ${penType === 'play' ? 'active' : ''}`}
+                  title="Place Suspects"
+                  onClick={() => setPenType('play')}
+                >
+                  🧩
+                </button>
+
+                <div style={{ height: 2, background: 'rgba(0,0,0,0.15)', width: '80%', margin: '4px 0' }} />
+
+                {penType !== 'eraser' && penType !== 'play' && penColors.map(col => (
+                  <div 
+                    key={col} 
+                    className={`pen-color-dot ${penColor === col ? 'active' : ''}`}
+                    style={{ background: col }}
+                    onClick={() => setPenColor(col)}
+                  />
+                ))}
+
+                {penType !== 'play' && (
+                  <>
+                    <div style={{ height: 2, background: 'rgba(0,0,0,0.15)', width: '80%', margin: '4px 0' }} />
+                    {brushSizes.map(sz => (
+                      <button 
+                        key={sz} 
+                        className={`pen-tool-btn ${penWidth === sz ? 'active' : ''}`}
+                        style={{ fontSize: 9 + (sz/2), padding: 4, height: 28, width: 28 }}
+                        onClick={() => setPenWidth(sz)}
+                      >
+                        ●
+                      </button>
+                    ))}
+                  </>
+                )}
+
+                <div style={{ height: 2, background: 'rgba(0,0,0,0.15)', width: '80%', margin: '4px 0' }} />
+
+                <button 
+                  className="pen-tool-btn" 
+                  title={t('drawingUndo')}
+                  disabled={drawingPaths.length === 0}
+                  onClick={() => {
+                    setDrawingPaths(prev => {
+                      if (prev.length === 0) return prev;
+                      const next = [...prev];
+                      const undone = next.pop();
+                      setDrawingHistory(h => [...h, undone]);
+                      return next;
+                    });
+                  }}
+                >
+                  ↩
+                </button>
+
+                <button 
+                  className="pen-tool-btn" 
+                  title={t('clearDrawing')}
+                  disabled={drawingPaths.length === 0}
+                  onClick={() => {
+                    if (confirm("Limpar todo o rascunho / Clear all sketches?")) {
+                      setDrawingHistory([]);
+                      setDrawingPaths([]);
+                    }
+                  }}
+                >
+                  🗑
+                </button>
+              </div>
+
+              {ipadOrientation === 'portrait' && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', paddingLeft: 48, marginBottom: 12, marginTop: 40 }}>
+                  <button className="back-btn" onClick={() => { setView('selector'); setIsVictory(false); }}>
+                    ← {t('backBtn')}
+                  </button>
+                  <span className="puzzle-timer" style={{ fontSize: 15, fontWeight: 700 }}>⏱ {timerStr}</span>
+                </div>
+              )}
+
+              <div className="worksheet-notebook-paper">
+                <div className="worksheet-header">
+                  <h2 className="worksheet-title">📝 {t('worksheetPageTitle')}</h2>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button 
+                      className={`ipad-submit-btn ${toolMode === 'xmark' && penType === 'play' ? 'active' : ''}`}
+                      style={{ background: toolMode === 'xmark' && penType === 'play' ? '#274060' : '#4a341b', display: 'flex', alignItems: 'center', gap: 4 }}
+                      onClick={() => { setPenType('play'); setToolMode(p => p === 'xmark' ? 'select' : 'xmark'); setSelectedEntity(null); }}
+                    >
+                      ❌ {t('xMarkTool')}
+                    </button>
+                    <button 
+                      className="ipad-submit-btn" 
+                      style={{ background: '#555' }}
+                      onClick={handleUndo} 
+                      disabled={!undoStack.length}
+                    >
+                      ↩ {t('undoTool')}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="worksheet-grid-wrapper">
+                  <GameGrid
+                    level={level} placements={placements} notes={notes} xMarks={xMarks} autoXMarks={autoXMarks}
+                    selectedEntity={selectedEntity} toolMode={toolMode} pressingCell={pressingCell}
+                    onPointerDown={handlePointerDown} onPointerUp={handlePointerUp} onPointerLeave={handlePointerLeave}
+                    emptyMode={true}
+                    comparisonMode={false}
+                    drawingPaths={drawingPaths}
+                    setDrawingPaths={setDrawingPaths}
+                    currentPath={currentPath}
+                    setCurrentPath={setCurrentPath}
+                    penColor={penColor}
+                    penWidth={penWidth}
+                    penType={penType}
+                    drawingHistory={drawingHistory}
+                    setDrawingHistory={setDrawingHistory}
+                    t={t}
+                  />
+                </div>
+
+                <div className="killer-note-paper">
+                  <div className="killer-note-label">{t('killerIsText')}</div>
+                  <div className="killer-note-underline" onClick={() => setKillerDropdownOpen(p => !p)}>
+                    <div className="killer-note-value">
+                      {selectedKiller ? level.suspects.find(s => s.id === selectedKiller)?.name : '________________'}
+                    </div>
+
+                    {killerDropdownOpen && (
+                      <div className="killer-dropdown" onClick={e => e.stopPropagation()}>
+                        <div className="killer-dropdown-item" onClick={() => { setSelectedKiller(''); setKillerDropdownOpen(false); }}>
+                          (Limpar / Clear)
+                        </div>
+                        {level.suspects.map(suspect => (
+                          <div 
+                            key={suspect.id} 
+                            className="killer-dropdown-item"
+                            onClick={() => { setSelectedKiller(suspect.id); setKillerDropdownOpen(false); }}
+                          >
+                            {suspect.name}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <button 
+                    className="ipad-submit-btn"
+                    onClick={handleCheckSolution}
+                    disabled={Object.keys(placements).length !== level.suspects.length}
+                  >
+                    🔍 {t('checkSolution')}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </IpadFrame>
     );
   }
 
@@ -1226,19 +2050,19 @@ const MurdokuApp = () => {
                 onClick={() => { setView('selector'); setIsVictory(false); }}
               >
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="m15 18-6-6 6-6"/></svg>
-                Back
+                {t('backBtn')}
               </button>
               <div className="logo-text">MRD<span className="logo-o">O</span>KU</div>
             </div>
             <div className="puzzle-meta">
-              <span className="puzzle-name">{level?.name}</span>
+              <span className="puzzle-name">{t('levels.' + level?.id + '.name', level?.name)}</span>
               <span className="puzzle-timer">{timerStr}</span>
             </div>
           </div>
 
-          <div className="suspects-title">Suspects</div>
+          <div className="suspects-title">{t('suspectsTitle')}</div>
           <div className="suspects-hint">
-            Tap to select · Click grid for note · Hold grid to place
+            {t('tapToSelectHint')}
           </div>
 
           {/* Suspects 3-col grid */}
@@ -1254,7 +2078,7 @@ const MurdokuApp = () => {
                   onClick={() => { setToolMode('select'); setSelectedEntity(prev => prev === suspect.id ? null : suspect.id); }}
                 >
                   <PortraitCard suspect={suspect} isSelected={isSelected} isPlaced={isPlaced} />
-                  <ClueBox suspect={suspect} clueText={clue?.text || ''} isSelected={isSelected} />
+                  <ClueBox suspect={suspect} clueText={t('levels.' + level.id + '.clues.' + suspect.id, clue?.text || '')} isSelected={isSelected} />
                 </div>
               );
             })}
@@ -1269,13 +2093,14 @@ const MurdokuApp = () => {
             level={level} placements={placements} notes={notes} xMarks={xMarks} autoXMarks={autoXMarks}
             selectedEntity={selectedEntity} toolMode={toolMode} pressingCell={pressingCell}
             onPointerDown={handlePointerDown} onPointerUp={handlePointerUp} onPointerLeave={handlePointerLeave}
+            t={t}
           />
         )}
       </div>
 
       {/* ---- RIGHT PANEL ---- */}
       <div className="right-panel" style={{ zIndex: 2 }}>
-        <div className="tools-label">Tools</div>
+        <div className="tools-label">{t('toolsTitle')}</div>
 
         {/* X Mark */}
         <button className={`tool-btn ${toolMode === 'xmark' ? 'active-tool' : ''}`}
@@ -1283,7 +2108,7 @@ const MurdokuApp = () => {
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
             <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
           </svg>
-          X Mark
+          {t('xMarkTool')}
         </button>
 
         {/* Eraser */}
@@ -1304,8 +2129,8 @@ const MurdokuApp = () => {
             <path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21"/>
             <path d="M22 21H7"/><path d="m5 11 9 9"/>
           </svg>
-          Eraser
-          <span className="tool-sub">hold to clear all</span>
+          {t('eraserTool')}
+          <span className="tool-sub">{t('holdToClearAll')}</span>
         </button>
 
         {/* Undo */}
@@ -1313,7 +2138,7 @@ const MurdokuApp = () => {
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/>
           </svg>
-          Undo
+          {t('undoTool')}
         </button>
 
         <div style={{flex:1}}/>
@@ -1322,8 +2147,8 @@ const MurdokuApp = () => {
         <button className="submit-btn"
           onClick={handleSubmit}
           disabled={Object.keys(placements).length !== (level?.suspects?.length ?? 0)}>
-          SUBMIT
-          <span className="submit-sub">(place all first)</span>
+          {t('submitBtn')}
+          <span className="submit-sub">{t('placeAllFirst')}</span>
         </button>
 
         {/* How to play */}
@@ -1331,12 +2156,12 @@ const MurdokuApp = () => {
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/>
           </svg>
-          How to play
+          {t('howToPlayBtn')}
         </button>
 
         {/* Icon row */}
         <div style={{ display:'flex', gap:4, marginTop:4 }}>
-          <button className="icon-btn" title="Dark mode" style={{flex:1}} onClick={() => {
+          <button className="icon-btn" title={t('darkModeTitle')} style={{flex:1}} onClick={() => {
             setIsDarkMode(p => {
               const n = !p;
               if (n) document.body.classList.add('dark-theme');
@@ -1346,7 +2171,7 @@ const MurdokuApp = () => {
           }}>
             {isDarkMode ? '🌞' : '🌙'}
           </button>
-          <button className="icon-btn" title="Mute" style={{flex:1}} onClick={() => setIsSoundMuted(p => !p)}>
+          <button className="icon-btn" title={t('muteTitle')} style={{flex:1}} onClick={() => setIsSoundMuted(p => !p)}>
             {isSoundMuted ? (
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
@@ -1358,6 +2183,12 @@ const MurdokuApp = () => {
                 <path d="M11 5 6 9H2v6h4l5 4V5z"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/>
               </svg>
             )}
+          </button>
+          <button className="icon-btn" title="Mudar idioma / Change language" style={{flex:1, fontSize:12, fontWeight:800}} onClick={() => handleToggleLang(lang === 'pt' ? 'en' : 'pt')}>
+            {lang === 'pt' ? '🇵🇹' : '🇬🇧'}
+          </button>
+          <button className="icon-btn" title="Modo iPad / iPad Mode" style={{flex:1}} onClick={() => setIpadMode(p => !p)}>
+            📱
           </button>
         </div>
       </div>
@@ -1372,10 +2203,11 @@ const MurdokuApp = () => {
             startLevel(all[idx+1] || all[0]);
           }}
           onBack={() => { setView('selector'); setIsVictory(false); }}
+          t={t}
         />
       )}
 
-      {showHowToPlay && <HowToPlayModal onClose={() => setShowHowToPlay(false)}/>}
+      {showHowToPlay && <HowToPlayModal onClose={() => setShowHowToPlay(false)} t={t}/>}
     </div>
   );
 };

@@ -418,8 +418,9 @@ const LEVEL_1 = (() => {
     // Workshop room decorations
     { x:0, y:0, type:'barrel'  }, // A(1,0) beside this ✓
     { x:2, y:1, type:'crate'   }, // decorative
-    { x:0, y:2, type:'shelf'   }, // decorative
-    { x:1, y:2, type:'plant'   }, // decorative
+    // NOTE: C(0,2) is the solution cell — no blocking obstacle here
+    { x:1, y:2, type:'shelf'   }, // decorative (moved from 0,2 to avoid blocking C)
+    { x:0, y:1, type:'plant'   }, // decorative (moved from 1,2)
     // Office room decorations
     { x:4, y:0, type:'tv'      }, // B(4,1) directly below ✓
     { x:3, y:0, type:'shelf'   }, // decorative
@@ -708,7 +709,8 @@ const LEVEL_3 = (() => {
     { x:7, y:5, type:'horse'     }, // G(8,6): beside → |8-7|=1, |6-5|=1 ✓
     { x:4, y:7, type:'plant'     }, // H(5,7): beside → |5-4|=1 ✓
     { x:2, y:8, type:'flowers'   }, // I(3,8): beside → |3-2|=1 ✓
-    { x:5, y:7, type:'shrub'     }, // decorative — camp
+    // NOTE: shrub moved from (5,7) — that is H's solution cell
+    { x:6, y:8, type:'shrub'     }, // decorative — camp (moved from 5,7 to not block H)
     { x:6, y:7, type:'crate'     }, // decorative — camp
   ];
 
