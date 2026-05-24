@@ -661,7 +661,7 @@ const GameGrid = ({ level, placements, notes, xMarks, autoXMarks, selectedEntity
           const hasAutoX = autoXMarks.has(cellKey);
           const hasAnyX = (hasManualX || hasAutoX) && !occupant;
           const press = pressingCell?.x === x && pressingCell?.y === y;
-          const canPlace = !void_ && !obstacle;
+          const canPlace = !void_ && (!obstacle || obstacle.walkable);
 
           return (
             <div
@@ -695,7 +695,7 @@ const GameGrid = ({ level, placements, notes, xMarks, autoXMarks, selectedEntity
               )}
 
               {/* Hover preview */}
-              {!void_ && !obstacle && !occupant && (
+              {!void_ && (!obstacle || obstacle.walkable) && !occupant && (
                 <div className="hover-preview" />
               )}
 
@@ -825,9 +825,61 @@ const GameGrid = ({ level, placements, notes, xMarks, autoXMarks, selectedEntity
 
       {/* SVG borders overlay */}
       <svg style={{ position:'absolute', top:0, left:0, pointerEvents:'none', zIndex:20, width:W, height:H }} viewBox={`0 0 ${W} ${H}`}>
-        <path d={thinGridPath} stroke="rgba(0,0,0,0.2)" strokeWidth="0.5" fill="none"/>
-        <path d={roomBorderPath} stroke="#000" strokeWidth="3" strokeLinecap="square" fill="none"/>
-        <path d={outerBorderPath} stroke="#000" strokeWidth="4" strokeLinecap="square" fill="none"/>
+        <path d={thinGridPath} stroke="var(--wall-thin)" strokeWidth="0.5" fill="none"/>
+        <path d={roomBorderPath} stroke="var(--wall-thick)" strokeWidth="3" strokeLinecap="square" fill="none"/>
+        <path d={outerBorderPath} stroke="var(--wall-thick)" strokeWidth="4" strokeLinecap="square" fill="none"/>
+        
+        {/* Wall decorations (windows) */}
+        {(level.obstacles || []).map((obs, idx) => {
+          if (obs.type !== 'window' || !obs.wall) return null;
+          
+          const cx = (obs.x + 0.5) * cellSize;
+          const cy = (obs.y + 0.5) * cellSize;
+          
+          let wx, wy;
+          let isHorizontal = true;
+          
+          if (obs.wall === 'top') {
+            wx = cx;
+            wy = obs.y * cellSize;
+            isHorizontal = true;
+          } else if (obs.wall === 'bottom') {
+            wx = cx;
+            wy = (obs.y + 1) * cellSize;
+            isHorizontal = true;
+          } else if (obs.wall === 'left') {
+            wx = obs.x * cellSize;
+            wy = cy;
+            isHorizontal = false;
+          } else if (obs.wall === 'right') {
+            wx = (obs.x + 1) * cellSize;
+            wy = cy;
+            isHorizontal = false;
+          } else {
+            return null;
+          }
+          
+          if (isHorizontal) {
+            const w = cellSize * 0.55;
+            const h = cellSize * 0.16;
+            return (
+              <g key={`wall-obs-${idx}`} transform={`translate(${wx - w/2}, ${wy - h/2})`}>
+                <rect width={w} height={h} rx={h/2} ry={h/2} fill="#ffffff" stroke="var(--wall-thick)" strokeWidth="2.5" />
+                <line x1={w/2} y1={0} x2={w/2} y2={h} stroke="var(--wall-thick)" strokeWidth="1.5" />
+              </g>
+            );
+          } else {
+            const w = cellSize * 0.16;
+            const h = cellSize * 0.55;
+            return (
+              <g key={`wall-obs-${idx}`} transform={`translate(${wx - w/2}, ${wy - h/2})`}>
+                <rect width={w} height={h} rx={w/2} ry={w/2} fill="#ffffff" stroke="var(--wall-thick)" strokeWidth="2.5" />
+                <line x1={0} y1={h/2} x2={w} y2={h/2} stroke="var(--wall-thick)" strokeWidth="1.5" />
+              </g>
+            );
+          }
+        })}
+
         {/* Hovered room border highlight */}
         {hoveredRoomPath && (
           <>

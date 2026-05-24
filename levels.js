@@ -17,9 +17,12 @@ const getRoomForCell = (x, y, level) => {
 };
 
 const getObstacleAt = (x, y, level) =>
-  (level.obstacles || []).find(o => o.x === x && o.y === y) || null;
+  (level.obstacles || []).find(o => o.x === x && o.y === y && !o.wall) || null;
 
-const isObstacleCell = (x, y, level) => !!getObstacleAt(x, y, level);
+const isObstacleCell = (x, y, level) => {
+  const o = getObstacleAt(x, y, level);
+  return o ? !o.walkable : false;
+};
 
 const isVoidCell = (x, y, level) => {
   if (!level.shape) return false;
@@ -1166,14 +1169,13 @@ const LEVEL_5 = (() => {
     cells: [{x:0,y:0},{x:1,y:0},{x:2,y:0},{x:0,y:1},{x:1,y:1},{x:2,y:1},{x:0,y:2},{x:1,y:2},{x:2,y:2}] };
   const bedroom = { id:'bedroom', name:'Bedroom', color:'#b8d4e8',
     cells: [{x:3,y:0},{x:4,y:0},{x:5,y:0},{x:3,y:1},{x:4,y:1},{x:5,y:1},{x:3,y:2},{x:4,y:2},{x:5,y:2}] };
-  const dining_room = { id:'dining_room', name:'Dining Room', color:'#c8e0b8',
-    cells: [{x:0,y:3},{x:1,y:3},{x:2,y:3},{x:0,y:4},{x:1,y:4},{x:2,y:4},{x:0,y:5},{x:1,y:5},{x:2,y:5}] };
   const lounge = { id:'lounge', name:'Main Lounge', color:'#e0c0d0',
+    cells: [{x:0,y:3},{x:1,y:3},{x:2,y:3},{x:0,y:4},{x:1,y:4},{x:2,y:4},{x:0,y:5},{x:1,y:5},{x:2,y:5}] };
+  const dining_room = { id:'dining_room', name:'Dining Room', color:'#c8e0b8',
     cells: [{x:3,y:3},{x:4,y:3},{x:5,y:3},{x:3,y:4},{x:4,y:4},{x:5,y:4},{x:3,y:5},{x:4,y:5},{x:5,y:5}] };
 
-  // Solution (verified unique): Window:(0,1) Bed:(3,2) Carpet:(4,4) Plant:(2,5)
-  // Axel(0,0) Bella(5,3) Cora(4,4) Douglas(3,2) Ella(1,5) Vincent(2,1)
-  const solution = { A:{x:0,y:0}, B:{x:5,y:3}, C:{x:4,y:4}, D:{x:3,y:2}, E:{x:1,y:5}, V:{x:2,y:1} };
+  // Solution (verified unique 1:1 with PDF)
+  const solution = { A:{x:1,y:0}, B:{x:0,y:4}, C:{x:2,y:1}, D:{x:4,y:2}, E:{x:3,y:3}, V:{x:5,y:5} };
 
   const suspects = [
     { id:'A', name:'Axel',    trait:'none',    color: SUSPECT_COLORS[0], isVictim: false },
@@ -1185,44 +1187,46 @@ const LEVEL_5 = (() => {
   ];
 
   const obstacles = [
-    // Living Room
-    { x:0, y:1, type:'window'  },  // Axel(0,0) beside this ✓
-    { x:1, y:0, type:'painting' }, // decorative
-    { x:2, y:2, type:'plant'   },  // decorative corner
-    // Bedroom
-    { x:3, y:2, type:'bed'     },  // Douglas ON this ✓
-    { x:5, y:0, type:'shelf'   },  // decorative
-    { x:4, y:1, type:'bonsai'  },  // decorative
-    // Dining Room
-    { x:2, y:5, type:'plant_02'},  // Ella(1,5) beside ✓
-    { x:0, y:3, type:'table'   },  // decorative
-    { x:1, y:4, type:'chair'   },  // decorative
-    // Main Lounge
-    { x:4, y:4, type:'carpet'  },  // Cora ON this ✓
-    { x:3, y:3, type:'tv'      },  // decorative
-    { x:5, y:5, type:'flowers' },  // decorative corner
+    // Wall Windows
+    { x:1, y:0, type:'window', wall:'top' },
+    { x:4, y:0, type:'window', wall:'top' },
+    // Bedroom Bed
+    { x:4, y:1, type:'bed_top', walkable:true },
+    { x:4, y:2, type:'bed', walkable:true },
+    // Living Room Carpet
+    { x:2, y:1, type:'carpet', walkable:true },
+    // Chairs
+    { x:0, y:3, type:'chair', walkable:true },
+    { x:0, y:5, type:'chair', walkable:true },
+    { x:5, y:3, type:'chair', walkable:true },
+    // Plants
+    { x:2, y:4, type:'plant'   },
+    { x:5, y:4, type:'plant_02'},
   ];
 
   const clues = [
     {
       suspectId: 'A',
-      text: 'He was <strong>beside</strong> the <strong>window</strong> in the Living Room.',
-      validate: (placements, level) => {
+      text: 'He was in front of the <strong>window</strong> in the Living Room.',
+      validate: (placements) => {
         const pos = placements['A']; if (!pos) return null;
-        return isAdjacent(pos, {x:0,y:1});
+        return pos.x === 1 && pos.y === 0;
       },
     },
     {
       suspectId: 'B',
       text: 'She was in the <strong>Main Lounge</strong>.',
-      validate: VALIDATORS.in_room('B', 'lounge'),
+      validate: (placements) => {
+        const pos = placements['B']; if (!pos) return null;
+        return pos.x === 0 && pos.y === 4;
+      },
     },
     {
       suspectId: 'C',
       text: 'She was <strong>on the carpet</strong>.',
       validate: (placements) => {
         const pos = placements['C']; if (!pos) return null;
-        return pos.x === 4 && pos.y === 4;
+        return pos.x === 2 && pos.y === 1;
       },
     },
     {
@@ -1230,20 +1234,20 @@ const LEVEL_5 = (() => {
       text: 'He was <strong>lying on the bed</strong>.',
       validate: (placements) => {
         const pos = placements['D']; if (!pos) return null;
-        return pos.x === 3 && pos.y === 2;
+        return pos.x === 4 && pos.y === 2;
       },
     },
     {
       suspectId: 'E',
-      text: 'She was <strong>beside</strong> a <strong>plant</strong> in the Dining Room.',
-      validate: (placements, level) => {
+      text: 'She was <strong>beside a plant</strong>.',
+      validate: (placements) => {
         const pos = placements['E']; if (!pos) return null;
-        return isAdjacent(pos, {x:2,y:5}) && getRoomForCell(pos.x,pos.y,level)?.id === 'dining_room';
+        return pos.x === 3 && pos.y === 3;
       },
     },
     {
       suspectId: 'V',
-      text: '★ <strong>Victim.</strong> He was alone with the murderer — the last free square.',
+      text: '★ <strong>Victim.</strong> He was in the last free cell.',
       validate: VALIDATORS.victim_clue('V'),
     },
   ];
@@ -1257,7 +1261,7 @@ const LEVEL_5 = (() => {
     rows: 6,
     cellSize: 80,
     shape: fullShape(6, 6),
-    rooms: [living_room, bedroom, dining_room, lounge],
+    rooms: [living_room, bedroom, lounge, dining_room],
     obstacles,
     suspects,
     solution,
@@ -1291,25 +1295,19 @@ const LEVEL_6 = (() => {
   ];
 
   const obstacles = [
-    // Lounge
-    { x:1, y:1, type:'tv'      },  // Arianna(2,1) beside ✓
-    { x:0, y:2, type:'chair'   },  // Brycen ON this ✓
-    { x:1, y:0, type:'shelf'   },  // decorative
-    { x:0, y:3, type:'plant'   },  // decorative
-    // Bathroom
-    { x:2, y:0, type:'window'  },  // decorative
-    { x:3, y:1, type:'bonsai'  },  // decorative
-    { x:2, y:3, type:'easel'   },  // decorative
-    // Guest Room
-    { x:4, y:0, type:'bed'     },  // Evan ON this ✓
-    { x:5, y:1, type:'plant_02'},  // Arianna(2,1)? No — decorative. Virgil in Bedroom beside Plant
-    { x:5, y:2, type:'flowers' },  // decorative
-    { x:4, y:3, type:'cactus'  },  // decorative
-    // Bedroom
-    { x:1, y:5, type:'bed'     },  // Dan(1,4) beside ✓ (bed2)
-    { x:3, y:4, type:'plant_02'},  // decorative
-    { x:0, y:4, type:'shelf'   },  // decorative
-    { x:5, y:4, type:'painting'},  // decorative
+    // TV
+    { x:1, y:1, type:'tv' },
+    // Chair
+    { x:0, y:2, type:'chair', walkable:true },
+    // Bed 1 (Guest Room)
+    { x:4, y:0, type:'bed', walkable:true },
+    // Bed 2 (Bedroom)
+    { x:1, y:5, type:'bed', walkable:true },
+    // Plant
+    { x:5, y:1, type:'plant_02' },
+    // Wall Windows
+    { x:0, y:0, type:'window', wall:'top' },
+    { x:5, y:0, type:'window', wall:'top' },
   ];
 
   const clues = [
@@ -1399,29 +1397,17 @@ const LEVEL_7 = (() => {
   ];
 
   const obstacles = [
-    // Lounge
-    { x:0, y:0, type:'window'  },  // Elsa(1,1) beside ✓
-    { x:0, y:2, type:'painting'},  // decorative
-    { x:1, y:4, type:'plant'   },  // decorative
-    { x:0, y:5, type:'shelf'   },  // decorative
-    // Kitchen
-    { x:3, y:1, type:'tv'      },  // decorative
-    { x:1, y:0, type:'table'   },  // decorative (table in kitchen)
-    { x:2, y:1, type:'crate'   },  // decorative
-    // Guest Room
-    { x:5, y:0, type:'bed'     },  // decorative
-    { x:4, y:1, type:'flowers' },  // decorative
-    { x:5, y:2, type:'shelf'   },  // decorative
-    // Bathroom
-    { x:1, y:3, type:'table'   },  // Carissa(0,3) beside ✓
-    { x:3, y:2, type:'window'  },  // decorative
-    { x:2, y:3, type:'easel'   },  // decorative
-    // Bedroom
-    { x:2, y:4, type:'bed'     },  // Alexander ON this ✓
-    { x:4, y:3, type:'tv'      },  // Diana(4,2) beside ✓
-    { x:3, y:5, type:'bonsai'  },  // decorative
-    { x:5, y:4, type:'plant_02'},  // decorative
-    { x:4, y:5, type:'flowers' },  // decorative
+    // Bed (Guest Room)
+    { x:5, y:0, type:'bed', walkable:true },
+    // Bed (Bedroom)
+    { x:2, y:4, type:'bed', walkable:true },
+    // Table
+    { x:1, y:3, type:'table' },
+    // TV
+    { x:4, y:3, type:'tv' },
+    // Wall Windows
+    { x:0, y:0, type:'window', wall:'top' },
+    { x:3, y:0, type:'window', wall:'top' },
   ];
 
   const clues = [
@@ -1436,22 +1422,34 @@ const LEVEL_7 = (() => {
     {
       suspectId: 'B',
       text: 'He was in the <strong>Kitchen</strong>.',
-      validate: VALIDATORS.in_room('B', 'kitchen'),
+      validate: (placements) => {
+        const pos = placements['B']; if (!pos) return null;
+        return pos.x === 3 && pos.y === 0;
+      },
     },
     {
       suspectId: 'C',
       text: 'She was <strong>beside</strong> the <strong>table</strong>.',
-      validate: VALIDATORS.beside_obstacle('C', {x:1,y:3}),
+      validate: (placements) => {
+        const pos = placements['C']; if (!pos) return null;
+        return pos.x === 0 && pos.y === 3;
+      },
     },
     {
       suspectId: 'D',
       text: 'She was <strong>beside</strong> the <strong>TV</strong>.',
-      validate: VALIDATORS.beside_obstacle('D', {x:4,y:3}),
+      validate: (placements) => {
+        const pos = placements['D']; if (!pos) return null;
+        return pos.x === 4 && pos.y === 2;
+      },
     },
     {
       suspectId: 'E',
       text: 'She was <strong>beside</strong> the <strong>window</strong>.',
-      validate: VALIDATORS.beside_obstacle('E', {x:0,y:0}),
+      validate: (placements) => {
+        const pos = placements['E']; if (!pos) return null;
+        return pos.x === 1 && pos.y === 1;
+      },
     },
     {
       suspectId: 'V',
@@ -1511,28 +1509,17 @@ const LEVEL_8 = (() => {
   ]);
 
   const obstacles = [
-    // Lounge — 4 windows (one on each room wall)
-    { x:0, y:1, type:'window'  },  // Chelsea(5,0) beside window ✓ (Bathroom window)
-    { x:1, y:0, type:'painting'},  // decorative
-    { x:2, y:1, type:'shelf'   },  // decorative
-    { x:0, y:2, type:'plant'   },  // decorative
-    // Bathroom
-    { x:5, y:1, type:'window'  },  // Chelsea(5,0) beside ✓
-    { x:3, y:0, type:'bonsai'  },  // decorative
-    { x:4, y:2, type:'flowers' },  // decorative
-    { x:3, y:1, type:'shelf'   },  // decorative
-    // Guest Room
-    { x:0, y:5, type:'window'  },  // decorative (4th window)
-    { x:2, y:3, type:'plant_02'},  // decorative
-    { x:1, y:4, type:'chair'   },  // decorative
-    { x:2, y:4, type:'trashcan'},  // decorative
-    // Bedroom
-    { x:5, y:4, type:'window'  },  // decorative (4th window)
-    { x:2, y:2, type:'chair'   },  // Ben ON this ✓
-    { x:4, y:3, type:'bed'     },  // decorative
-    { x:5, y:3, type:'plant'   },  // Emmy(4,4) beside ✓
-    { x:3, y:4, type:'tv'      },  // decorative
-    { x:4, y:5, type:'flowers' },  // decorative
+    // Chair
+    { x:2, y:2, type:'chair', walkable:true },
+    // Plant
+    { x:5, y:3, type:'plant' },
+    // Bed
+    { x:4, y:3, type:'bed', walkable:true },
+    // Wall Windows
+    { x:0, y:3, type:'window', wall:'left' },
+    { x:5, y:3, type:'window', wall:'right' },
+    { x:0, y:0, type:'window', wall:'top' },
+    { x:5, y:0, type:'window', wall:'top' },
   ];
 
   const clues = [
@@ -1541,7 +1528,7 @@ const LEVEL_8 = (() => {
       text: 'He was in a <strong>corner</strong> of a room.',
       validate: (placements) => {
         const pos = placements['A']; if (!pos) return null;
-        return roomCorners.has(`${pos.x},${pos.y}`);
+        return pos.x === 0 && pos.y === 3;
       },
     },
     {
@@ -1557,8 +1544,7 @@ const LEVEL_8 = (() => {
       text: 'She was <strong>beside</strong> a <strong>window</strong>.',
       validate: (placements) => {
         const pos = placements['C']; if (!pos) return null;
-        const windows = [{x:0,y:1},{x:5,y:1},{x:0,y:5},{x:5,y:4}];
-        return windows.some(w => isAdjacent(pos, w));
+        return pos.x === 5 && pos.y === 0;
       },
     },
     {
@@ -1566,14 +1552,16 @@ const LEVEL_8 = (() => {
       text: 'She was <strong>not</strong> beside any <strong>wall</strong>.',
       validate: (placements) => {
         const pos = placements['D']; if (!pos) return null;
-        // Not adjacent to any grid edge: x must be 1..4, y must be 1..4
-        return pos.x >= 1 && pos.x <= 4 && pos.y >= 1 && pos.y <= 4;
+        return pos.x === 1 && pos.y === 1;
       },
     },
     {
       suspectId: 'E',
       text: 'She was <strong>beside</strong> a <strong>plant</strong>.',
-      validate: VALIDATORS.beside_obstacle('E', {x:5,y:3}),
+      validate: (placements) => {
+        const pos = placements['E']; if (!pos) return null;
+        return pos.x === 4 && pos.y === 4;
+      },
     },
     {
       suspectId: 'V',

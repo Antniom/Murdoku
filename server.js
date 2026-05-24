@@ -174,6 +174,21 @@ Suspects:   ${nSuspects} (one per row, one per column in solution)
 For HARD difficulty: use an irregular shape (many void cells at corners/edges to make the grid look non-rectangular). Rooms should be irregular L-shapes or T-shapes, not simple rectangles.
 For EASY difficulty: use a simple shape (few or no voids). Rooms can be simple rectangles.
 
+OBSTACLE DENSITY: Every room should have at least 2–3 obstacle objects placed inside it for visual richness. Obstacles make the grid feel alive and give suspects interesting things to be "beside".
+
+═══════════════════ CLUE TEXT RULES ═══════════════════
+Clue text must read like natural English flavor text — NOT coordinates.
+
+✅ CORRECT: "She was beside the <strong>cactus</strong>."
+✅ CORRECT: "He was <strong>alone</strong> in the <strong>Library</strong>."
+✅ CORRECT: "She was <strong>directly below</strong> the <strong>barrel</strong>."
+❌ WRONG:   "Kevin was seen directly below the water dispenser at (1,4)."
+❌ WRONG:   "Creed was seen directly below the vent at (6,7)."
+❌ WRONG:   Any mention of grid coordinates like (x,y), column X, row Y, position (n,m).
+
+NEVER include raw grid coordinates or position numbers in clue text.
+Describe WHERE suspects are using room names and obstacle references ONLY.
+
 ═══════════════════ WORKED EXAMPLE ═══════════════════
 A valid 4-suspect mini-level:
 • 4 cols × 4 rows, no voids → shape = [[true,true,true,true],[true,true,true,true],[true,true,true,true],[true,true,true,true]]
