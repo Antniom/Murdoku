@@ -824,7 +824,7 @@ const GameGrid = ({ level, placements, notes, xMarks, autoXMarks, selectedEntity
       </div>
 
       {/* SVG borders overlay */}
-      <svg style={{ position:'absolute', top:0, left:0, pointerEvents:'none', zIndex:20, width:W, height:H }} viewBox={`0 0 ${W} ${H}`}>
+      <svg style={{ position:'absolute', top:0, left:0, pointerEvents:'none', zIndex:5, width:W, height:H }} viewBox={`0 0 ${W} ${H}`}>
         <path d={thinGridPath} stroke="var(--wall-thin)" strokeWidth="0.5" fill="none"/>
         <path d={roomBorderPath} stroke="var(--wall-thick)" strokeWidth="3" strokeLinecap="square" fill="none"/>
         <path d={outerBorderPath} stroke="var(--wall-thick)" strokeWidth="4" strokeLinecap="square" fill="none"/>
