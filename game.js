@@ -737,7 +737,13 @@ const GameGrid = ({ level, placements, notes, xMarks, autoXMarks, selectedEntity
               {/* Notes */}
               {!void_ && !occupant && !hasAnyX && cellNotes.length > 0 && (
                 <div className="notes-container" style={{ 
-                  gridTemplateColumns: `repeat(${cellNotes.length === 1 ? 1 : cellNotes.length <= 4 ? 2 : 3}, 1fr)`
+                  position: 'absolute',
+                  inset: '4px',
+                  zIndex: 20,
+                  display: 'grid',
+                  gridTemplateColumns: `repeat(${cellNotes.length === 1 ? 1 : cellNotes.length <= 4 ? 2 : 3}, 1fr)`,
+                  gridGap: '2px',
+                  pointerEvents: 'none'
                 }}>
                   {cellNotes.map(id => {
                     const s = level.suspects.find(s => s.id === id);

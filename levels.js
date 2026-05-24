@@ -1299,9 +1299,11 @@ const LEVEL_6 = (() => {
     { x:1, y:1, type:'tv' },
     // Chair
     { x:0, y:2, type:'chair', walkable:true },
-    // Bed 1 (Guest Room)
-    { x:4, y:0, type:'bed', walkable:true },
-    // Bed 2 (Bedroom)
+    // Bed 1 (Guest Room) - spans 2 cells
+    { x:4, y:0, type:'bed_top', walkable:true },
+    { x:4, y:1, type:'bed', walkable:true },
+    // Bed 2 (Bedroom) - spans 2 cells
+    { x:1, y:4, type:'bed_top', walkable:true },
     { x:1, y:5, type:'bed', walkable:true },
     // Plant
     { x:5, y:1, type:'plant_02' },
@@ -1397,10 +1399,12 @@ const LEVEL_7 = (() => {
   ];
 
   const obstacles = [
-    // Bed (Guest Room)
-    { x:5, y:0, type:'bed', walkable:true },
-    // Bed (Bedroom)
-    { x:2, y:4, type:'bed', walkable:true },
+    // Bed (Guest Room) - spans 2 cells
+    { x:5, y:0, type:'bed_top', walkable:true },
+    { x:5, y:1, type:'bed', walkable:true },
+    // Bed (Bedroom) - spans 2 cells
+    { x:2, y:4, type:'bed_top', walkable:true },
+    { x:2, y:5, type:'bed', walkable:true },
     // Table
     { x:1, y:3, type:'table' },
     // TV
@@ -1513,8 +1517,9 @@ const LEVEL_8 = (() => {
     { x:2, y:2, type:'chair', walkable:true },
     // Plant
     { x:5, y:3, type:'plant' },
-    // Bed
-    { x:4, y:3, type:'bed', walkable:true },
+    // Bed - spans 2 cells
+    { x:4, y:3, type:'bed_top', walkable:true },
+    { x:4, y:4, type:'bed', walkable:true },
     // Wall Windows
     { x:0, y:3, type:'window', wall:'left' },
     { x:5, y:3, type:'window', wall:'right' },
