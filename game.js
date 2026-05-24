@@ -675,8 +675,19 @@ const GameGrid = ({ level, placements, notes, xMarks, autoXMarks, selectedEntity
               }}
               onPointerDown={canPlace ? e => onPointerDown(e, x, y) : undefined}
               onPointerUp={canPlace ? e => onPointerUp(e, x, y) : undefined}
-              onPointerLeave={canPlace ? onPointerLeave : undefined}
-              onPointerEnter={!void_ ? () => setHoveredRoomId(room?.id || null) : undefined}
+              onPointerEnter={!void_ ? () => {
+                setHoveredRoomId(room?.id || null);
+                if (obstacle) {
+                  clearTimeout(tooltipTimerRef.current);
+                  const label = obsLabels[obstacle.type] || obstacle.type;
+                  tooltipTimerRef.current = setTimeout(() => setTooltip({ x, y, label }), 800);
+                }
+              } : undefined}
+              onPointerLeave={() => {
+                if (canPlace) onPointerLeave();
+                clearTimeout(tooltipTimerRef.current);
+                setTooltip(null);
+              }}
             >
               {/* Cell BG (only non-void) */}
               {!void_ && (
@@ -707,20 +718,11 @@ const GameGrid = ({ level, placements, notes, xMarks, autoXMarks, selectedEntity
                   <div className="cell-asset"
                     style={
                       isDoubleBedTop 
-                        ? { height: 'calc(200% + 20px)' } 
+                        ? { height: 'calc(200% + 20px)', pointerEvents: 'none' } 
                         : isDoubleBedBottom 
                         ? { display: 'none' } 
                         : undefined
                     }
-                    onPointerEnter={() => {
-                      clearTimeout(tooltipTimerRef.current);
-                      const label = obsLabels[obstacle.type] || obstacle.type;
-                      tooltipTimerRef.current = setTimeout(() => setTooltip({ x, y, label }), 800);
-                    }}
-                    onPointerLeave={() => {
-                      clearTimeout(tooltipTimerRef.current);
-                      setTooltip(null);
-                    }}
                   >
                     <SvgAsset type={obstacle.type} size="100%"/>
                     {tooltip?.x === x && tooltip?.y === y && (

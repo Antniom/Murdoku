@@ -318,6 +318,9 @@ const ASSET_FILES = {
 const OBSTACLE_LABELS = {
   barrel:     'Barrel',
   bed:        'Bed',
+  bed_top:    'Bed',
+  bed_02:     'Bed',
+  bed_top_02: 'Bed',
   boar:       'Wild Boar',
   boat:       'Boat',
   bonsai:     'Bonsai Tree',
