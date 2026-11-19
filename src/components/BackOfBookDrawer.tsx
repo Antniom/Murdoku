@@ -4,6 +4,7 @@ import { UI_STRINGS } from '../data/i18n';
 import { FloorplanSVG } from './FloorplanSVG';
 import { TornWorkingGrid } from './TornWorkingGrid';
 import { RichText } from './RichText';
+import { IconBookOpen, IconClose, IconLightbulb } from './Icons';
 
 export interface BackOfBookDrawerProps {
   murdokuCase: MurdokuCase;
@@ -41,8 +42,14 @@ export const BackOfBookDrawer: React.FC<BackOfBookDrawerProps> = ({
               {t.backOfBook} · {murdokuCase.number}. {murdokuCase.title[lang]}
             </h2>
           </div>
-          <button type="button" className="btn-secondary" onClick={onClose}>
-            ✕ {t.close}
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={onClose}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}
+          >
+            <IconClose size={14} />
+            <span>{t.close}</span>
           </button>
         </div>
 
@@ -51,15 +58,21 @@ export const BackOfBookDrawer: React.FC<BackOfBookDrawerProps> = ({
             type="button"
             className={`bob-tab ${tab === 'hints' ? 'active' : ''}`}
             onClick={() => setTab('hints')}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
           >
-            💡 {t.hintsTab} ({revealedHints}/{totalSteps})
+            <IconLightbulb size={14} />
+            <span>
+              {t.hintsTab} ({revealedHints}/{totalSteps})
+            </span>
           </button>
           <button
             type="button"
             className={`bob-tab ${tab === 'solution' ? 'active' : ''}`}
             onClick={() => setTab('solution')}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
           >
-            📖 {t.solutionTab}
+            <IconBookOpen size={14} />
+            <span>{t.solutionTab}</span>
           </button>
         </div>
 

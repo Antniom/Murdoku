@@ -1,6 +1,7 @@
 import React from 'react';
 import type { Lang, MurdokuCase } from '../engine/types';
 import { UI_STRINGS } from '../data/i18n';
+import { IconCheck } from './Icons';
 
 export interface TableOfContentsProps {
   lang: Lang;
@@ -53,7 +54,12 @@ export const TableOfContents: React.FC<TableOfContentsProps> = ({
                       <span className="toc-badge toc-badge--twist">{t.twistBadges[c.twist.kind]}</span>
                     )}
                     {isToday && <span className="toc-badge toc-badge--today">{t.todayBadge}</span>}
-                    {isSolved && <span className="toc-badge toc-badge--solved">✓ {t.solvedStamp}</span>}
+                    {isSolved && (
+                      <span className="toc-badge toc-badge--solved" style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                        <IconCheck size={11} />
+                        <span>{t.solvedStamp}</span>
+                      </span>
+                    )}
                   </div>
                 </div>
                 <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 13 }}>
@@ -94,7 +100,11 @@ export const TableOfContents: React.FC<TableOfContentsProps> = ({
                       {c.twist.kind !== 'classic' && (
                         <span className="toc-badge toc-badge--twist">{t.twistBadges[c.twist.kind]}</span>
                       )}
-                      {isSolved && <span className="toc-badge toc-badge--solved">✓</span>}
+                      {isSolved && (
+                        <span className="toc-badge toc-badge--solved" style={{ display: 'inline-flex', alignItems: 'center' }}>
+                          <IconCheck size={11} />
+                        </span>
+                      )}
                     </div>
                   </div>
                   <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 13 }}>

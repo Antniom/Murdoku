@@ -1,6 +1,7 @@
 import React from 'react';
 import type { Lang, MurdokuCase } from '../engine/types';
 import { UI_STRINGS } from '../data/i18n';
+import { IconCheck, IconChevronRight, IconRules } from './Icons';
 
 export interface BookCoverProps {
   lang: Lang;
@@ -61,17 +62,19 @@ export const BookCover: React.FC<BookCoverProps> = ({
               disabled={dailyLoading && !todayCase}
             >
               <span>{dailyLoading && !todayCase ? t.dailyLoading : t.openTodayCase}</span>
-              <span>→</span>
+              <IconChevronRight size={16} />
             </button>
 
             <button type="button" className="cover-btn cover-btn--secondary" onClick={onOpenToc}>
               <span>{t.browseContents}</span>
-              <span>{solvedCount}/{totalStarter} ✓</span>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                {solvedCount}/{totalStarter} <IconCheck size={14} />
+              </span>
             </button>
 
             <button type="button" className="cover-btn cover-btn--ghost" onClick={onOpenRules}>
               <span>{t.howToPlay}</span>
-              <span>§</span>
+              <IconRules size={15} />
             </button>
           </div>
 

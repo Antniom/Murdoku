@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import type { MurdokuCase } from '../engine/types';
+import { IconClose, IconEraser } from './Icons';
 
 const CELL = 38;
 const PAD = 4;
@@ -94,8 +95,10 @@ export const TornWorkingGrid: React.FC<TornWorkingGridProps> = ({
               onUpdateTapMark(activeCell, tapMarks[activeCell] === 'X' ? null : 'X');
               setActiveCell(null);
             }}
+            aria-label="Mark empty"
+            style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
           >
-            ✕
+            <IconClose size={13} />
           </button>
           {suspects.map((s) => (
             <button
@@ -115,8 +118,10 @@ export const TornWorkingGrid: React.FC<TornWorkingGridProps> = ({
               onUpdateTapMark(activeCell, null);
               setActiveCell(null);
             }}
+            aria-label="Clear cell"
+            style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
           >
-            ⌫
+            <IconEraser size={13} />
           </button>
         </div>
       )}

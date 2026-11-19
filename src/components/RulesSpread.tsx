@@ -1,6 +1,7 @@
 import React from 'react';
 import type { Lang } from '../engine/types';
 import { UI_STRINGS } from '../data/i18n';
+import { IconPencil } from './Icons';
 
 export interface RulesSpreadProps {
   lang: Lang;
@@ -40,8 +41,9 @@ export const RulesSpread: React.FC<RulesSpreadProps> = ({ lang, mobilePage }) =>
             border: '1px solid rgba(24,24,34,0.12)',
           }}
         >
-          <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 13.5, marginBottom: 4 }}>
-            ✏️ {t.pencilTipsHeading}
+          <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 13.5, marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
+            <IconPencil size={14} />
+            <span>{t.pencilTipsHeading}</span>
           </div>
           <p style={{ margin: 0, fontSize: 12.8, lineHeight: 1.48, color: '#3b3a40' }}>
             {t.pencilTipsBody}

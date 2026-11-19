@@ -3,6 +3,18 @@ import type { Lang } from '../engine/types';
 import type { InkTool } from '../services/inkStorage';
 import { UI_STRINGS } from '../data/i18n';
 import type { PencilSettings } from './PencilCanvasLayer';
+import {
+  IconClose,
+  IconEraser,
+  IconHand,
+  IconHighlighter,
+  IconPencil,
+  IconPenNib,
+  IconRedo,
+  IconStylus,
+  IconTrash,
+  IconUndo,
+} from './Icons';
 
 const SWATCHES = [
   { id: 'graphite', color: '#2b2c30', label: 'Graphite' },
@@ -49,7 +61,8 @@ export const PencilToolbar: React.FC<PencilToolbarProps> = ({
           title={t.pencilDock}
           aria-label={t.pencilDock}
         >
-          ✏️ {t.pencilDock}
+          <IconPencil size={14} />
+          <span>{t.pencilDock}</span>
         </button>
       </div>
     );
@@ -79,7 +92,17 @@ export const PencilToolbar: React.FC<PencilToolbarProps> = ({
         }
         title={settings.allowTouchAndMouseDraw ? t.fingerDraw : t.penOnly}
       >
-        {settings.allowTouchAndMouseDraw ? `✍️ ${t.fingerDraw}` : `👆 ${t.penOnly}`}
+        {settings.allowTouchAndMouseDraw ? (
+          <>
+            <IconHand size={14} />
+            <span>{t.fingerDraw}</span>
+          </>
+        ) : (
+          <>
+            <IconStylus size={14} />
+            <span>{t.penOnly}</span>
+          </>
+        )}
       </button>
 
       <span className="dock-sep" />
@@ -89,28 +112,32 @@ export const PencilToolbar: React.FC<PencilToolbarProps> = ({
         className={`dock-btn ${settings.tool === 'pencil' && settings.allowTouchAndMouseDraw ? 'active' : ''}`}
         onClick={() => setTool('pencil')}
       >
-        ✏️ {t.toolPencil}
+        <IconPencil size={14} />
+        <span>{t.toolPencil}</span>
       </button>
       <button
         type="button"
         className={`dock-btn ${settings.tool === 'pen' && settings.allowTouchAndMouseDraw ? 'active' : ''}`}
         onClick={() => setTool('pen')}
       >
-        ✒️ {t.toolPen}
+        <IconPenNib size={14} />
+        <span>{t.toolPen}</span>
       </button>
       <button
         type="button"
         className={`dock-btn ${settings.tool === 'highlighter' && settings.allowTouchAndMouseDraw ? 'active' : ''}`}
         onClick={() => setTool('highlighter')}
       >
-        🖍️ {t.toolHighlighter}
+        <IconHighlighter size={14} />
+        <span>{t.toolHighlighter}</span>
       </button>
       <button
         type="button"
         className={`dock-btn ${settings.tool === 'eraser' && settings.allowTouchAndMouseDraw ? 'active' : ''}`}
         onClick={() => setTool('eraser')}
       >
-        ⌫ {t.toolEraser}
+        <IconEraser size={14} />
+        <span>{t.toolEraser}</span>
       </button>
 
       <span className="dock-sep" />
@@ -152,19 +179,20 @@ export const PencilToolbar: React.FC<PencilToolbarProps> = ({
 
       <span className="dock-sep" />
 
-      <button type="button" className="dock-btn" disabled={!canUndo} onClick={onUndo} title={t.undo}>
-        ↶
+      <button type="button" className="dock-btn" disabled={!canUndo} onClick={onUndo} title={t.undo} aria-label={t.undo}>
+        <IconUndo size={15} />
       </button>
-      <button type="button" className="dock-btn" disabled={!canRedo} onClick={onRedo} title={t.redo}>
-        ↷
+      <button type="button" className="dock-btn" disabled={!canRedo} onClick={onRedo} title={t.redo} aria-label={t.redo}>
+        <IconRedo size={15} />
       </button>
       <button
         type="button"
         className="dock-btn"
         onClick={() => onClearPage('both')}
         title={t.clearSpread}
+        aria-label={t.clearSpread}
       >
-        🗑
+        <IconTrash size={14} />
       </button>
 
       <button
@@ -174,7 +202,7 @@ export const PencilToolbar: React.FC<PencilToolbarProps> = ({
         title={t.close}
         aria-label={t.close}
       >
-        ✕
+        <IconClose size={14} />
       </button>
     </div>
   );

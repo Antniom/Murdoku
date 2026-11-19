@@ -19,6 +19,16 @@ import { PencilToolbar } from './components/PencilToolbar';
 import { VerdictModal } from './components/VerdictModal';
 import { BackOfBookDrawer } from './components/BackOfBookDrawer';
 import type { PencilSettings } from './components/PencilCanvasLayer';
+import {
+  IconBookClosed,
+  IconBookOpen,
+  IconCheck,
+  IconChevronLeft,
+  IconChevronRight,
+  IconContents,
+  IconGrid,
+  IconRules,
+} from './components/Icons';
 
 type AppView = 'cover' | 'toc' | 'rules' | 'case';
 
@@ -203,21 +213,24 @@ export const App: React.FC = () => {
       {view !== 'cover' && (
         <nav className="top-bar" aria-label="Book navigation">
           <button type="button" className="top-btn" onClick={() => setView('cover')}>
-            📕 {t.backToCover}
+            <IconBookClosed size={14} />
+            <span>{t.backToCover}</span>
           </button>
           <button
             type="button"
             className={`top-btn ${view === 'toc' ? 'active' : ''}`}
             onClick={() => setView('toc')}
           >
-            📑 {t.tableOfContents}
+            <IconContents size={14} />
+            <span>{t.tableOfContents}</span>
           </button>
           <button
             type="button"
             className={`top-btn ${view === 'rules' ? 'active' : ''}`}
             onClick={() => setView('rules')}
           >
-            § {t.howToPlay}
+            <IconRules size={14} />
+            <span>{t.howToPlay}</span>
           </button>
 
           {view === 'case' && activeCase && (
@@ -229,7 +242,8 @@ export const App: React.FC = () => {
                 disabled={!prevCase}
                 onClick={() => prevCase && openCase(prevCase)}
               >
-                ‹ {t.prevSpread}
+                <IconChevronLeft size={14} />
+                <span>{t.prevSpread}</span>
               </button>
               <button
                 type="button"
@@ -237,7 +251,8 @@ export const App: React.FC = () => {
                 disabled={!nextCase}
                 onClick={() => nextCase && openCase(nextCase)}
               >
-                {t.nextSpread} ›
+                <span>{t.nextSpread}</span>
+                <IconChevronRight size={14} />
               </button>
               <span className="top-divider" />
               <button
@@ -246,7 +261,8 @@ export const App: React.FC = () => {
                 title={t.gridAidTooltip}
                 onClick={() => setShowObstacleAid((v) => !v)}
               >
-                ▦ {t.gridAid}
+                <IconGrid size={14} />
+                <span>{t.gridAid}</span>
               </button>
               <button
                 type="button"
@@ -262,14 +278,16 @@ export const App: React.FC = () => {
                   });
                 }}
               >
-                ✓ {t.tapAssist}
+                <IconCheck size={14} />
+                <span>{t.tapAssist}</span>
               </button>
               <button
                 type="button"
                 className="top-btn"
                 onClick={() => setBackOfBookOpen(true)}
               >
-                📖 {t.backOfBook}
+                <IconBookOpen size={14} />
+                <span>{t.backOfBook}</span>
               </button>
             </>
           )}
