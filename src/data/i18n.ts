@@ -62,6 +62,12 @@ export interface UIStrings {
   toolHighlighter: string;
   toolEraser: string;
   close: string;
+  moreOptions: string;
+  autoMinimize: string;
+  pencilDetectedLabel: string;
+  pencilReadyLabel: string;
+  strokeWidthLabel: string;
+  gesturesHint: string;
   missingPatchesLabel: string;
   difficultyLabels: Record<Difficulty, string>;
   twistBadges: Record<TwistKind, string>;
@@ -97,8 +103,8 @@ export const UI_STRINGS: Record<Lang, UIStrings> = {
     gridAidTooltip: 'Faintly stencil blocked furniture on the working grid (Book 2/3 style)',
     tapAssist: 'Tap Assist',
     tapAssistTooltip: 'Tap working-grid squares to stamp X or suspect initials',
-    fingerDraw: 'Finger Draw',
-    penOnly: 'Pencil Only',
+    fingerDraw: 'Draw with Finger',
+    penOnly: 'Apple Pencil Only',
     theMurdererIs: 'The murderer is...',
     accuseTitle: 'Submit Your Verdict',
     accuseSubtitle: 'Check your deduction without spoiling the grid.',
@@ -130,7 +136,7 @@ export const UI_STRINGS: Record<Lang, UIStrings> = {
     completeProof: 'Complete Deduction Proof',
     clearPageLeft: 'Clear Left',
     clearPageRight: 'Clear Right',
-    clearSpread: 'Clear Both',
+    clearSpread: 'Clear Both Pages',
     undo: 'Undo',
     redo: 'Redo',
     toolPencil: 'Pencil',
@@ -138,6 +144,12 @@ export const UI_STRINGS: Record<Lang, UIStrings> = {
     toolHighlighter: 'Highlighter',
     toolEraser: 'Eraser',
     close: 'Close',
+    moreOptions: 'More Options',
+    autoMinimize: 'Auto-Minimize',
+    pencilDetectedLabel: 'Apple Pencil Active',
+    pencilReadyLabel: 'Apple Pencil Ready',
+    strokeWidthLabel: 'Stroke Width',
+    gesturesHint: '2-finger tap: Undo · 3-finger tap: Redo',
     missingPatchesLabel: 'Choose the missing map fragment:',
     difficultyLabels: {
       easy: 'Easy',
@@ -251,6 +263,12 @@ export const UI_STRINGS: Record<Lang, UIStrings> = {
     toolHighlighter: 'Marcador',
     toolEraser: 'Borracha',
     close: 'Fechar',
+    moreOptions: 'Mais Opções',
+    autoMinimize: 'Minimizar Auto.',
+    pencilDetectedLabel: 'Apple Pencil Ativo',
+    pencilReadyLabel: 'Apple Pencil Pronto',
+    strokeWidthLabel: 'Espessura',
+    gesturesHint: '2 dedos: Desfazer · 3 dedos: Refazer',
     missingPatchesLabel: 'Escolhe o fragmento em falta:',
     difficultyLabels: {
       easy: 'Fácil',

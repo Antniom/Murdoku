@@ -64,13 +64,25 @@ export const App: React.FC = () => {
 
   const [pencilSettings, setPencilSettings] = useState<PencilSettings>({
     tool: 'pencil',
-    color: '#2b2c30',
+    color: '#18181b',
     size: 2.2,
     allowTouchAndMouseDraw: false,
+    autoMinimize: true,
+    pencilDetected: false,
   });
+  const [pencilDockCollapsed, setPencilDockCollapsed] = useState(true);
+  const [gestureToast, setGestureToast] = useState<string | null>(null);
+  const lastDrawToolRef = useRef<'pencil' | 'pen' | 'highlighter'>('pencil');
+  const toastTimerRef = useRef<number | null>(null);
 
   const saveTimerRef = useRef<number | null>(null);
   const t = UI_STRINGS[lang];
+
+  const showGestureToast = useCallback((label: string) => {
+    setGestureToast(label);
+    if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = window.setTimeout(() => setGestureToast(null), 950);
+  }, []);
 
   // Fetch daily archive on mount
   useEffect(() => {
@@ -165,21 +177,33 @@ export const App: React.FC = () => {
     [updateProgress]
   );
 
-  const handleUndo = () => {
+  const handleUndo = useCallback(() => {
     if (undoStack.length === 0 || !progress) return;
     const previousStrokes = undoStack[undoStack.length - 1];
     setUndoStack((u) => u.slice(0, -1));
     setRedoStack((r) => [...r, progress.strokes]);
     updateProgress((prev) => ({ ...prev, strokes: previousStrokes }));
-  };
+  }, [undoStack, progress, updateProgress]);
 
-  const handleRedo = () => {
+  const handleRedo = useCallback(() => {
     if (redoStack.length === 0 || !progress) return;
     const restored = redoStack[redoStack.length - 1];
     setRedoStack((r) => r.slice(0, -1));
     setUndoStack((u) => [...u, progress.strokes]);
     updateProgress((prev) => ({ ...prev, strokes: restored }));
-  };
+  }, [redoStack, progress, updateProgress]);
+
+  const handleGestureUndo = useCallback(() => {
+    if (undoStack.length === 0 || !progress) return;
+    handleUndo();
+    showGestureToast(t.undo);
+  }, [undoStack.length, progress, handleUndo, showGestureToast, t.undo]);
+
+  const handleGestureRedo = useCallback(() => {
+    if (redoStack.length === 0 || !progress) return;
+    handleRedo();
+    showGestureToast(t.redo);
+  }, [redoStack.length, progress, handleRedo, showGestureToast, t.redo]);
 
   const handleClearPage = (scope: 'left' | 'right' | 'both') => {
     if (!progress || progress.strokes.length === 0) return;
@@ -191,9 +215,58 @@ export const App: React.FC = () => {
     }));
   };
 
+  // Automatically detect Apple Pencil (hover or touch) WITHOUT turning on Draw with Finger
   const handlePenDetected = useCallback(() => {
-    setPencilSettings((prev) => (prev.allowTouchAndMouseDraw ? prev : { ...prev, allowTouchAndMouseDraw: true }));
+    setPencilSettings((prev) => (prev.pencilDetected ? prev : { ...prev, pencilDetected: true }));
   }, []);
+
+  // Auto-minimize PencilKit pill as soon as the user begins drawing a stroke
+  const handleStrokeStart = useCallback(() => {
+    if (pencilSettings.autoMinimize) {
+      setPencilDockCollapsed(true);
+    }
+  }, [pencilSettings.autoMinimize]);
+
+  // Toggle Eraser <-> last drawing tool (used by stylus barrel button & keyboard 'E')
+  const handleToggleEraser = useCallback(() => {
+    setPencilSettings((prev) => {
+      if (prev.tool === 'eraser') {
+        const restored = lastDrawToolRef.current;
+        const label =
+          restored === 'pen' ? t.toolPen : restored === 'highlighter' ? t.toolHighlighter : t.toolPencil;
+        showGestureToast(label);
+        return { ...prev, tool: restored };
+      }
+      lastDrawToolRef.current = prev.tool;
+      showGestureToast(t.toolEraser);
+      return { ...prev, tool: 'eraser' };
+    });
+  }, [showGestureToast, t.toolEraser, t.toolHighlighter, t.toolPen, t.toolPencil]);
+
+  // Keyboard shortcuts for Undo / Redo / Eraser toggle while solving a case
+  useEffect(() => {
+    if (view !== 'case') return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
+        return;
+      }
+      const mod = e.metaKey || e.ctrlKey;
+      if (mod && e.key.toLowerCase() === 'z') {
+        e.preventDefault();
+        if (e.shiftKey) handleGestureRedo();
+        else handleGestureUndo();
+      } else if (mod && e.key.toLowerCase() === 'y') {
+        e.preventDefault();
+        handleGestureRedo();
+      } else if (!mod && !e.altKey && e.key.toLowerCase() === 'e') {
+        e.preventDefault();
+        handleToggleEraser();
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [view, handleGestureUndo, handleGestureRedo, handleToggleEraser]);
 
   const handleMarkSolved = () => {
     if (!activeCase) return;
@@ -347,6 +420,10 @@ export const App: React.FC = () => {
               onAddStroke={handleAddStroke}
               onEraseStrokeIds={handleEraseStrokeIds}
               onPenDetected={handlePenDetected}
+              onStrokeStart={handleStrokeStart}
+              onToggleEraser={handleToggleEraser}
+              onGestureUndo={handleGestureUndo}
+              onGestureRedo={handleGestureRedo}
               onUpdateTapMark={(cellKey, mark) =>
                 updateProgress((prev) => {
                   const nextMarks = { ...prev.tapMarks };
@@ -391,14 +468,26 @@ export const App: React.FC = () => {
         </div>
       )}
 
-      {/* Collapsible PencilKit-Style Dock on Case Spreads */}
+      {/* Transient iPadOS Gesture Toast (Undo / Redo / Tool Switch) */}
+      {gestureToast && (
+        <div className="pk-gesture-toast" role="status" aria-live="polite">
+          {gestureToast}
+        </div>
+      )}
+
+      {/* Collapsible iPadOS PencilKit-Style Dock on Case Spreads */}
       {view === 'case' && activeCase && (
         <PencilToolbar
           lang={lang}
           settings={pencilSettings}
+          collapsed={pencilDockCollapsed}
           canUndo={undoStack.length > 0}
           canRedo={redoStack.length > 0}
+          onToggleCollapsed={setPencilDockCollapsed}
           onChangeSettings={(next) => {
+            if (next.tool !== 'eraser') {
+              lastDrawToolRef.current = next.tool;
+            }
             if (next.allowTouchAndMouseDraw) setTapAssistEnabled(false);
             setPencilSettings(next);
           }}

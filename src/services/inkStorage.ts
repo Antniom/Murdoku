@@ -4,6 +4,7 @@ export interface InkPoint {
   x: number; // normalized 0..1 relative to page width
   y: number; // normalized 0..1 relative to page height
   p: number; // pressure 0.1..1.0
+  t?: number; // optional stylus tilt magnitude 0..1
 }
 
 export interface InkStroke {

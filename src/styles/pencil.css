@@ -5,7 +5,7 @@
   width: 100%;
   height: 100%;
   z-index: 20;
-  /* When pointer-events is auto, touch-action: none prevents Safari scroll/zoom fighting the pen */
+  /* When pointer-events is auto, touch-action: none prevents Safari scroll/zoom fighting drawing */
   touch-action: none;
 }
 
@@ -13,115 +13,515 @@
   pointer-events: none;
 }
 
-/* Collapsible PencilKit-Style Floating Dock */
-.pencil-dock {
+/* Floating PencilKit Wrapper */
+.pencil-dock-wrap {
   position: fixed;
-  bottom: max(14px, env(safe-area-inset-bottom));
-  right: max(14px, env(safe-area-inset-right));
+  bottom: max(16px, env(safe-area-inset-bottom));
+  right: max(16px, env(safe-area-inset-right));
   z-index: 65;
   display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  pointer-events: none;
+}
+
+.pencil-dock-wrap > * {
+  pointer-events: auto;
+}
+
+/* Minimized Floating Circle (IMG_0813 style) */
+.pk-minimized-btn {
+  position: relative;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  backdrop-filter: blur(22px) saturate(180%);
+  -webkit-backdrop-filter: blur(22px) saturate(180%);
+  box-shadow:
+    0 10px 28px rgba(0, 0, 0, 0.18),
+    0 2px 6px rgba(0, 0, 0, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  overflow: hidden;
+  padding: 0;
+  transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.2s ease;
+}
+
+.pk-minimized-btn:hover {
+  transform: scale(1.05);
+}
+
+.pk-minimized-btn:active {
+  transform: scale(0.95);
+}
+
+.pk-minimized-tool {
+  width: 34px;
+  height: 54px;
+  transform: translateY(5px);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.14));
+}
+
+.pk-pen-dot {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #34c759;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.9);
+}
+
+/* Expanded Frosted PencilKit Pill (IMG_0812 style) */
+.pk-pill {
+  position: relative;
+  display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 10px;
+  gap: 14px;
+  height: 76px;
+  padding: 0 16px;
   border-radius: 999px;
-  background: var(--toolbar-bg);
-  border: 1px solid var(--toolbar-border);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  color: var(--toolbar-text);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  color: #1c1c1e;
+  box-shadow:
+    0 14px 38px rgba(0, 0, 0, 0.18),
+    0 2px 8px rgba(0, 0, 0, 0.07),
+    inset 0 1px 0 rgba(255, 255, 255, 0.92);
   max-width: calc(100vw - 24px);
-  overflow-x: auto;
-  scrollbar-width: none;
+  overflow: hidden;
+  animation: pkExpand 0.22s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.pencil-dock::-webkit-scrollbar {
-  display: none;
+@keyframes pkExpand {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
-.pencil-dock--collapsed {
-  padding: 6px;
-}
-
-.dock-btn {
-  display: inline-flex;
+/* Top-center grabber handle */
+.pk-grabber-btn {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 4px 20px 6px;
+  display: flex;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  height: 34px;
-  min-width: 34px;
-  padding: 0 10px;
+  z-index: 3;
+}
+
+.pk-grabber {
+  width: 28px;
+  height: 3.5px;
   border-radius: 999px;
-  font-size: 12px;
-  font-weight: 600;
-  color: #e6e2dc;
-  white-space: nowrap;
-  transition: background 0.14s ease, color 0.14s ease;
+  background: rgba(0, 0, 0, 0.18);
+  transition: background 0.15s ease;
 }
 
-.dock-btn:hover {
-  background: rgba(255, 255, 255, 0.12);
+.pk-grabber-btn:hover .pk-grabber {
+  background: rgba(0, 0, 0, 0.32);
 }
 
-.dock-btn.active {
-  background: #f4efe5;
-  color: #18181b;
-}
-
-.dock-btn:disabled {
-  opacity: 0.35;
-  cursor: default;
-}
-
-.dock-sep {
-  width: 1px;
-  height: 20px;
-  background: rgba(255, 255, 255, 0.16);
+/* Left Undo / Redo & Right More buttons */
+.pk-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   flex-shrink: 0;
 }
 
-.swatch-row {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  padding: 0 2px;
-}
-
-.swatch-dot {
-  width: 20px;
-  height: 20px;
-  border-radius: 999px;
-  border: 2px solid rgba(255, 255, 255, 0.25);
-  transition: transform 0.12s ease, border-color 0.12s ease;
-}
-
-.swatch-dot.active {
-  transform: scale(1.18);
-  border-color: #ffffff;
-}
-
-.size-dot {
-  width: 26px;
-  height: 26px;
-  border-radius: 999px;
+.pk-circle-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.065);
+  color: #1c1c1e;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.14s ease, transform 0.12s ease, opacity 0.14s ease;
 }
 
-.size-dot.active {
-  background: rgba(255, 255, 255, 0.2);
+.pk-circle-btn:hover:not(:disabled) {
+  background: rgba(0, 0, 0, 0.11);
 }
 
-.size-dot span {
+.pk-circle-btn:active:not(:disabled) {
+  transform: scale(0.92);
+}
+
+.pk-circle-btn.active {
+  background: rgba(10, 132, 255, 0.16);
+  color: #0a84ff;
+}
+
+.pk-circle-btn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+/* Upright PencilKit Tools */
+.pk-tools {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  height: 100%;
+  padding: 0 4px;
+  flex-shrink: 0;
+}
+
+.pk-tool-slot {
+  position: relative;
+  width: 36px;
+  height: 70px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0;
+  transform: translateY(14px);
+  transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1), filter 0.2s ease;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.12));
+}
+
+.pk-tool-slot:hover {
+  transform: translateY(9px);
+}
+
+.pk-tool-slot.active {
+  transform: translateY(2px) scale(1.03);
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
+}
+
+.pk-tool-svg {
+  width: 100%;
+  height: 100%;
   display: block;
+}
+
+/* 2x3 Color Swatch Grid */
+.pk-swatch-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 24px);
+  grid-template-rows: repeat(2, 24px);
+  gap: 6px;
+  flex-shrink: 0;
+  padding: 0 2px;
+}
+
+.pk-swatch {
+  position: relative;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
+  transition: transform 0.14s ease, box-shadow 0.14s ease;
+}
+
+.pk-swatch:hover {
+  transform: scale(1.1);
+}
+
+.pk-swatch.active {
+  box-shadow:
+    inset 0 0 0 2.5px #ffffff,
+    0 0 0 1.5px rgba(0, 0, 0, 0.22);
+}
+
+.pk-swatch--wheel {
+  display: block;
+  background: conic-gradient(
+    #ff3b30,
+    #ffcc00,
+    #34c759,
+    #00c7be,
+    #0a84ff,
+    #af52de,
+    #ff2d55,
+    #ff3b30
+  );
+  overflow: hidden;
+}
+
+.pk-swatch--wheel input[type='color'] {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+  border: none;
+  padding: 0;
+}
+
+/* Frosted iPadOS Popovers (Three-Dots Menu & Stroke Width) */
+.pk-popover {
+  margin-bottom: 10px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(0, 0, 0, 0.09);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border-radius: 16px;
+  box-shadow:
+    0 14px 36px rgba(0, 0, 0, 0.18),
+    0 2px 8px rgba(0, 0, 0, 0.08);
+  color: #1c1c1e;
+  font-family: -apple-system, BlinkMacSystemFont, var(--font-ui), sans-serif;
+  animation: pkPopIn 0.16s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes pkPopIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.pk-popover--more {
+  width: 244px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pk-popover--size {
+  align-self: center;
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.pk-popover-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #6e6e73;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.pk-size-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pk-size-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.05);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.14s ease, transform 0.12s ease;
+}
+
+.pk-size-btn.active {
+  background: rgba(10, 132, 255, 0.16);
+  box-shadow: inset 0 0 0 1.5px #0a84ff;
+}
+
+.pk-size-btn span {
+  display: block;
+  border-radius: 50%;
+}
+
+.pk-popover-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #3a3a3c;
+  padding: 2px 2px 0;
+}
+
+.pk-status-led {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #aeaeb2;
+}
+
+.pk-status-led.connected {
+  background: #34c759;
+  box-shadow: 0 0 0 3px rgba(52, 199, 89, 0.2);
+}
+
+.pk-popover-sep {
+  height: 1px;
+  background: rgba(0, 0, 0, 0.08);
+  margin: 2px 0;
+}
+
+/* iOS Switch Row */
+.pk-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: #1c1c1e;
+  cursor: pointer;
+  padding: 2px 2px;
+  user-select: none;
+}
+
+.pk-switch {
+  appearance: none;
+  -webkit-appearance: none;
+  position: relative;
+  width: 40px;
+  height: 24px;
   border-radius: 999px;
-  background: #f4efe5;
+  background: rgba(120, 120, 128, 0.28);
+  transition: background 0.18s ease;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.pk-switch::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  transition: transform 0.18s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.pk-switch:checked {
+  background: #34c759;
+}
+
+.pk-switch:checked::after {
+  transform: translateX(16px);
+}
+
+.pk-clear-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.pk-menu-btn {
+  padding: 7px 10px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.055);
+  color: #1c1c1e;
+  font-size: 12.5px;
+  font-weight: 600;
+  text-align: center;
+  transition: background 0.14s ease;
+}
+
+.pk-menu-btn:hover {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.pk-menu-btn--danger {
+  background: rgba(255, 59, 48, 0.1);
+  color: #d72c22;
+}
+
+.pk-menu-btn--danger:hover {
+  background: rgba(255, 59, 48, 0.18);
+}
+
+.pk-popover-hint {
+  font-size: 11px;
+  color: #6e6e73;
+  text-align: center;
+  padding-top: 2px;
+}
+
+/* Transient Gesture Toast (Undo / Redo / Eraser toggle) */
+.pk-gesture-toast {
+  position: fixed;
+  top: max(62px, calc(env(safe-area-inset-top) + 52px));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 80;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: rgba(28, 28, 30, 0.84);
+  color: #ffffff;
+  font-size: 12.5px;
+  font-weight: 600;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.22);
+  pointer-events: none;
+  animation: pkToastFade 0.18s ease;
+}
+
+@keyframes pkToastFade {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -6px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
 }
 
 @media (max-width: 900px) {
-  .pencil-dock {
-    bottom: max(62px, calc(env(safe-area-inset-bottom) + 52px));
-    right: 10px;
+  .pencil-dock-wrap {
+    bottom: max(64px, calc(env(safe-area-inset-bottom) + 54px));
+    right: 12px;
+  }
+
+  .pk-pill {
+    gap: 8px;
+    height: 68px;
+    padding: 0 11px;
+  }
+
+  .pk-tool-slot {
+    width: 30px;
+    height: 62px;
+  }
+
+  .pk-swatch-grid {
+    grid-template-columns: repeat(3, 21px);
+    grid-template-rows: repeat(2, 21px);
+    gap: 5px;
+  }
+
+  .pk-swatch {
+    width: 21px;
+    height: 21px;
   }
 }
