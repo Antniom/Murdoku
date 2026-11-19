@@ -73,14 +73,14 @@ export const TableOfContents: React.FC<TableOfContentsProps> = ({
         <span className="page-number page-number--left">2</span>
       </section>
 
-      {/* Right Page: 12-Case Starter Anthology Volume */}
+      {/* Right Page: Starter Anthology Volume */}
       <section className="book-page book-page--right" style={{ justifyContent: 'flex-start' }}>
         <div>
           <h2 className="toc-heading">{t.starterVolume}</h2>
           <p className="toc-sub">
             {lang === 'en'
-              ? '12 curated cases spanning Classic Book 1 rules and all Book 2/3 chapter twists.'
-              : '12 casos curados com regras Clássicas do Livro 1 e todas as variantes dos Livros 2 e 3.'}
+              ? `${starterCases.length} curated cases spanning Classic Book 1 rules and all Book 2/3 chapter twists.`
+              : `${starterCases.length} casos curados com regras Clássicas do Livro 1 e todas as variantes dos Livros 2 e 3.`}
           </p>
 
           <div className="toc-list">

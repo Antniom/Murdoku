@@ -3,11 +3,11 @@ import { getStarterVolume } from '../src/data/starterVolume';
 import { solveCSP } from '../src/engine/solver';
 import { CHARACTER_BY_ID } from '../src/data/characters';
 
-describe('Starter Anthology Volume (12 Cases)', () => {
+describe('Starter Anthology Volume (32 Cases)', () => {
   const cases = getStarterVolume();
 
-  it('contains exactly 12 curated cases covering Classic + all 4 Book 2/3 twists', () => {
-    expect(cases.length).toBe(12);
+  it('contains exactly 32 curated cases covering Classic + all 4 Book 2/3 twists', () => {
+    expect(cases.length).toBe(32);
     const twists = new Set(cases.map((c) => c.twist.kind));
     expect(twists.has('classic')).toBe(true);
     expect(twists.has('outlaw')).toBe(true);
