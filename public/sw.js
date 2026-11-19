@@ -1,4 +1,4 @@
-const CACHE_NAME = 'murdoku-book-v5';
+const CACHE_NAME = 'murdoku-book-v6';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();

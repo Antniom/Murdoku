@@ -1,6 +1,13 @@
 import React, { useMemo } from 'react';
 import type { Lang, MapObject, MissingPieceTwist, MurdokuCase, RoomDef } from '../engine/types';
-import { getFloorTexturePath, OBJECT_CATALOG } from '../data/assets';
+import {
+  getFloorTexturePath,
+  getObjectTintRole,
+  hexToTintMatrix,
+  OBJECT_CATALOG,
+  PAPER_PALETTES,
+  type ObjectTintRole,
+} from '../data/assets';
 import { getAutotileSvgPath } from '../engine/autotile';
 
 const CELL = 64;
@@ -155,6 +162,10 @@ export const FloorplanSVG: React.FC<FloorplanSVGProps> = ({
   const missingTwist: MissingPieceTwist | null =
     twist.kind === 'missing_piece' && !showSolution ? twist : null;
 
+  const objectColors = (PAPER_PALETTES[murdokuCase.paperTheme] ?? PAPER_PALETTES.lilac).objectColors;
+  const tintRoles = Object.keys(objectColors) as ObjectTintRole[];
+  const filterPrefix = `tint-${murdokuCase.id}-${showSolution ? 'sol' : 'map'}`;
+
   return (
     <svg
       className="floorplan-svg"
@@ -166,7 +177,7 @@ export const FloorplanSVG: React.FC<FloorplanSVGProps> = ({
         {rooms.map((rm) => (
           <pattern
             key={rm.id}
-            id={`tex-${murdokuCase.id}-${rm.id}`}
+            id={`tex-${murdokuCase.id}-${showSolution ? 'sol' : 'map'}-${rm.id}`}
             patternUnits="userSpaceOnUse"
             width={CELL}
             height={CELL}
@@ -181,6 +192,15 @@ export const FloorplanSVG: React.FC<FloorplanSVGProps> = ({
             />
           </pattern>
         ))}
+        {tintRoles.map((role) => (
+          <filter
+            key={role}
+            id={`${filterPrefix}-${role}`}
+            colorInterpolationFilters="sRGB"
+          >
+            <feColorMatrix type="matrix" values={hexToTintMatrix(objectColors[role])} />
+          </filter>
+        ))}
       </defs>
 
       {/* 1. Room Floor Cells with Real Pastel-Tinted Textures */}
@@ -194,7 +214,7 @@ export const FloorplanSVG: React.FC<FloorplanSVGProps> = ({
               y={PAD + cell.r * CELL}
               width={CELL}
               height={CELL}
-              fill={`url(#tex-${murdokuCase.id}-${rm.id})`}
+              fill={`url(#tex-${murdokuCase.id}-${showSolution ? 'sol' : 'map'}-${rm.id})`}
             />
           );
         })
@@ -219,10 +239,11 @@ export const FloorplanSVG: React.FC<FloorplanSVGProps> = ({
         })
       )}
 
-      {/* 3. Furniture & Autotiled Tables/Carpets */}
+      {/* 3. Furniture & Autotiled Tables/Carpets — tinted to match the scene palette */}
       {visibleObjects.map((obj, idx) => {
         const isAutotile = (obj.type === 'table' || obj.type === 'carpet') && !!obj.tileIndex;
         const inset = isAutotile ? 0 : 4;
+        const tintRole = getObjectTintRole(obj.type);
         return (
           <image
             key={`obj-${idx}-${obj.r}-${obj.c}-${obj.type}`}
@@ -232,6 +253,7 @@ export const FloorplanSVG: React.FC<FloorplanSVGProps> = ({
             width={CELL - inset * 2}
             height={CELL - inset * 2}
             preserveAspectRatio="xMidYMid meet"
+            filter={tintRole ? `url(#${filterPrefix}-${tintRole})` : undefined}
           />
         );
       })}
