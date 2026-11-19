@@ -1,0 +1,66 @@
+:root {
+  --font-display: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-serif: 'Lora', Georgia, 'Times New Roman', serif;
+  --font-script: 'Courgette', cursive;
+  --font-badge: 'Oswald', 'Outfit', sans-serif;
+
+  --desk-bg: #1e1b1c;
+  --desk-radial: radial-gradient(ellipse at 50% 42%, #2c2729 0%, #191617 75%, #121011 100%);
+
+  --ink-primary: #18181b;
+  --ink-secondary: #3b3a40;
+  --ink-muted: #686670;
+  --crimson: #c63636;
+  --crimson-soft: #fae8ea;
+  --victim-frame: #e5b3b3;
+  --victim-bg: #df9b9b;
+
+  --page-bg: #ece9f5;
+  --page-edge: #e0dcee;
+  --gutter-shadow: rgba(38, 32, 62, 0.14);
+
+  --book-shadow: 0 24px 64px rgba(0, 0, 0, 0.55), 0 6px 18px rgba(0, 0, 0, 0.35);
+  --card-shadow: 0 2px 6px rgba(24, 24, 34, 0.14);
+  --pill-shadow: 0 3px 8px rgba(24, 24, 34, 0.13), 0 1px 2px rgba(24, 24, 34, 0.08);
+  --torn-shadow: drop-shadow(0 3px 5px rgba(24, 24, 34, 0.18));
+
+  --toolbar-bg: rgba(28, 26, 29, 0.86);
+  --toolbar-border: rgba(255, 255, 255, 0.14);
+  --toolbar-text: #f4f2ee;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--desk-bg);
+  color: var(--ink-primary);
+  font-family: var(--font-serif);
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+button {
+  font-family: var(--font-display);
+  cursor: pointer;
+  border: none;
+  background: none;
+  color: inherit;
+}
+
+button:focus-visible {
+  outline: 2px solid #d97757;
+  outline-offset: 2px;
+}

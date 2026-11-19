@@ -1,0 +1,400 @@
+/* Right Page: Crime Scene Floorplan + Torn Working Grid + Verdict Slip */
+.floorplan-wrap {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.floorplan-svg {
+  width: min(100%, 420px);
+  height: auto;
+  display: block;
+  filter: drop-shadow(0 2px 6px rgba(20, 20, 30, 0.12));
+}
+
+/* Bottom Workspace: Torn Working Grid + Verdict Slip side-by-side */
+.right-bottom {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 14px;
+  width: 100%;
+  margin-top: auto;
+  padding-bottom: 8px;
+}
+
+.torn-grid-shell {
+  position: relative;
+  width: min(64%, 275px);
+  background: #ffffff;
+  padding: 12px;
+  filter: var(--torn-shadow);
+  /* Organic torn-paper deckled clip path */
+  clip-path: polygon(
+    0% 1%, 6% 0%, 14% 1.2%, 23% 0.2%, 34% 1%, 48% 0%, 62% 1.1%, 76% 0.2%, 88% 1%, 96% 0%, 100% 1.5%,
+    99.2% 12%, 100% 22%, 98.5% 27%, 100% 34%, 99.4% 48%, 100% 64%, 99% 77%, 100% 90%, 99.3% 99%,
+    91% 100%, 79% 98.8%, 66% 100%, 51% 99%, 37% 100%, 24% 98.9%, 11% 100%, 2% 99.2%,
+    0.5% 88%, 0% 72%, 1% 56%, 0% 38%, 0.8% 20%
+  );
+}
+
+.working-grid-svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.working-grid-cell {
+  cursor: default;
+}
+
+.working-grid-cell--interactive {
+  cursor: pointer;
+}
+
+.working-grid-cell--interactive:hover {
+  fill: rgba(45, 95, 165, 0.08);
+}
+
+/* Tap Assist mini suspect selector popover */
+.tap-picker {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 45;
+  background: rgba(26, 24, 29, 0.94);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 12px;
+  padding: 6px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  max-width: 240px;
+  justify-content: center;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.45);
+}
+
+.tap-picker button {
+  min-width: 28px;
+  height: 28px;
+  padding: 0 6px;
+  border-radius: 6px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 12.5px;
+  color: #f4f2ee;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.tap-picker button:hover {
+  background: #f4efe5;
+  color: #18181b;
+}
+
+.tap-picker button.tap-picker__x {
+  background: rgba(198, 54, 54, 0.25);
+  color: #ffb8b8;
+}
+
+/* Torn-Paper Verdict Slip ("The murderer is...") */
+.verdict-slip {
+  position: relative;
+  flex: 1;
+  max-width: 175px;
+  background: #ffffff;
+  padding: 14px 14px 16px;
+  text-align: center;
+  filter: var(--torn-shadow);
+  clip-path: polygon(
+    0% 2%, 15% 0%, 35% 2%, 58% 0.5%, 82% 2%, 100% 0%,
+    99% 30%, 100% 65%, 99% 98%,
+    84% 100%, 60% 98%, 35% 100%, 12% 98.5%, 0% 100%,
+    1% 60%, 0% 25%
+  );
+  transition: transform 0.15s ease;
+  cursor: pointer;
+}
+
+.verdict-slip:hover {
+  transform: translateY(-2px);
+}
+
+.verdict-slip__label {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 12px;
+  color: #1e1e24;
+  margin-bottom: 18px;
+  display: block;
+}
+
+.verdict-slip__line {
+  width: 86%;
+  height: 2px;
+  background: #1c1c22;
+  margin: 0 auto;
+}
+
+.verdict-slip__solved {
+  font-family: var(--font-script);
+  font-size: 16px;
+  color: #216e42;
+  margin-top: -18px;
+  margin-bottom: 2px;
+}
+
+/* Book 3 Missing Map Fragment Strip (4 candidate patches A-D) */
+.patches-strip {
+  width: 100%;
+  margin-top: 6px;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(24, 24, 34, 0.12);
+  border-radius: 10px;
+  padding: 7px 10px;
+}
+
+.patches-strip__title {
+  font-family: var(--font-display);
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #46444e;
+  margin-bottom: 6px;
+  text-align: center;
+}
+
+.patches-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.patch-option {
+  background: #ffffff;
+  border: 1.5px solid #2b2b32;
+  border-radius: 6px;
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  transition: transform 0.14s ease, border-color 0.14s ease;
+}
+
+.patch-option:hover {
+  transform: translateY(-1px);
+  border-color: #2563ab;
+}
+
+.patch-option.selected {
+  border-color: #2563ab;
+  box-shadow: 0 0 0 2px rgba(37, 99, 171, 0.28);
+}
+
+.patch-option__label {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 11px;
+  color: #18181b;
+}
+
+/* Verdict & Back-of-Book Modals / Drawers */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  background: rgba(15, 13, 18, 0.62);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+}
+
+.modal-card {
+  width: min(460px, 95vw);
+  max-height: 90vh;
+  overflow-y: auto;
+  background: #f6f2ea;
+  border-radius: 14px;
+  border: 1.5px solid #222;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+  padding: 24px 24px 20px;
+  color: #18181b;
+}
+
+.modal-card--wide {
+  width: min(820px, 96vw);
+}
+
+.modal-title {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 21px;
+  margin: 0 0 4px;
+}
+
+.modal-sub {
+  font-size: 13.5px;
+  color: #55535d;
+  margin: 0 0 16px;
+}
+
+.choice-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.choice-chip {
+  padding: 9px 10px;
+  border-radius: 9px;
+  border: 1.5px solid rgba(24, 24, 34, 0.22);
+  background: #ffffff;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 13px;
+  text-align: center;
+  transition: all 0.14s ease;
+}
+
+.choice-chip.selected {
+  background: #1b1920;
+  color: #f6f2ea;
+  border-color: #1b1920;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.btn-primary {
+  padding: 10px 18px;
+  border-radius: 9px;
+  background: #1b1920;
+  color: #f6f2ea;
+  font-weight: 700;
+  font-size: 13.5px;
+}
+
+.btn-secondary {
+  padding: 10px 16px;
+  border-radius: 9px;
+  background: rgba(24, 24, 34, 0.09);
+  color: #1b1920;
+  font-weight: 700;
+  font-size: 13.5px;
+}
+
+.verdict-feedback {
+  padding: 12px 14px;
+  border-radius: 10px;
+  margin-top: 12px;
+  font-size: 13.5px;
+  line-height: 1.4;
+}
+
+.verdict-feedback--ok {
+  background: #ddf2e4;
+  border: 1px solid #2b7a4b;
+  color: #174c2d;
+}
+
+.verdict-feedback--err {
+  background: #fbe6e6;
+  border: 1px solid #c63636;
+  color: #7c1f1f;
+}
+
+/* Back-of-Book Solution Drawer */
+.bob-tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid rgba(24, 24, 34, 0.14);
+  padding-bottom: 10px;
+}
+
+.bob-tab {
+  padding: 7px 14px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 13px;
+  background: rgba(24, 24, 34, 0.07);
+  color: #3a3842;
+}
+
+.bob-tab.active {
+  background: #1b1920;
+  color: #f6f2ea;
+}
+
+.proof-list {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.proof-step {
+  background: #ffffff;
+  border: 1px solid rgba(24, 24, 34, 0.12);
+  border-radius: 10px;
+  padding: 10px 13px;
+  font-size: 13.5px;
+  line-height: 1.45;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.proof-step__num {
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  background: #1b1920;
+  color: #f6f2ea;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.solution-compare {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+  margin-bottom: 18px;
+}
+
+.solution-box {
+  background: #ffffff;
+  border: 1px solid rgba(24, 24, 34, 0.14);
+  border-radius: 10px;
+  padding: 12px;
+  text-align: center;
+}
+
+.solution-box h4 {
+  font-family: var(--font-display);
+  font-size: 13px;
+  margin: 0 0 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #46444e;
+}
+
+@media (max-width: 680px) {
+  .solution-compare {
+    grid-template-columns: 1fr;
+  }
+}

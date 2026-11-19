@@ -1,0 +1,305 @@
+import type { Difficulty, Lang, TwistKind } from '../engine/types';
+
+export interface UIStrings {
+  appTitle: string;
+  appSubtitle: string;
+  dailyVolume: string;
+  starterVolume: string;
+  howToPlay: string;
+  openTodayCase: string;
+  browseContents: string;
+  tableOfContents: string;
+  backToCover: string;
+  prevSpread: string;
+  nextSpread: string;
+  pageLabel: string;
+  suspectsTab: string;
+  mapTab: string;
+  pencilDock: string;
+  backOfBook: string;
+  gridAid: string;
+  gridAidTooltip: string;
+  tapAssist: string;
+  tapAssistTooltip: string;
+  fingerDraw: string;
+  penOnly: string;
+  theMurdererIs: string;
+  accuseTitle: string;
+  accuseSubtitle: string;
+  selectMurderer: string;
+  selectOutlaw: string;
+  selectUninvolved: string;
+  selectPatch: string;
+  selectLiar: string;
+  verifyVerdict: string;
+  verdictCorrectTitle: string;
+  verdictCorrectBody: string;
+  verdictWrongTitle: string;
+  verdictWrongBody: string;
+  tryAgain: string;
+  viewSolution: string;
+  nextCase: string;
+  solvedStamp: string;
+  todayBadge: string;
+  dailyArchiveTitle: string;
+  dailyLoading: string;
+  dailyNotice: string;
+  hintsTab: string;
+  solutionTab: string;
+  revealNextHint: string;
+  allHintsRevealed: string;
+  noHintsYet: string;
+  officialGrid: string;
+  yourGridInk: string;
+  completeProof: string;
+  clearPageLeft: string;
+  clearPageRight: string;
+  clearSpread: string;
+  undo: string;
+  redo: string;
+  toolPencil: string;
+  toolPen: string;
+  toolHighlighter: string;
+  toolEraser: string;
+  close: string;
+  missingPatchesLabel: string;
+  difficultyLabels: Record<Difficulty, string>;
+  twistBadges: Record<TwistKind, string>;
+  rulesTitle: string;
+  rulesSubtitle: string;
+  coreRulesHeading: string;
+  coreRulesList: string[];
+  twistsHeading: string;
+  twistExplanations: Array<{ badge: string; title: string; body: string }>;
+  pencilTipsHeading: string;
+  pencilTipsBody: string;
+}
+
+export const UI_STRINGS: Record<Lang, UIStrings> = {
+  en: {
+    appTitle: 'MURDOKU',
+    appSubtitle: 'Murder Mystery Logic Puzzles',
+    dailyVolume: 'Daily Mystery Volume',
+    starterVolume: 'Starter Anthology',
+    howToPlay: 'Rules & Twists',
+    openTodayCase: "Open Today's Case",
+    browseContents: 'Table of Contents',
+    tableOfContents: 'Contents',
+    backToCover: 'Cover',
+    prevSpread: 'Previous',
+    nextSpread: 'Next',
+    pageLabel: 'Page',
+    suspectsTab: 'Suspects',
+    mapTab: 'Map & Grid',
+    pencilDock: 'Pencil',
+    backOfBook: 'Back of Book',
+    gridAid: 'Grid Aid',
+    gridAidTooltip: 'Faintly stencil blocked furniture on the working grid (Book 2/3 style)',
+    tapAssist: 'Tap Assist',
+    tapAssistTooltip: 'Tap working-grid squares to stamp X or suspect initials',
+    fingerDraw: 'Finger Draw',
+    penOnly: 'Pencil Only',
+    theMurdererIs: 'The murderer is...',
+    accuseTitle: 'Submit Your Verdict',
+    accuseSubtitle: 'Check your deduction without spoiling the grid.',
+    selectMurderer: 'Who is the murderer?',
+    selectOutlaw: 'Who is the Outlaw?',
+    selectUninvolved: 'Who was uninvolved (alibi)?',
+    selectPatch: 'Which map fragment completes the scene?',
+    selectLiar: 'Who was lying?',
+    verifyVerdict: 'Check Verdict',
+    verdictCorrectTitle: 'Case Closed!',
+    verdictCorrectBody: 'Your deduction is spot-on. You caught the culprit!',
+    verdictWrongTitle: 'Not quite...',
+    verdictWrongBody: 'Double-check your clues and working grid, or peek at the next hint in the Back of Book.',
+    tryAgain: 'Keep Investigating',
+    viewSolution: 'Open Back of Book',
+    nextCase: 'Next Case',
+    solvedStamp: 'SOLVED',
+    todayBadge: 'TODAY',
+    dailyArchiveTitle: 'Daily Cases Archive',
+    dailyLoading: "Typesetting today's case...",
+    dailyNotice: 'One fresh mystery is printed every day and archived in this volume.',
+    hintsTab: 'Step-by-Step Hints',
+    solutionTab: 'Official Solution',
+    revealNextHint: 'Reveal Next Deduction',
+    allHintsRevealed: 'All deduction steps revealed.',
+    noHintsYet: 'Stuck? Reveal one logical deduction at a time without spoiling the whole grid.',
+    officialGrid: 'Official Solved Grid',
+    yourGridInk: 'Your Working Grid',
+    completeProof: 'Complete Deduction Proof',
+    clearPageLeft: 'Clear Left',
+    clearPageRight: 'Clear Right',
+    clearSpread: 'Clear Both',
+    undo: 'Undo',
+    redo: 'Redo',
+    toolPencil: 'Pencil',
+    toolPen: 'Fine Pen',
+    toolHighlighter: 'Highlighter',
+    toolEraser: 'Eraser',
+    close: 'Close',
+    missingPatchesLabel: 'Choose the missing map fragment:',
+    difficultyLabels: {
+      easy: 'Easy',
+      medium: 'Medium',
+      hard: 'Hard',
+      expert: 'Expert',
+    },
+    twistBadges: {
+      classic: 'Classic',
+      outlaw: 'Book 2 · Outlaw',
+      uninvolved: 'Book 3 · Alibi',
+      missing_piece: 'Book 3 · Torn Map',
+      liar: 'Book 2/3 · Liar',
+    },
+    rulesTitle: 'How to Solve a Murdoku',
+    rulesSubtitle: 'Every puzzle has one unique logical solution — no guessing required.',
+    coreRulesHeading: 'Core Rules',
+    coreRulesList: [
+      'Every row and every column contains exactly one person.',
+      'No one can stand on blocking furniture (tables, shelves, TVs, plants), but suspects CAN occupy chairs, beds, carpets, and flowers.',
+      '"Beside" always means orthogonally adjacent (up, down, left, or right — never diagonal) AND inside the same room (never across a thick black wall).',
+      'North, South, East, and West refer to anywhere strictly higher, lower, right, or left on the grid — not necessarily the same column or row.',
+      'Rooms may contain 0, 1, 2, or more people — EXCEPT the Victim’s room, which always holds exactly 2 people: the Victim and the Murderer.',
+    ],
+    twistsHeading: 'Book 2 & Book 3 Chapter Twists',
+    twistExplanations: [
+      {
+        badge: 'OUTLAW',
+        title: 'The Hidden Outlaw',
+        body: 'One suspect (never the Victim) is secretly an Outlaw who obeys a public condition printed at the top of the case. Other clues reference the Outlaw.',
+      },
+      {
+        badge: 'ALIBI',
+        title: 'The Uninvolved Suspect',
+        body: 'There is one extra suspect card! One person was never at the crime scene at all and must be ruled out through contradictions.',
+      },
+      {
+        badge: 'TORN MAP',
+        title: 'Missing Map Fragment',
+        body: 'A section of the crime scene map is missing. Four candidate patches (A–D) are printed — only one yields a valid unique solution.',
+      },
+      {
+        badge: 'LIAR',
+        title: 'The Liar',
+        body: 'Exactly one suspect (never the Victim) is lying — their entire statement is false, while everyone else tells the truth.',
+      },
+    ],
+    pencilTipsHeading: 'Apple Pencil & iPad Tips',
+    pencilTipsBody:
+      'Draw freely anywhere across both pages — cross out clues, annotate rooms, and fill the torn working grid. Resting your palm is automatically ignored when Apple Pencil is active. Without a pencil, enable Tap Assist or Finger Draw from the toolbar.',
+  },
+  pt: {
+    appTitle: 'MURDOKU',
+    appSubtitle: 'Puzzles de Lógica e Mistério',
+    dailyVolume: 'Volume Diário',
+    starterVolume: 'Antologia Inicial',
+    howToPlay: 'Regras e Variantes',
+    openTodayCase: 'Abrir Caso de Hoje',
+    browseContents: 'Índice do Livro',
+    tableOfContents: 'Índice',
+    backToCover: 'Capa',
+    prevSpread: 'Anterior',
+    nextSpread: 'Seguinte',
+    pageLabel: 'Página',
+    suspectsTab: 'Suspeitos',
+    mapTab: 'Planta e Grelha',
+    pencilDock: 'Lápis',
+    backOfBook: 'Soluções',
+    gridAid: 'Ajuda Grelha',
+    gridAidTooltip: 'Mostrar silhuetas suaves dos obstáculos na grelha de rascunho (estilo Livro 2/3)',
+    tapAssist: 'Toque Rápido',
+    tapAssistTooltip: 'Toca nos quadrados da grelha de rascunho para marcar X ou iniciais',
+    fingerDraw: 'Desenhar c/ Dedo',
+    penOnly: 'Só Apple Pencil',
+    theMurdererIs: 'O assassino é...',
+    accuseTitle: 'Apresentar Veredicto',
+    accuseSubtitle: 'Confirma a tua dedução sem revelar a grelha.',
+    selectMurderer: 'Quem é o assassino?',
+    selectOutlaw: 'Quem é o Fora-da-Lei?',
+    selectUninvolved: 'Quem tem álibi (não esteve no local)?',
+    selectPatch: 'Qual o fragmento que completa a planta?',
+    selectLiar: 'Quem estava a mentir?',
+    verifyVerdict: 'Verificar Veredicto',
+    verdictCorrectTitle: 'Caso Encerrado!',
+    verdictCorrectBody: 'Dedução impecável. Apanhaste o culpado!',
+    verdictWrongTitle: 'Ainda não...',
+    verdictWrongBody: 'Revê as pistas e a grelha de rascunho, ou espreita a próxima pista nas Soluções.',
+    tryAgain: 'Continuar a Investigar',
+    viewSolution: 'Abrir Soluções',
+    nextCase: 'Caso Seguinte',
+    solvedStamp: 'RESOLVIDO',
+    todayBadge: 'HOJE',
+    dailyArchiveTitle: 'Arquivo de Casos Diários',
+    dailyLoading: 'A imprimir o caso de hoje...',
+    dailyNotice: 'Um novo mistério é publicado todos os dias e arquivado neste volume.',
+    hintsTab: 'Pistas Passo-a-Passo',
+    solutionTab: 'Solução Oficial',
+    revealNextHint: 'Revelar Próxima Dedução',
+    allHintsRevealed: 'Todas as deduções reveladas.',
+    noHintsYet: 'Bloqueado? Revela uma dedução lógica de cada vez sem estragar a grelha inteira.',
+    officialGrid: 'Grelha Oficial Resolvida',
+    yourGridInk: 'A Tua Grelha',
+    completeProof: 'Demonstração Completa',
+    clearPageLeft: 'Limpar Esq.',
+    clearPageRight: 'Limpar Dir.',
+    clearSpread: 'Limpar Ambas',
+    undo: 'Desfazer',
+    redo: 'Refazer',
+    toolPencil: 'Lápis',
+    toolPen: 'Caneta',
+    toolHighlighter: 'Marcador',
+    toolEraser: 'Borracha',
+    close: 'Fechar',
+    missingPatchesLabel: 'Escolhe o fragmento em falta:',
+    difficultyLabels: {
+      easy: 'Fácil',
+      medium: 'Médio',
+      hard: 'Difícil',
+      expert: 'Perito',
+    },
+    twistBadges: {
+      classic: 'Clássico',
+      outlaw: 'Livro 2 · Fora-da-Lei',
+      uninvolved: 'Livro 3 · Álibi',
+      missing_piece: 'Livro 3 · Planta Rasgada',
+      liar: 'Livro 2/3 · Mentiroso',
+    },
+    rulesTitle: 'Como Resolver um Murdoku',
+    rulesSubtitle: 'Cada puzzle tem uma única solução lógica — nunca precisas de adivinhar.',
+    coreRulesHeading: 'Regras Base',
+    coreRulesList: [
+      'Cada linha e cada coluna contém exatamente uma pessoa.',
+      'Ninguém pode ocupar mobiliário sólido (mesas, estantes, TVs, plantas), mas os suspeitos PODEM ocupar cadeiras, camas, tapetes e flores.',
+      '"Ao lado de" significa sempre ortogonalmente adjacente (cima, baixo, esquerda ou direita — nunca diagonal) E na mesma divisão (nunca através de uma parede preta).',
+      'Norte, Sul, Este e Oeste referem-se a qualquer ponto estritamente acima, abaixo, à direita ou à esquerda na grelha — não necessariamente na mesma linha ou coluna.',
+      'Uma divisão pode ter 0, 1, 2 ou mais pessoas — EXCETO a divisão da Vítima, que tem sempre exatamente 2 pessoas: a Vítima e o Assassino.',
+    ],
+    twistsHeading: 'Variantes dos Livros 2 e 3',
+    twistExplanations: [
+      {
+        badge: 'FORA-DA-LEI',
+        title: 'O Fora-da-Lei Oculto',
+        body: 'Um suspeito (nunca a Vítima) é secretamente o Fora-da-Lei e cumpre a condição impressa no topo da página. Outras pistas fazem referência ao Fora-da-Lei.',
+      },
+      {
+        badge: 'ÁLIBI',
+        title: 'O Suspeito com Álibi',
+        body: 'Há uma carta de suspeito a mais! Uma pessoa não esteve no local do crime e deve ser descartada por contradição.',
+      },
+      {
+        badge: 'PLANTA RASGADA',
+        title: 'Fragmento em Falta',
+        body: 'Falta um pedaço da planta do crime. Quatro fragmentos candidatos (A–D) estão impressos — apenas um permite uma solução única válida.',
+      },
+      {
+        badge: 'MENTIROSO',
+        title: 'O Mentiroso',
+        body: 'Exatamente um suspeito (nunca a Vítima) está a mentir — toda a sua declaração é falsa, enquanto os restantes dizem a verdade.',
+      },
+    ],
+    pencilTipsHeading: 'Dicas de Apple Pencil e iPad',
+    pencilTipsBody:
+      'Desenha livremente nas duas páginas — risca pistas, anota divisões e preenche a grelha de rascunho. A palma da mão é ignorada automaticamente com Apple Pencil. Sem lápis, ativa o Toque Rápido ou Desenhar c/ Dedo na barra.',
+  },
+};

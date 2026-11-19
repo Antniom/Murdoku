@@ -1,113 +1,30 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-  <title>Murdoku — Murder Mystery meets Sudoku</title>
-  <meta name="description" content="Murdoku: a fiendish logic puzzle where you must deduce which suspect is the murderer by placing them on a grid with one per row, one per column."/>
-  <meta name="theme-color" content="#f2f0f7" />
-
-  <!-- Google Fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Caveat:wght@600;700;800&display=swap" rel="stylesheet" />
-
-  <link rel="stylesheet" href="styles.css" />
-
-  <style>
-    /* Inline loading screen */
-    #load-screen {
-      position: fixed; inset: 0;
-      background: #f2f0f7;
-      display: flex; align-items: center; justify-content: center;
-      z-index: 9999;
-      transition: opacity 0.35s;
-    }
-    #load-screen.fade { opacity: 0; pointer-events: none; }
-    .load-logo {
-      font-family: 'Inter', sans-serif;
-      font-size: 32px; font-weight: 900;
-      letter-spacing: -1.5px;
-      animation: shimmer 1.5s ease-in-out infinite;
-    }
-    .load-logo span { color: #ff7171; }
-  </style>
-</head>
-<body>
-
-  <!-- Loading screen -->
-  <div id="load-screen">
-    <div>
-      <div class="load-logo">MRD<span>O</span>KU</div>
-      <div style="text-align:center; font-size:12px; color:rgba(25,25,34,0.5); margin-top:8px; font-family:Inter,sans-serif">A carregar...</div>
-    </div>
-  </div>
-
-  <div id="root"></div>
-
-  <!-- React (UMD CDN, no build step required) -->
-  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
-  <!-- Babel for JSX transformation in-browser -->
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-
-  <!--
-    IMPORTANT: levels.js and gemini.js must load BEFORE game.js
-    They are plain scripts (no JSX), so no Babel needed.
-    We load them via a bootstrap approach: fetch the raw text, eval, then transpile game.js.
-  -->
-  <script>
-    // Bootstrap loader: injects scripts as real <script> tags so const declarations 
-    // are properly accessible across all scripts (global scope).
-    const _loadedScripts = [];
-
-    const injectScript = (text) => new Promise((resolve, reject) => {
-      const blob = new Blob([text], { type: 'text/javascript' });
-      const url = URL.createObjectURL(blob);
-      const el = document.createElement('script');
-      el.src = url;
-      el.onload = () => { URL.revokeObjectURL(url); resolve(); };
-      el.onerror = (e) => { URL.revokeObjectURL(url); reject(new Error('Script load failed: ' + url)); };
-      document.head.appendChild(el);
-    });
-
-    const injectBabelScript = (text) => new Promise((resolve, reject) => {
-      try {
-        const transpiled = Babel.transform(text, { presets: ['react'] }).code;
-        const blob = new Blob([transpiled], { type: 'text/javascript' });
-        const url = URL.createObjectURL(blob);
-        const el = document.createElement('script');
-        el.src = url;
-        el.onload = () => { URL.revokeObjectURL(url); resolve(); };
-        el.onerror = (e) => { URL.revokeObjectURL(url); reject(new Error('Transpile script load failed')); };
-        document.head.appendChild(el);
-      } catch(e) { reject(e); }
-    });
-
-    const fetchText = (src) => fetch(src).then(r => { if(!r.ok) throw new Error(`HTTP ${r.status}: ${src}`); return r.text(); });
-
-    (async () => {
-      try {
-        await injectScript(await fetchText('locales.js'));
-        await injectScript(await fetchText('levels.js'));
-        await injectScript(await fetchText('gemini.js'));
-        await injectBabelScript(await fetchText('game.js'));
-      } catch (e) {
-        console.error('Failed to load Murdoku:', e);
-        document.getElementById('load-screen').innerHTML =
-          `<div style="text-align:center;padding:24px;font-family:Inter,sans-serif">
-            <div style="font-size:24px;font-weight:900;margin-bottom:8px">⚠️ Erro de Carregamento</div>
-            <div style="font-size:13px;color:rgba(0,0,0,0.6)">${e.message}</div>
-          </div>`;
-        return;
-      }
-
-      // Fade out loading screen
-      setTimeout(() => {
-        const ls = document.getElementById('load-screen');
-        if (ls) { ls.classList.add('fade'); setTimeout(() => ls.remove(), 350); }
-      }, 300);
-    })();
-  </script>
-</body>
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Murdoku" />
+    <meta name="theme-color" content="#1e1b1c" />
+    <meta
+      name="description"
+      content="Murdoku — Authentic open-book murder mystery logic puzzles with Apple Pencil support, Classic & Book 2/3 twists, and a new daily case."
+    />
+    <title>Murdoku — Murder Mystery Logic Puzzles</title>
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Courgette&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Oswald:wght@600;700&family=Outfit:wght@500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
 </html>

@@ -1,21 +1,7 @@
-# Dependencies
 node_modules/
-
-# Dev tools (scraping, testing, research — not needed for the game)
-tools/
-
-# Generated / runtime files
-generated_levels.json
-
-# Dev server (not needed for GitHub Pages — game uses JSONBin.io)
-server.js
-
-# Logs
-*.log
-
-# Environment variables (credentials, API keys)
+dist/
+.data/
 .env
-
-# OS files
-.DS_Store
-Thumbs.db
+.env.local
+.vercel/
+*.log

@@ -1,0 +1,17 @@
+{
+  "name": "Murdoku — Open-Book Mystery Puzzles",
+  "short_name": "Murdoku",
+  "description": "Authentic two-page open-book murder mystery logic puzzles with Apple Pencil support and daily cases.",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#1e1b1c",
+  "theme_color": "#1e1b1c",
+  "icons": [
+    {
+      "src": "/assets/objects/obj_chair.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}
