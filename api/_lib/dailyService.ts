@@ -1,5 +1,9 @@
-import type { CreativeBrief, MurdokuCase, TwistKind } from '../../src/engine/types';
-import { generateVerifiedCase, getDailyScheduleForDate } from '../../src/engine/generator';
+import type { CreativeBrief, MurdokuCase } from '../../src/engine/types';
+import {
+  generateVerifiedCase,
+  getDailyScheduleForDate,
+  type DailyScheduleSpec,
+} from '../../src/engine/generator';
 import type { DailyStore } from './store';
 import { generateCreativeBriefWithGemini } from './gemini';
 
@@ -15,7 +19,7 @@ export interface DailyServiceDeps {
   store: DailyStore;
   fetchBrief?: (
     dateStr: string,
-    twistKind: TwistKind
+    sched: DailyScheduleSpec
   ) => Promise<{ brief: CreativeBrief; source: 'gemini' | 'fallback' }>;
 }
 
@@ -53,7 +57,7 @@ export async function getOrCreateDailyCase(
     }
 
     const sched = getDailyScheduleForDate(dateStr);
-    const { brief, source } = await fetchBrief(dateStr, sched.twistKind);
+    const { brief, source } = await fetchBrief(dateStr, sched);
 
     // Compute sequential daily volume case number from archive length
     const archive = await store.listArchive();
@@ -72,6 +76,7 @@ export async function getOrCreateDailyCase(
       cols: sched.cols,
       difficulty: sched.difficulty,
       twistKind: sched.twistKind,
+      allowIrregularVoid: sched.allowIrregularVoid,
       brief,
       generatedBy: source,
     });

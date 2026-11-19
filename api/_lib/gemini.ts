@@ -1,4 +1,5 @@
-import type { CreativeBrief, PaperThemeId, ThemeAccessoryId, TwistKind } from '../../src/engine/types';
+import type { CreativeBrief, PaperThemeId, ThemeAccessoryId } from '../../src/engine/types';
+import type { DailyScheduleSpec } from '../../src/engine/generator';
 import { VALID_FLOOR_TEXTURES, VALID_OBJECT_IDS } from '../../src/data/assets';
 import { FALLBACK_THEMES } from '../../src/data/themes';
 import { hashSeed } from '../../src/engine/prng';
@@ -25,11 +26,11 @@ const VALID_ACCESSORIES: ThemeAccessoryId[] = [
 /**
  * Calls Gemini ONCE per day as Creative Director to invent an original, witty Murdoku
  * mystery theme in BOTH English and Portuguese (PT-PT), strictly validated against our
- * verified object and floor-texture allowlists.
+ * verified object and floor-texture allowlists and scaled to today's difficulty tier.
  */
 export async function generateCreativeBriefWithGemini(
   dateStr: string,
-  twistKind: TwistKind
+  sched: DailyScheduleSpec
 ): Promise<{ brief: CreativeBrief; source: 'gemini' | 'fallback' }> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
@@ -43,7 +44,12 @@ export async function generateCreativeBriefWithGemini(
   const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`;
 
   const prompt = `You are the Creative Director for a Murdoku murder-mystery logic puzzle book (in the witty, cozy-noir style of Manuel Garand).
-Create ONE original crime-scene setting for date ${dateStr} (chapter twist: ${twistKind}).
+Create ONE original crime-scene setting for date ${dateStr}.
+Today's puzzle scale: difficulty="${sched.difficulty}", map=${sched.rows}x${sched.cols}, exact rooms=${sched.roomCount}, chapter twist="${sched.twistKind}".
+- For "easy" (5x5, 4 rooms), pick a cozy compact venue (e.g. bakery, cabin, greenhouse, boutique).
+- For "medium" (6x6, 5 rooms), pick a lively mid-sized venue (e.g. gallery, saloon, hotel floor, theater).
+- For "hard" or "expert" (7x7 / 8x8, 6 rooms), pick a grand multi-wing venue (e.g. museum, observatory, manor, cruise deck, laboratory).
+
 Return ONLY a valid JSON object matching this exact structure:
 {
   "title": { "en": "The ...", "pt": "O/A ..." },
@@ -59,7 +65,7 @@ Return ONLY a valid JSON object matching this exact structure:
     }
   ]
 }
-Provide 5 or 6 distinct rooms. Keep room names concise (1-2 words, uppercase) so they fit cleanly on printed map badges.`;
+Provide exactly ${sched.roomCount} distinct rooms. Keep room names concise (1-2 words, uppercase) so they fit cleanly on printed map badges.`;
 
   try {
     const controller = new AbortController();

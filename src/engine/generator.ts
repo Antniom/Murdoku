@@ -54,6 +54,7 @@ function harvestCandidateClauses(
   allSuspectIds: string[],
   placements: Record<string, GridCoord>,
   rooms: RoomDef[],
+  difficulty: Difficulty,
   outlawId?: string
 ): ScoredClause[] {
   const pos = placements[suspectId];
@@ -61,6 +62,13 @@ function harvestCandidateClauses(
   const k = cellKey(pos.r, pos.c);
   const myRoom = board.roomGrid[pos.r][pos.c]!;
   const out: ScoredClause[] = [];
+
+  // Difficulty-tuned weight modifiers matching real Murdoku book progression:
+  // Easy = direct unary anchors; Hard/Expert = relational chains & exclusivity
+  const directBias =
+    difficulty === 'easy' ? 18 : difficulty === 'medium' ? 0 : difficulty === 'hard' ? -18 : -32;
+  const relationalBias =
+    difficulty === 'easy' ? -18 : difficulty === 'medium' ? 0 : difficulty === 'hard' ? 14 : 24;
 
   const addIfTrue = (clause: ClueClause, weight: number) => {
     if (evaluateClauseFull(board, suspectId, clause, placements, outlawId)) {
@@ -70,55 +78,55 @@ function harvestCandidateClauses(
 
   // 1. Walkable occupancy (classic book favorite: "sitting in a chair")
   if (board.onObjects.get(k)?.has('chair')) {
-    addIfTrue({ kind: 'only_person_sitting' }, 95);
-    addIfTrue({ kind: 'sitting_in_chair' }, 90);
+    addIfTrue({ kind: 'only_person_sitting' }, 90 + Math.max(0, relationalBias));
+    addIfTrue({ kind: 'sitting_in_chair' }, 88 + directBias * 0.6);
   }
   for (const obj of board.onObjects.get(k) ?? []) {
     if (obj !== 'chair') {
-      addIfTrue({ kind: 'on_object', objectType: obj }, 82);
+      addIfTrue({ kind: 'on_object', objectType: obj }, 82 + directBias * 0.4);
     }
   }
 
   // 2. Beside objects (wall-aware orthogonal!)
   for (const obj of board.besideObjects.get(k) ?? []) {
-    addIfTrue({ kind: 'only_person_beside', objectType: obj }, 88);
-    addIfTrue({ kind: 'beside_object', objectType: obj }, 85);
+    addIfTrue({ kind: 'only_person_beside', objectType: obj }, 86 + Math.max(0, relationalBias));
+    addIfTrue({ kind: 'beside_object', objectType: obj }, 84 + directBias * 0.5);
   }
 
   // 3. Room clues
-  addIfTrue({ kind: 'in_room', roomId: myRoom }, 80);
-  addIfTrue({ kind: 'alone_in_room' }, 86);
+  addIfTrue({ kind: 'in_room', roomId: myRoom }, 80 + directBias);
+  addIfTrue({ kind: 'alone_in_room' }, 84 + relationalBias * 0.5);
   let roomOcc = 0;
   for (const p of Object.values(placements)) {
     if (board.roomGrid[p.r][p.c] === myRoom) roomOcc++;
   }
   if (roomOcc >= 2) {
-    addIfTrue({ kind: 'room_occupant_count', count: roomOcc }, 74);
+    addIfTrue({ kind: 'room_occupant_count', count: roomOcc }, 72 + relationalBias * 0.6);
   }
   for (const rm of rooms) {
     if (rm.id !== myRoom) {
-      addIfTrue({ kind: 'not_in_room', roomId: rm.id }, 42);
+      addIfTrue({ kind: 'not_in_room', roomId: rm.id }, 38 + relationalBias * 0.4);
     }
   }
 
   // 4. Geometry clues
-  if (board.inCorner[pos.r][pos.c]) addIfTrue({ kind: 'in_room_corner' }, 76);
-  if (!board.besideWall[pos.r][pos.c]) addIfTrue({ kind: 'not_beside_wall' }, 72);
-  addIfTrue({ kind: 'in_row', row: pos.r }, pos.r === 0 || pos.r === board.rows - 1 ? 75 : 58);
-  addIfTrue({ kind: 'in_col', col: pos.c }, pos.c === 0 || pos.c === board.cols - 1 ? 75 : 58);
+  if (board.inCorner[pos.r][pos.c]) addIfTrue({ kind: 'in_room_corner' }, 76 + relationalBias * 0.4);
+  if (!board.besideWall[pos.r][pos.c]) addIfTrue({ kind: 'not_beside_wall' }, 70 + relationalBias * 0.5);
+  addIfTrue({ kind: 'in_row', row: pos.r }, (pos.r === 0 || pos.r === board.rows - 1 ? 75 : 58) + directBias);
+  addIfTrue({ kind: 'in_col', col: pos.c }, (pos.c === 0 || pos.c === board.cols - 1 ? 75 : 58) + directBias);
 
   // 5. Relational clues to other non-victim suspects (avoid referencing Victim directly so Victim stays deduced last)
   for (const otherId of allSuspectIds) {
     if (otherId === suspectId || otherId === 'V') continue;
     const op = placements[otherId];
     if (!op) continue;
-    addIfTrue({ kind: 'same_room_as', targetId: otherId }, 84);
-    addIfTrue({ kind: 'beside_person', targetId: otherId }, 87);
-    addIfTrue({ kind: 'same_diagonal', targetId: otherId }, 79);
-    if (pos.r < op.r) addIfTrue({ kind: 'north_of', targetId: otherId }, 77);
-    if (pos.r > op.r) addIfTrue({ kind: 'south_of', targetId: otherId }, 77);
-    if (pos.c > op.c) addIfTrue({ kind: 'east_of', targetId: otherId }, 77);
-    if (pos.c < op.c) addIfTrue({ kind: 'west_of', targetId: otherId }, 77);
+    addIfTrue({ kind: 'same_room_as', targetId: otherId }, 82 + relationalBias * 0.6);
+    addIfTrue({ kind: 'beside_person', targetId: otherId }, 85 + relationalBias * 0.7);
+    addIfTrue({ kind: 'same_diagonal', targetId: otherId }, 76 + relationalBias);
+    if (pos.r < op.r) addIfTrue({ kind: 'north_of', targetId: otherId }, 76 + relationalBias * 0.7);
+    if (pos.r > op.r) addIfTrue({ kind: 'south_of', targetId: otherId }, 76 + relationalBias * 0.7);
+    if (pos.c > op.c) addIfTrue({ kind: 'east_of', targetId: otherId }, 76 + relationalBias * 0.7);
+    if (pos.c < op.c) addIfTrue({ kind: 'west_of', targetId: otherId }, 76 + relationalBias * 0.7);
   }
 
   // 6. Outlaw-referencing clues (if outlaw twist is active and suspect is not the outlaw)
@@ -307,7 +315,7 @@ export function generateVerifiedCase(options: GenerateCaseOptions): MurdokuCase 
         const falses = rng.shuffle(harvestFalseClauses(board, s.id, activeIds, placements, fp.rooms));
         pools[s.id] = falses.map((clause) => ({ clause, weight: 85 }));
       } else {
-        const raw = harvestCandidateClauses(board, s.id, activeIds, placements, fp.rooms, outlawId);
+        const raw = harvestCandidateClauses(board, s.id, activeIds, placements, fp.rooms, difficulty, outlawId);
         // Shuffle within similar weight bands for rich variety
         pools[s.id] = raw
           .map((item) => ({ ...item, sortKey: item.weight + rng.int(-12, 12) }))
@@ -605,32 +613,78 @@ export function generateVerifiedCase(options: GenerateCaseOptions): MurdokuCase 
   });
 }
 
-/**
- * Weekly schedule for Daily Mystery cases so every day feels like a real serialized Murdoku book!
- */
-export function getDailyScheduleForDate(dateStr: string): {
+export interface DailyScheduleSpec {
   rows: number;
   cols: number;
+  roomCount: number;
   difficulty: Difficulty;
   twistKind: TwistKind;
-} {
+  allowIrregularVoid: boolean;
+}
+
+/**
+ * Repeating 4-day difficulty ladder for the Daily Mystery Volume:
+ *   Day 0: Easy   (5×5, 4 rooms)
+ *   Day 1: Medium (6×6, 5 rooms)
+ *   Day 2: Hard   (7×7, 6 rooms)
+ *   Day 3: Expert (8×8 Classic or 7×7 Twist, 6 rooms)
+ *   ...then repeats!
+ * Across consecutive 4-day cycles, Medium/Hard/Expert rotate smoothly between
+ * Classic Book 1 and all 4 Book 2/3 twists (outlaw, uninvolved, missing_piece, liar).
+ */
+export function getDailyScheduleForDate(dateStr: string): DailyScheduleSpec {
   const [y, m, d] = dateStr.split('-').map(Number);
-  const dow = new Date(Date.UTC(y, m - 1, d)).getUTCDay(); // 0=Sun..6=Sat
-  switch (dow) {
-    case 1: // Monday: Classic Easy
-      return { rows: 5, cols: 5, difficulty: 'easy', twistKind: 'classic' };
-    case 2: // Tuesday: Classic Medium
-      return { rows: 6, cols: 6, difficulty: 'medium', twistKind: 'classic' };
-    case 3: // Wednesday: Book 2 Outlaw
-      return { rows: 6, cols: 6, difficulty: 'medium', twistKind: 'outlaw' };
-    case 4: // Thursday: Classic Hard
-      return { rows: 7, cols: 7, difficulty: 'hard', twistKind: 'classic' };
-    case 5: // Friday: Book 3 Uninvolved Suspect
-      return { rows: 6, cols: 6, difficulty: 'hard', twistKind: 'uninvolved' };
-    case 6: // Saturday: Book 3 Torn Map
-      return { rows: 6, cols: 6, difficulty: 'hard', twistKind: 'missing_piece' };
-    case 0: // Sunday: Book 2/3 Liar Expert
-    default:
-      return { rows: 7, cols: 7, difficulty: 'expert', twistKind: 'liar' };
+  const dayIndex = Math.floor(Date.UTC(y, m - 1, d) / 86_400_000);
+  const step = ((dayIndex % 4) + 4) % 4;
+  const cycle = Math.floor(dayIndex / 4);
+
+  switch (step) {
+    case 0: // Easy: compact 5x5 Classic
+      return {
+        rows: 5,
+        cols: 5,
+        roomCount: 4,
+        difficulty: 'easy',
+        twistKind: 'classic',
+        allowIrregularVoid: false,
+      };
+    case 1: { // Medium: 6x6 alternating Classic / Outlaw / Uninvolved
+      const medTwists: TwistKind[] = ['classic', 'outlaw', 'uninvolved'];
+      const twistKind = medTwists[((cycle % medTwists.length) + medTwists.length) % medTwists.length];
+      return {
+        rows: 6,
+        cols: 6,
+        roomCount: 5,
+        difficulty: 'medium',
+        twistKind,
+        allowIrregularVoid: false,
+      };
+    }
+    case 2: { // Hard: 7x7 alternating Classic (irregular courtyard) / Missing Piece / Outlaw
+      const hardTwists: TwistKind[] = ['classic', 'missing_piece', 'outlaw'];
+      const twistKind = hardTwists[((cycle % hardTwists.length) + hardTwists.length) % hardTwists.length];
+      return {
+        rows: twistKind === 'missing_piece' ? 6 : 7,
+        cols: twistKind === 'missing_piece' ? 6 : 7,
+        roomCount: twistKind === 'missing_piece' ? 5 : 6,
+        difficulty: 'hard',
+        twistKind,
+        allowIrregularVoid: twistKind === 'classic',
+      };
+    }
+    case 3:
+    default: { // Expert: 8x8 Classic or 7x7 Liar / Uninvolved
+      const expTwists: TwistKind[] = ['classic', 'liar', 'uninvolved'];
+      const twistKind = expTwists[((cycle % expTwists.length) + expTwists.length) % expTwists.length];
+      const isClassic = twistKind === 'classic';
+      return {
+        rows: isClassic ? 8 : 7,
+        cols: isClassic ? 8 : 7,
+        roomCount: 6,
+        difficulty: 'expert',
+        twistKind,
+        allowIrregularVoid: isClassic,
+      };
+    }
   }
 }

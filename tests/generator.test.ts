@@ -50,12 +50,19 @@ describe('Deterministic Puzzle Generator Stress Test', () => {
     });
   }
 
-  it('rotates through all twists across a 7-day daily schedule', () => {
+  it('cycles strictly through Easy -> Medium -> Hard -> Expert every 4 days and repeats across all twists', () => {
+    const seq = [];
     const twists = new Set<TwistKind>();
-    for (let d = 1; d <= 7; d++) {
-      const sched = getDailyScheduleForDate(`2026-11-0${d}`);
+    for (let d = 1; d <= 12; d++) {
+      const dateStr = `2026-11-${String(d).padStart(2, '0')}`;
+      const sched = getDailyScheduleForDate(dateStr);
+      seq.push(sched.difficulty);
       twists.add(sched.twistKind);
     }
+    // Every consecutive 4-day block must contain all 4 difficulties and repeat identically!
+    expect(new Set(seq.slice(0, 4)).size).toBe(4);
+    expect(seq.slice(4, 8)).toEqual(seq.slice(0, 4));
+    expect(seq.slice(8, 12)).toEqual(seq.slice(0, 4));
     expect(twists.size).toBe(5);
   });
 });

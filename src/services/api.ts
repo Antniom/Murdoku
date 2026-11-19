@@ -31,6 +31,7 @@ function buildLocalDailyFallback(dateStr: string): MurdokuCase {
     cols: sched.cols,
     difficulty: sched.difficulty,
     twistKind: sched.twistKind,
+    allowIrregularVoid: sched.allowIrregularVoid,
     brief,
     generatedBy: 'fallback',
   });
