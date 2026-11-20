@@ -4,11 +4,14 @@ import type {
   CreativeBrief,
   Difficulty,
   GridCoord,
+  LocalizedText,
   MapObject,
   MapPatchOption,
   MurdokuCase,
   OutlawCondition,
   RoomDef,
+  SecretRoleDef,
+  SubGridSpec,
   SuspectDef,
   TwistConfig,
   TwistKind,
@@ -16,10 +19,17 @@ import type {
 import { createPRNG, type PRNG } from './prng';
 import { castAlphabeticalSuspects } from '../data/characters';
 import { OBJECT_CATALOG, PAPER_PALETTES } from '../data/assets';
-import { applyAutotiles, generateFloorplan } from './floorplanGen';
-import { buildBoardIndex, cellKey, evaluateClauseFull, evaluateOutlawCondition, type BoardIndex } from './predicates';
+import { applyAutotiles, generateFloorplan, generateSplitFloorplan } from './floorplanGen';
+import {
+  buildBoardIndex,
+  cellKey,
+  evaluateClauseFull,
+  evaluateOutlawCondition,
+  type BoardIndex,
+  type EvalContext,
+} from './predicates';
 import { solveCSP } from './solver';
-import { formatSuspectClue } from './clues';
+import { formatRoleClue, formatSuspectClue, type ClueFormatExtras } from './clues';
 import { generateDeductionProof } from './prover';
 
 export interface GenerateCaseOptions {
@@ -42,8 +52,19 @@ export interface GenerateCaseOptions {
 
 interface ScoredClause {
   clause: ClueClause;
-  weight: number; // higher = more interesting/authentic Murdoku book clue
+  weight: number;
 }
+
+const SECRET_ROLE_POOL: Array<{ id: string; title: LocalizedText }> = [
+  { id: 'explorer', title: { en: 'The Explorer', pt: 'O Explorador' } },
+  { id: 'botanist', title: { en: 'The Botanist', pt: 'O Botânico' } },
+  { id: 'navigator', title: { en: 'The Navigator', pt: 'O Navegador' } },
+  { id: 'archivist', title: { en: 'The Archivist', pt: 'O Arquivista' } },
+  { id: 'tracker', title: { en: 'The Tracker', pt: 'O Batedor' } },
+  { id: 'cartographer', title: { en: 'The Cartographer', pt: 'O Cartógrafo' } },
+  { id: 'archaeologist', title: { en: 'The Archaeologist', pt: 'O Arqueólogo' } },
+  { id: 'naturalist', title: { en: 'The Naturalist', pt: 'O Naturalista' } },
+];
 
 /**
  * Harvests all true, natural Murdoku candidate clauses for a suspect at their ground-truth position.
@@ -55,35 +76,35 @@ function harvestCandidateClauses(
   placements: Record<string, GridCoord>,
   rooms: RoomDef[],
   difficulty: Difficulty,
-  outlawId?: string
+  ctx: EvalContext = {},
+  options: { isSplitGrid?: boolean; roles?: SecretRoleDef[] } = {}
 ): ScoredClause[] {
   const pos = placements[suspectId];
   if (!pos) return [];
   const k = cellKey(pos.r, pos.c);
   const myRoom = board.roomGrid[pos.r][pos.c]!;
+  const mySub = board.subGridGrid[pos.r][pos.c];
   const out: ScoredClause[] = [];
 
-  // Difficulty-tuned weight modifiers matching real Murdoku book progression:
-  // Easy = direct unary anchors; Hard/Expert = relational chains & exclusivity
   const directBias =
     difficulty === 'easy' ? 18 : difficulty === 'medium' ? 0 : difficulty === 'hard' ? -18 : -32;
   const relationalBias =
     difficulty === 'easy' ? -18 : difficulty === 'medium' ? 0 : difficulty === 'hard' ? 14 : 24;
 
   const addIfTrue = (clause: ClueClause, weight: number) => {
-    if (evaluateClauseFull(board, suspectId, clause, placements, outlawId)) {
+    if (evaluateClauseFull(board, suspectId, clause, placements, ctx)) {
       out.push({ clause, weight });
     }
   };
 
-  // 1. Walkable occupancy (classic book favorite: "sitting in a chair")
+  // 1. Walkable occupancy (including era overrides like horse, boat, car!)
   if (board.onObjects.get(k)?.has('chair')) {
     addIfTrue({ kind: 'only_person_sitting' }, 90 + Math.max(0, relationalBias));
     addIfTrue({ kind: 'sitting_in_chair' }, 88 + directBias * 0.6);
   }
   for (const obj of board.onObjects.get(k) ?? []) {
     if (obj !== 'chair') {
-      addIfTrue({ kind: 'on_object', objectType: obj }, 82 + directBias * 0.4);
+      addIfTrue({ kind: 'on_object', objectType: obj }, 92 + directBias * 0.4);
     }
   }
 
@@ -109,13 +130,15 @@ function harvestCandidateClauses(
     }
   }
 
-  // 4. Geometry clues
+  // 4. Geometry clues (skip raw global in_row/in_col on split_grids so phrasing stays intuitive)
   if (board.inCorner[pos.r][pos.c]) addIfTrue({ kind: 'in_room_corner' }, 76 + relationalBias * 0.4);
   if (!board.besideWall[pos.r][pos.c]) addIfTrue({ kind: 'not_beside_wall' }, 70 + relationalBias * 0.5);
-  addIfTrue({ kind: 'in_row', row: pos.r }, (pos.r === 0 || pos.r === board.rows - 1 ? 75 : 58) + directBias);
-  addIfTrue({ kind: 'in_col', col: pos.c }, (pos.c === 0 || pos.c === board.cols - 1 ? 75 : 58) + directBias);
+  if (!options.isSplitGrid) {
+    addIfTrue({ kind: 'in_row', row: pos.r }, (pos.r === 0 || pos.r === board.rows - 1 ? 75 : 58) + directBias);
+    addIfTrue({ kind: 'in_col', col: pos.c }, (pos.c === 0 || pos.c === board.cols - 1 ? 75 : 58) + directBias);
+  }
 
-  // 5. Relational clues to other non-victim suspects (avoid referencing Victim directly so Victim stays deduced last)
+  // 5. Relational clues to other non-victim suspects
   for (const otherId of allSuspectIds) {
     if (otherId === suspectId || otherId === 'V') continue;
     const op = placements[otherId];
@@ -127,10 +150,21 @@ function harvestCandidateClauses(
     if (pos.r > op.r) addIfTrue({ kind: 'south_of', targetId: otherId }, 76 + relationalBias * 0.7);
     if (pos.c > op.c) addIfTrue({ kind: 'east_of', targetId: otherId }, 76 + relationalBias * 0.7);
     if (pos.c < op.c) addIfTrue({ kind: 'west_of', targetId: otherId }, 76 + relationalBias * 0.7);
+
+    // Split Grid cross-zone relational clues
+    if (options.isSplitGrid && mySub !== null) {
+      addIfTrue({ kind: 'same_subgrid_as', targetId: otherId }, 92);
+      addIfTrue({ kind: 'different_subgrid_from', targetId: otherId }, 90);
+    }
   }
 
-  // 6. Outlaw-referencing clues (if outlaw twist is active and suspect is not the outlaw)
-  if (outlawId && suspectId !== outlawId) {
+  // 5b. Split Grid direct sub-grid clue
+  if (options.isSplitGrid && mySub !== null) {
+    addIfTrue({ kind: 'in_subgrid', gridId: mySub }, 94 + directBias * 0.4);
+  }
+
+  // 6. Outlaw-referencing clues
+  if (ctx.outlawId && suspectId !== ctx.outlawId) {
     addIfTrue({ kind: 'same_room_as_outlaw' }, 96);
     addIfTrue({ kind: 'beside_outlaw' }, 97);
     addIfTrue({ kind: 'north_of_outlaw' }, 92);
@@ -140,6 +174,86 @@ function harvestCandidateClauses(
     addIfTrue({ kind: 'not_the_outlaw' }, 65);
   }
 
+  // 7. Volume 2: Time Travel clauses
+  if (ctx.swappedPair && ctx.pastPlacements) {
+    const pp = ctx.pastPlacements[suspectId];
+    const pastRoom = pp ? board.roomGrid[pp.r][pp.c] : null;
+    const isMover = suspectId === ctx.swappedPair[0] || suspectId === ctx.swappedPair[1];
+    if (isMover) {
+      addIfTrue({ kind: 'moved_in_time' }, 88);
+      if (pastRoom && pastRoom !== myRoom) {
+        addIfTrue({ kind: 'past_in_room', roomId: pastRoom }, 98);
+      }
+      if (pp) {
+        for (const obj of board.besideObjects.get(cellKey(pp.r, pp.c)) ?? []) {
+          addIfTrue({ kind: 'past_beside_object', objectType: obj }, 95);
+        }
+      }
+      for (const otherId of allSuspectIds) {
+        if (otherId === suspectId) continue;
+        addIfTrue({ kind: 'past_same_room_as', targetId: otherId }, 97);
+      }
+    } else {
+      addIfTrue({ kind: 'stayed_in_place' }, 76);
+      if (pastRoom) {
+        addIfTrue({ kind: 'past_in_room', roomId: pastRoom }, 78);
+      }
+    }
+  }
+
+  // 8. Volume 3: Secret Identities clauses
+  if (ctx.roleAssignment && options.roles) {
+    for (const role of options.roles) {
+      const holder = ctx.roleAssignment[role.id];
+      if (holder === suspectId) {
+        addIfTrue({ kind: 'has_role', roleId: role.id }, 62); // lower weight so roles are mostly deduced, not handed out
+      } else {
+        addIfTrue({ kind: 'not_role', roleId: role.id }, 72);
+        addIfTrue({ kind: 'same_room_as_role', roleId: role.id }, 94);
+        addIfTrue({ kind: 'north_of_role', roleId: role.id }, 91);
+        addIfTrue({ kind: 'south_of_role', roleId: role.id }, 91);
+        addIfTrue({ kind: 'east_of_role', roleId: role.id }, 91);
+        addIfTrue({ kind: 'west_of_role', roleId: role.id }, 91);
+      }
+    }
+  }
+
+  return out;
+}
+
+/**
+ * Harvests clean spatial clues describing a Secret Role's position (never referencing suspect names directly!).
+ */
+function harvestRoleClauses(
+  board: BoardIndex,
+  holderId: string,
+  placements: Record<string, GridCoord>,
+  rooms: RoomDef[]
+): ClueClause[] {
+  const pos = placements[holderId];
+  if (!pos) return [];
+  const k = cellKey(pos.r, pos.c);
+  const myRoom = board.roomGrid[pos.r][pos.c]!;
+  const out: ClueClause[] = [];
+
+  if (board.onObjects.get(k)?.has('chair')) out.push({ kind: 'sitting_in_chair' });
+  for (const obj of board.onObjects.get(k) ?? []) {
+    if (obj !== 'chair') out.push({ kind: 'on_object', objectType: obj });
+  }
+  for (const obj of board.besideObjects.get(k) ?? []) {
+    out.push({ kind: 'beside_object', objectType: obj });
+  }
+  out.push({ kind: 'in_room', roomId: myRoom });
+  if (board.inCorner[pos.r][pos.c]) out.push({ kind: 'in_room_corner' });
+  if (!board.besideWall[pos.r][pos.c]) out.push({ kind: 'not_beside_wall' });
+  out.push({ kind: 'in_row', row: pos.r });
+  out.push({ kind: 'in_col', col: pos.c });
+  if (evaluateClauseFull(board, holderId, { kind: 'alone_in_room' }, placements)) {
+    out.push({ kind: 'alone_in_room' });
+  }
+  for (const rm of rooms) {
+    if (rm.id !== myRoom) out.push({ kind: 'not_in_room', roomId: rm.id });
+  }
   return out;
 }
 
@@ -204,7 +318,7 @@ function buildOutlawCondition(
 
 /**
  * Generates a 100% mathematically verified, uniquely solvable MurdokuCase
- * with bilingual EN/PT-PT clues and a complete Back-of-Book deduction proof.
+ * supporting Classic Book 1 and ALL Volume 2 & Volume 3 twists.
  */
 export function generateVerifiedCase(options: GenerateCaseOptions): MurdokuCase {
   const {
@@ -227,23 +341,48 @@ export function generateVerifiedCase(options: GenerateCaseOptions): MurdokuCase 
 
   const baseRng = createPRNG(seed);
   const palette = PAPER_PALETTES[brief.paperTheme] ?? PAPER_PALETTES.lilac;
+  const walkableOverrides = brief.walkableOverrides ?? [];
 
-  // Try up to 40 deterministic attempts to guarantee an exact unique, clean, fun puzzle
-  for (let attempt = 0; attempt < 40; attempt++) {
+  for (let attempt = 0; attempt < 45; attempt++) {
     const rng = createPRNG(`${seed}#attempt_${attempt}`);
-    const fp = generateFloorplan({
-      rows,
-      cols,
-      roomBriefs: brief.rooms,
-      rng,
-      allowIrregularVoid,
-    });
 
-    // For uninvolved twist, we have N+1 total suspects (N non-victims + 1 Victim) on an N×N grid!
-    const nonVictimCount = twistKind === 'uninvolved' ? rows : rows - 1;
+    // Build either a Split-Grid floorplan (Volume 3) or a Single floorplan
+    let splitGridsSpec: [SubGridSpec, SubGridSpec] | undefined;
+    const fp =
+      twistKind === 'split_grids'
+        ? (() => {
+            const sizeA = rows >= 7 ? 4 : 3;
+            const sizeB = 3;
+            const res = generateSplitFloorplan({
+              sizeA,
+              sizeB,
+              roomBriefs: brief.rooms,
+              rng,
+              walkableOverrides,
+            });
+            const names = brief.subGridNames ?? [
+              { en: 'WEST WING', pt: 'ALA OESTE' },
+              { en: 'EAST WING', pt: 'ALA ESTE' },
+            ];
+            splitGridsSpec = [
+              { id: 'A', name: names[0], rows: sizeA, cols: sizeA, colOffset: 0 },
+              { id: 'B', name: names[1], rows: sizeB, cols: sizeB, colOffset: res.colOffsetB },
+            ];
+            return res;
+          })()
+        : generateFloorplan({
+            rows,
+            cols,
+            roomBriefs: brief.rooms,
+            rng,
+            allowIrregularVoid,
+            walkableOverrides,
+          });
+
+    const totalPlaced = fp.groundTruth.length;
+    const nonVictimCount = twistKind === 'uninvolved' ? totalPlaced : totalPlaced - 1;
     const cast = castAlphabeticalSuspects(nonVictimCount, rng, preferredSuspectIds);
 
-    // Build SuspectDef shells (clauses filled below)
     const cardBgs = rng.shuffle(palette.cardPalette);
     const suspects: SuspectDef[] = cast.suspects.map((prof, idx) => ({
       id: prof.initial,
@@ -289,13 +428,16 @@ export function generateVerifiedCase(options: GenerateCaseOptions): MurdokuCase 
       placements[s.id] = fp.groundTruth[idx];
     });
     placements['V'] = fp.groundTruth[fp.victimIndex];
-
     const activeIds = [...activeNonVictims.map((s) => s.id), 'V'];
 
-    // Configure twist metadata
+    // Configure twist metadata & evaluation context
     let twist: TwistConfig = { kind: 'classic' };
     let outlawId: string | undefined;
     let liarId: string | undefined;
+    let swappedPair: [string, string] | undefined;
+    let pastPlacements: Record<string, GridCoord> | undefined;
+    let secretRoles: SecretRoleDef[] | undefined;
+    let roleAssignment: Record<string, string> | undefined;
 
     if (twistKind === 'outlaw') {
       outlawId = rng.pick(activeNonVictims).id;
@@ -306,7 +448,49 @@ export function generateVerifiedCase(options: GenerateCaseOptions): MurdokuCase 
     } else if (twistKind === 'liar') {
       liarId = rng.pick(activeNonVictims).id;
       twist = { kind: 'liar', mode: 'single_liar', liarSuspectId: liarId };
+    } else if (twistKind === 'split_grids' && splitGridsSpec) {
+      twist = { kind: 'split_grids', grids: splitGridsSpec };
+    } else if (twistKind === 'time_travel') {
+      // Pick 2 non-victim suspects in DIFFERENT rooms to swap across Past <-> Present!
+      const shuffledNV = rng.shuffle(activeNonVictims);
+      const s1 = shuffledNV[0];
+      const r1 = board.roomGrid[placements[s1.id].r][placements[s1.id].c];
+      const s2 =
+        shuffledNV.find((s) => s.id !== s1.id && board.roomGrid[placements[s.id].r][placements[s.id].c] !== r1) ??
+        shuffledNV[1];
+      const pair = [s1.id, s2.id].sort() as [string, string];
+      swappedPair = pair;
+      pastPlacements = { ...placements, [pair[0]]: placements[pair[1]], [pair[1]]: placements[pair[0]] };
+      twist = { kind: 'time_travel', swappedPair: pair };
+    } else if (twistKind === 'secret_identities') {
+      const roleCount = Math.min(3, activeNonVictims.length - 1);
+      const chosenRoleTemplates = rng.shuffle(SECRET_ROLE_POOL).slice(0, roleCount);
+      const holders = rng.shuffle(activeNonVictims).slice(0, roleCount);
+      roleAssignment = {};
+      secretRoles = chosenRoleTemplates.map((rt, idx) => {
+        const holder = holders[idx];
+        roleAssignment![rt.id] = holder.id;
+        const rCandidates = rng.shuffle(harvestRoleClauses(board, holder.id, placements, fp.rooms));
+        return {
+          id: rt.id,
+          title: rt.title,
+          clauses: rCandidates.slice(0, Math.min(2, rCandidates.length)),
+          clueText: { en: '', pt: '' },
+        };
+      });
+      twist = {
+        kind: 'secret_identities',
+        roles: secretRoles,
+        keyRoleId: secretRoles[0].id,
+      };
     }
+
+    const evalCtx: EvalContext = {
+      outlawId,
+      swappedPair,
+      pastPlacements,
+      roleAssignment,
+    };
 
     // Build candidate clue pools for every active non-victim suspect
     const pools: Record<string, ScoredClause[]> = {};
@@ -315,8 +499,16 @@ export function generateVerifiedCase(options: GenerateCaseOptions): MurdokuCase 
         const falses = rng.shuffle(harvestFalseClauses(board, s.id, activeIds, placements, fp.rooms));
         pools[s.id] = falses.map((clause) => ({ clause, weight: 85 }));
       } else {
-        const raw = harvestCandidateClauses(board, s.id, activeIds, placements, fp.rooms, difficulty, outlawId);
-        // Shuffle within similar weight bands for rich variety
+        const raw = harvestCandidateClauses(
+          board,
+          s.id,
+          activeIds,
+          placements,
+          fp.rooms,
+          difficulty,
+          evalCtx,
+          { isSplitGrid: twistKind === 'split_grids', roles: secretRoles }
+        );
         pools[s.id] = raw
           .map((item) => ({ ...item, sortKey: item.weight + rng.int(-12, 12) }))
           .sort((a, b) => b.sortKey - a.sortKey)
@@ -324,10 +516,8 @@ export function generateVerifiedCase(options: GenerateCaseOptions): MurdokuCase 
       }
     }
 
-    // For uninvolved suspect, give a plausible-sounding clue that creates a contradiction if they WERE placed
     if (twistKind === 'uninvolved' && uninvolvedId) {
       const unSuspect = suspects.find((s) => s.id === uninvolvedId)!;
-      // Pick a tight constraint (e.g. same row as an active suspect's row + same col as another) so placing them causes an instant conflict
       const sampleA = placements[activeNonVictims[0].id];
       const sampleB = placements[activeNonVictims[1].id];
       unSuspect.clauses = [
@@ -343,23 +533,48 @@ export function generateVerifiedCase(options: GenerateCaseOptions): MurdokuCase 
       }
     }
 
-    // For outlaw twist, make sure at least 1 suspect explicitly references the outlaw
+    // Twist-specific seed clauses so the twist mechanic is genuinely central to solving the case!
     if (twistKind === 'outlaw' && outlawId) {
       const nonOutlaws = rng.shuffle(activeNonVictims.filter((s) => s.id !== outlawId));
       for (const s of nonOutlaws) {
-        const outlawClauseIdx = pools[s.id].findIndex((c) =>
-          c.clause.kind.includes('outlaw')
-        );
-        if (outlawClauseIdx !== -1) {
-          const [picked] = pools[s.id].splice(outlawClauseIdx, 1);
-          s.clauses = [picked.clause];
+        const idx = pools[s.id].findIndex((c) => c.clause.kind.includes('outlaw'));
+        if (idx !== -1) {
+          s.clauses = [pools[s.id].splice(idx, 1)[0].clause];
           break;
+        }
+      }
+    } else if (twistKind === 'time_travel' && swappedPair) {
+      // Ensure BOTH swapped suspects have a clear Past-timeline clue + a Present clue
+      for (const moverId of swappedPair) {
+        const mover = activeNonVictims.find((s) => s.id === moverId)!;
+        const pastIdx = pools[moverId].findIndex(
+          (c) => c.clause.kind === 'past_in_room' || c.clause.kind === 'past_same_room_as' || c.clause.kind === 'past_beside_object'
+        );
+        if (pastIdx !== -1) {
+          const pastCl = pools[moverId].splice(pastIdx, 1)[0].clause;
+          mover.clauses = [pastCl, ...mover.clauses.slice(0, 1)];
+        }
+      }
+    } else if (twistKind === 'secret_identities' && secretRoles && roleAssignment) {
+      // Ensure at least 2 suspects reference roles so role deduction links tightly with spatial deduction
+      let roleRefs = 0;
+      for (const s of rng.shuffle(activeNonVictims)) {
+        if (roleRefs >= 2) break;
+        const idx = pools[s.id].findIndex(
+          (c) =>
+            c.clause.kind === 'same_room_as_role' ||
+            c.clause.kind === 'north_of_role' ||
+            c.clause.kind === 'south_of_role' ||
+            c.clause.kind === 'east_of_role' ||
+            c.clause.kind === 'west_of_role'
+        );
+        if (idx !== -1) {
+          s.clauses = [pools[s.id].splice(idx, 1)[0].clause];
+          roleRefs++;
         }
       }
     }
 
-    // Step 2: Iteratively refine clues until solveCSP returns EXACTLY 1 solution!
-    // (For missing_piece, first achieve uniqueness on the real map, then carve 1 true + 3 contradicting patches!)
     const baseTwistForSolve: TwistConfig =
       twistKind === 'missing_piece' ? { kind: 'classic' } : twist;
 
@@ -377,11 +592,10 @@ export function generateVerifiedCase(options: GenerateCaseOptions): MurdokuCase 
     );
 
     let guard = 0;
-    while (solutions.length !== 1 && guard < 28) {
+    while (solutions.length !== 1 && guard < 32) {
       guard++;
-      if (solutions.length === 0) break; // inconsistent, retry attempt
+      if (solutions.length === 0) break;
 
-      // Find a suspect whose placement differs between solution[0] and solution[1]
       const [solA, solB] = solutions;
       const diffSuspects = rng.shuffle(
         activeNonVictims.filter((s) => {
@@ -392,17 +606,23 @@ export function generateVerifiedCase(options: GenerateCaseOptions): MurdokuCase 
         })
       );
 
+      const solBCtx: EvalContext = {
+        outlawId: solB.outlawId,
+        swappedPair: solB.timeSwappedPair,
+        pastPlacements: solB.pastPlacements,
+        roleAssignment: solB.roleAssignment,
+      };
+
       let added = false;
       const targetOrder = diffSuspects.length > 0 ? diffSuspects : rng.shuffle(activeNonVictims);
       for (const s of targetOrder) {
         if (s.clauses.length >= 2) continue;
-        // Pick a clause from pool that rules out the alternate solution if possible
         const pool = pools[s.id];
         if (!pool || pool.length === 0) continue;
 
         let chosenIdx = pool.findIndex((item) => {
-          if (s.id === liarId) return false; // keep liar to 1 crisp false clause!
-          const altTrue = evaluateClauseFull(board, s.id, item.clause, solB.placements, solB.outlawId);
+          if (s.id === liarId) return false;
+          const altTrue = evaluateClauseFull(board, s.id, item.clause, solB.placements, solBCtx);
           return !altTrue;
         });
         if (chosenIdx === -1 && s.id !== liarId) chosenIdx = 0;
@@ -415,8 +635,9 @@ export function generateVerifiedCase(options: GenerateCaseOptions): MurdokuCase 
       }
 
       if (!added) {
-        // Fallback: allow 3rd clause on a suspect if needed on Expert/8x8
-        const anyS = targetOrder.find((s) => s.id !== liarId && pools[s.id]?.length > 0 && s.clauses.length < 3);
+        const anyS = targetOrder.find(
+          (s) => s.id !== liarId && pools[s.id]?.length > 0 && s.clauses.length < 3
+        );
         if (!anyS) break;
         anyS.clauses.push(pools[anyS.id].shift()!.clause);
       }
@@ -437,7 +658,7 @@ export function generateVerifiedCase(options: GenerateCaseOptions): MurdokuCase 
 
     if (solutions.length !== 1) continue;
 
-    // Step 3: Prune redundant clauses so clues stay crisp & book-like (1–2 clauses per card)
+    // Prune redundant clauses so cards remain clean and concise
     for (const s of rng.shuffle(activeNonVictims)) {
       if (s.clauses.length <= 1) continue;
       for (let ci = s.clauses.length - 1; ci >= 0; ci--) {
@@ -461,21 +682,18 @@ export function generateVerifiedCase(options: GenerateCaseOptions): MurdokuCase 
       }
     }
 
-    // Step 4: If twistKind === 'missing_piece', carve a 2×2 patch region and generate 3 contradicting decoys!
+    // Carve missing_piece 2x2 patches if needed
     if (twistKind === 'missing_piece') {
       const originR = rng.int(0, fp.rows - 2);
       const originC = rng.int(0, fp.cols - 2);
       const height = 2;
       const width = 2;
-
       const inPatch = (r: number, c: number) =>
         r >= originR && r < originR + height && c >= originC && c < originC + width;
-
       const trueObjects = fp.objects.filter((o) => inPatch(o.r, o.c));
       const decoyPatches: MapObject[][] = [];
-
-      // Create 3 distinct decoy object layouts inside the 2x2 patch that each yield 0 solutions!
       const blockerPool = ['table', 'shelf', 'tv', 'plant', 'crate', 'barrel'];
+
       for (let dTry = 0; dTry < 60 && decoyPatches.length < 3; dTry++) {
         const candObjs: MapObject[] = [];
         for (let r = originR; r < originR + height; r++) {
@@ -486,7 +704,6 @@ export function generateVerifiedCase(options: GenerateCaseOptions): MurdokuCase 
             }
           }
         }
-        // Ensure visually distinct from trueObjects & existing decoys
         const sig = JSON.stringify(candObjs.map((o) => `${o.r},${o.c}:${o.type}`).sort());
         const trueSig = JSON.stringify(trueObjects.map((o) => `${o.r},${o.c}:${o.type}`).sort());
         if (sig === trueSig) continue;
@@ -546,7 +763,6 @@ export function generateVerifiedCase(options: GenerateCaseOptions): MurdokuCase 
       };
     }
 
-    // Final ironclad verification across the complete case (including twist!)
     const finalSolutions = solveCSP(
       {
         rows: fp.rows,
@@ -563,11 +779,26 @@ export function generateVerifiedCase(options: GenerateCaseOptions): MurdokuCase 
     if (finalSolutions.length !== 1) continue;
     const verifiedSolution: CaseSolution = finalSolutions[0];
 
-    // Format all suspect clues in both EN & PT-PT
-    const suspectsById = Object.fromEntries(suspects.map((s) => [s.id, { name: s.name, gender: s.gender }]));
+    const suspectsById = Object.fromEntries(
+      suspects.map((s) => [s.id, { name: s.name, gender: s.gender }])
+    );
+    const rolesById = secretRoles ? Object.fromEntries(secretRoles.map((r) => [r.id, r])) : undefined;
+    const formatExtras: ClueFormatExtras = {
+      subGrids: splitGridsSpec,
+      rolesById,
+    };
+
+    if (twist.kind === 'secret_identities' && secretRoles) {
+      const formattedRoles = secretRoles.map((r) => ({
+        ...r,
+        clueText: formatRoleClue(r, roomsById, suspectsById, fp.rows, fp.cols, formatExtras),
+      }));
+      twist = { ...twist, roles: formattedRoles };
+    }
+
     const formattedSuspects: SuspectDef[] = suspects.map((s) => ({
       ...s,
-      clueText: formatSuspectClue(s, roomsById, suspectsById, fp.rows, fp.cols),
+      clueText: formatSuspectClue(s, roomsById, suspectsById, fp.rows, fp.cols, formatExtras),
     }));
 
     const proofSteps = generateDeductionProof({
@@ -587,6 +818,10 @@ export function generateVerifiedCase(options: GenerateCaseOptions): MurdokuCase 
       pageLeft,
       pageRight,
       volume,
+      edition: brief.edition,
+      chapterLabel: brief.chapterLabel,
+      cardTheme: brief.cardTheme,
+      walkableOverrides: walkableOverrides.length > 0 ? walkableOverrides : undefined,
       date,
       title: brief.title,
       subtitle: brief.subtitle,
@@ -605,7 +840,6 @@ export function generateVerifiedCase(options: GenerateCaseOptions): MurdokuCase 
     };
   }
 
-  // Fallback recursive call with relaxed seed if 40 attempts didn't converge (should virtually never happen)
   return generateVerifiedCase({
     ...options,
     seed: `${seed}_fb_${baseRng.int(1, 9999)}`,
@@ -626,11 +860,11 @@ export interface DailyScheduleSpec {
  * Repeating 4-day difficulty ladder for the Daily Mystery Volume:
  *   Day 0: Easy   (5×5, 4 rooms)
  *   Day 1: Medium (6×6, 5 rooms)
- *   Day 2: Hard   (7×7, 6 rooms)
- *   Day 3: Expert (8×8 Classic or 7×7 Twist, 6 rooms)
+ *   Day 2: Hard   (7×7 / 6×6 twist, 5-6 rooms)
+ *   Day 3: Expert (8×8 Classic or 7×7 / 6×6 Advanced Twist, 6 rooms)
  *   ...then repeats!
- * Across consecutive 4-day cycles, Medium/Hard/Expert rotate smoothly between
- * Classic Book 1 and all 4 Book 2/3 twists (outlaw, uninvolved, missing_piece, liar).
+ * Across consecutive 4-day cycles, Medium/Hard/Expert rotate cleanly through
+ * Classic Book 1 + Volume 2 (Outlaw, Time Travel) + Volume 3 (Split Grids, Secret Identities, Alibi, Torn Map, Liar).
  */
 export function getDailyScheduleForDate(dateStr: string): DailyScheduleSpec {
   const [y, m, d] = dateStr.split('-').map(Number);
@@ -648,8 +882,8 @@ export function getDailyScheduleForDate(dateStr: string): DailyScheduleSpec {
         twistKind: 'classic',
         allowIrregularVoid: false,
       };
-    case 1: { // Medium: 6x6 alternating Classic / Outlaw / Uninvolved
-      const medTwists: TwistKind[] = ['classic', 'outlaw', 'uninvolved'];
+    case 1: { // Medium: 6x6 rotating Classic / Outlaw / Split Grids / Uninvolved
+      const medTwists: TwistKind[] = ['classic', 'outlaw', 'split_grids', 'uninvolved'];
       const twistKind = medTwists[((cycle % medTwists.length) + medTwists.length) % medTwists.length];
       return {
         rows: 6,
@@ -660,21 +894,22 @@ export function getDailyScheduleForDate(dateStr: string): DailyScheduleSpec {
         allowIrregularVoid: false,
       };
     }
-    case 2: { // Hard: 7x7 alternating Classic (irregular courtyard) / Missing Piece / Outlaw
-      const hardTwists: TwistKind[] = ['classic', 'missing_piece', 'outlaw'];
+    case 2: { // Hard: 7x7 rotating Time Travel / Missing Piece / Secret Identities / Classic
+      const hardTwists: TwistKind[] = ['time_travel', 'missing_piece', 'secret_identities', 'classic'];
       const twistKind = hardTwists[((cycle % hardTwists.length) + hardTwists.length) % hardTwists.length];
+      const useSix = twistKind === 'missing_piece' || twistKind === 'time_travel' || twistKind === 'secret_identities';
       return {
-        rows: twistKind === 'missing_piece' ? 6 : 7,
-        cols: twistKind === 'missing_piece' ? 6 : 7,
-        roomCount: twistKind === 'missing_piece' ? 5 : 6,
+        rows: useSix ? 6 : 7,
+        cols: useSix ? 6 : 7,
+        roomCount: useSix ? 5 : 6,
         difficulty: 'hard',
         twistKind,
         allowIrregularVoid: twistKind === 'classic',
       };
     }
     case 3:
-    default: { // Expert: 8x8 Classic or 7x7 Liar / Uninvolved
-      const expTwists: TwistKind[] = ['classic', 'liar', 'uninvolved'];
+    default: { // Expert: 8x8 Classic or 7x7 Liar / Split Grids / Time Travel / Secret Identities
+      const expTwists: TwistKind[] = ['classic', 'liar', 'split_grids', 'secret_identities'];
       const twistKind = expTwists[((cycle % expTwists.length) + expTwists.length) % expTwists.length];
       const isClassic = twistKind === 'classic';
       return {

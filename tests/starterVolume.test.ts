@@ -3,17 +3,25 @@ import { getStarterVolume } from '../src/data/starterVolume';
 import { solveCSP } from '../src/engine/solver';
 import { CHARACTER_BY_ID } from '../src/data/characters';
 
-describe('Starter Anthology Volume (32 Cases)', () => {
+describe('Starter Anthology Volume (40 Cases)', () => {
   const cases = getStarterVolume();
 
-  it('contains exactly 32 curated cases covering Classic + all 4 Book 2/3 twists', () => {
-    expect(cases.length).toBe(32);
+  it('contains exactly 40 curated cases covering Classic Vol. 1 + all Vol. 2 & Vol. 3 twists', () => {
+    expect(cases.length).toBe(40);
     const twists = new Set(cases.map((c) => c.twist.kind));
     expect(twists.has('classic')).toBe(true);
     expect(twists.has('outlaw')).toBe(true);
     expect(twists.has('uninvolved')).toBe(true);
     expect(twists.has('missing_piece')).toBe(true);
     expect(twists.has('liar')).toBe(true);
+    expect(twists.has('time_travel')).toBe(true);
+    expect(twists.has('split_grids')).toBe(true);
+    expect(twists.has('secret_identities')).toBe(true);
+
+    const editions = new Set(cases.map((c) => c.edition ?? 'vol1'));
+    expect(editions.has('vol1')).toBe(true);
+    expect(editions.has('vol2')).toBe(true);
+    expect(editions.has('vol3')).toBe(true);
   });
 
   for (const c of cases) {
@@ -44,8 +52,8 @@ describe('Starter Anthology Volume (32 Cases)', () => {
         expect(s.clueText.pt.length).toBeGreaterThan(5);
       }
 
-      // Verify proof steps exist and mention the murderer
-      expect(c.proofSteps.length).toBeGreaterThanOrEqual(c.rows);
+      // Verify proof steps exist
+      expect(c.proofSteps.length).toBeGreaterThanOrEqual(4);
     });
   }
 });

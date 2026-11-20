@@ -100,6 +100,85 @@ const MissingPatchesStrip: React.FC<{
   );
 };
 
+const REGIONAL_STAMP_OBJECTS = new Set([
+  'horse', 'boat', 'rowboat', 'car', 'golf_cart', 'elephant', 'lion', 'bear', 'penguin',
+  'shark', 'crocodile', 'boar', 'catapult', 'statue', 'cactus', 'bonsai', 'palmtree',
+  'flowers', 'lily_pad', 'puddle', 'bed', 'carpet',
+]);
+
+/** Volume 3 Occupancy Stamps: visual tile guides removing walkability ambiguity */
+const OccupancyStampsStrip: React.FC<{ murdokuCase: MurdokuCase; lang: Lang }> = ({
+  murdokuCase,
+  lang,
+}) => {
+  const t = UI_STRINGS[lang];
+  const overrideSet = new Set(murdokuCase.walkableOverrides ?? []);
+  const seen = new Map<string, boolean>();
+
+  for (const obj of murdokuCase.objects) {
+    if (seen.has(obj.type)) continue;
+    if (overrideSet.has(obj.type) || REGIONAL_STAMP_OBJECTS.has(obj.type)) {
+      seen.set(obj.type, obj.walkable);
+    }
+  }
+
+  // Only show strip if case is Vol 2/3, has overrides, or has >= 2 regional/special objects
+  const entries = Array.from(seen.entries())
+    .sort((a, b) => Number(b[1]) - Number(a[1]))
+    .slice(0, 5);
+
+  if (entries.length === 0) return null;
+  if (
+    murdokuCase.edition !== 'vol2' &&
+    murdokuCase.edition !== 'vol3' &&
+    overrideSet.size === 0 &&
+    entries.length < 2
+  ) {
+    return null;
+  }
+
+  const objectColors = (PAPER_PALETTES[murdokuCase.paperTheme] ?? PAPER_PALETTES.lilac).objectColors;
+
+  return (
+    <div className="occupancy-stamps" aria-label="Occupancy stamps">
+      {entries.map(([objType, walkable]) => {
+        const meta = OBJECT_CATALOG[objType];
+        if (!meta) return null;
+        const role = getObjectTintRole(objType);
+        const fid = `stamp-${murdokuCase.id}-${objType}`;
+        return (
+          <span
+            key={objType}
+            className={`occ-stamp ${walkable ? 'occ-stamp--can' : 'occ-stamp--cannot'}`}
+            title={walkable ? t.occupancyCan : t.occupancyCannot}
+          >
+            <svg width="20" height="20" viewBox="0 0 64 64" aria-hidden="true">
+              {role && (
+                <defs>
+                  <filter id={fid} colorInterpolationFilters="sRGB">
+                    <feColorMatrix type="matrix" values={hexToTintMatrix(objectColors[role])} />
+                  </filter>
+                </defs>
+              )}
+              <image
+                href={meta.svgPath}
+                x="4"
+                y="4"
+                width="56"
+                height="56"
+                filter={role ? `url(#${fid})` : undefined}
+              />
+            </svg>
+            <span className="occ-stamp__tile" aria-hidden="true">
+              {walkable ? '✓' : '✕'}
+            </span>
+          </span>
+        );
+      })}
+    </div>
+  );
+};
+
 export interface RightMapPageProps {
   murdokuCase: MurdokuCase;
   lang: Lang;
@@ -138,6 +217,8 @@ export const RightMapPage: React.FC<RightMapPageProps> = ({
           previewPatchId={selectedPatchId}
         />
 
+        <OccupancyStampsStrip murdokuCase={murdokuCase} lang={lang} />
+
         {murdokuCase.twist.kind === 'missing_piece' && (
           <MissingPatchesStrip
             twist={murdokuCase.twist}
@@ -163,7 +244,7 @@ export const RightMapPage: React.FC<RightMapPageProps> = ({
 
         <button
           type="button"
-          className="verdict-slip"
+          className="verdict-slip verdict-cta-btn"
           onClick={onOpenVerdict}
           aria-label={t.accuseTitle}
         >

@@ -452,6 +452,11 @@
   color: #8c2d1f;
 }
 
+.toc-badge--chapter {
+  background: #e2e8f4;
+  color: #2c436b;
+}
+
 .toc-badge--solved {
   background: #d8eee0;
   color: #1f6b3e;
@@ -460,6 +465,35 @@
 .toc-badge--today {
   background: #1e1b22;
   color: #f4efe5;
+}
+
+.toc-vol-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.toc-vol-pill {
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(24, 24, 34, 0.14);
+  color: #36343d;
+  transition: background 0.14s ease, color 0.14s ease, border-color 0.14s ease;
+}
+
+.toc-vol-pill:hover {
+  background: #ffffff;
+}
+
+.toc-vol-pill.is-active {
+  background: #23202a;
+  color: #f6f0e4;
+  border-color: #23202a;
 }
 
 /* Strict Horizontal Landscape Lock Overlay (shown whenever device is held vertically) */

@@ -9,7 +9,14 @@ import type {
 } from './types';
 import { buildBoardIndex, evaluateUnaryClause } from './predicates';
 
-function coordLabel(c: GridCoord): string {
+function coordLabel(c: GridCoord, twist?: TwistConfig): string {
+  if (twist?.kind === 'split_grids') {
+    const [gA, gB] = twist.grids;
+    if (c.c >= gB.colOffset) {
+      return `${gB.id}:R${c.r + 1}C${c.c - gB.colOffset + 1}`;
+    }
+    return `${gA.id}:R${c.r + 1}C${c.c + 1}`;
+  }
   return `R${c.r + 1}C${c.c + 1}`;
 }
 
@@ -53,7 +60,7 @@ export function generateDeductionProof(params: {
   const steps: ProofStep[] = [];
   let stepNum = 1;
 
-  // Step 0 for Book 2/3 twists: explain twist deduction clearly
+  // Step 1 for Book 2/3 twists: explain twist deduction clearly
   if (twist.kind === 'missing_piece' && solution.correctPatchId) {
     const others = (['A', 'B', 'C', 'D'] as const).filter((id) => id !== solution.correctPatchId);
     steps.push({
@@ -96,9 +103,56 @@ export function generateDeductionProof(params: {
         pt: `Pela regra do Fora-da-Lei e pelas referências cruzadas, **${outlaw.name}** é o único **Fora-da-Lei**, em **${roomName(roomsById, rId, 'pt')}**.`,
       },
     });
+  } else if (twist.kind === 'time_travel' && solution.timeSwappedPair) {
+    const [aId, bId] = solution.timeSwappedPair;
+    const sa = suspectsById[aId];
+    const sb = suspectsById[bId];
+    steps.push({
+      stepNumber: stepNum++,
+      focusSuspectId: aId,
+      text: {
+        en: `Comparing Past and Present clues reveals that **${sa.name}** and **${sb.name}** are the exact two suspects who swapped positions across time; everyone else stayed in place.`,
+        pt: `Comparando as pistas do Passado e do Presente, **${sa.name}** e **${sb.name}** são os dois suspeitos que trocaram de posição no tempo; todos os outros permaneceram no mesmo lugar.`,
+      },
+    });
+  } else if (twist.kind === 'split_grids') {
+    const [gA, gB] = twist.grids;
+    const inA = suspects
+      .filter((s) => {
+        const p = solution.placements[s.id];
+        return p && p.c < gB.colOffset;
+      })
+      .map((s) => s.name);
+    const inB = suspects
+      .filter((s) => {
+        const p = solution.placements[s.id];
+        return p && p.c >= gB.colOffset;
+      })
+      .map((s) => s.name);
+    steps.push({
+      stepNumber: stepNum++,
+      text: {
+        en: `Balance headcounts across the two independent grids: **${gA.name.en}** (${gA.rows} people: ${inA.join(', ')}) and **${gB.name.en}** (${gB.rows} people: ${inB.join(', ')}).`,
+        pt: `Equilibra as duas grelhas independentes: **${gA.name.pt}** (${gA.rows} pessoas: ${inA.join(', ')}) e **${gB.name.pt}** (${gB.rows} pessoas: ${inB.join(', ')}).`,
+      },
+    });
+  } else if (twist.kind === 'secret_identities' && solution.roleAssignment) {
+    const pairsEn = twist.roles
+      .map((r) => `**${r.title.en}** = ${suspectsById[solution.roleAssignment![r.id]]?.name}`)
+      .join(', ');
+    const pairsPt = twist.roles
+      .map((r) => `**${r.title.pt}** = ${suspectsById[solution.roleAssignment![r.id]]?.name}`)
+      .join(', ');
+    steps.push({
+      stepNumber: stepNum++,
+      text: {
+        en: `Cross-referencing named clues with the Secret Identities dossier uniquely unmasks the roles: ${pairsEn}.`,
+        pt: `Cruzando as pistas dos suspeitos com o dossier de Identidades Secretas revela-se: ${pairsPt}.`,
+      },
+    });
   }
 
-  // Sort active non-victim suspects by how constrained their unary domain is (most constrained first = authentic human order!)
+  // Sort active non-victim suspects by unary constraint tightness
   const activeNonVictim = suspects
     .filter((s) => !s.isVictim && s.id !== solution.uninvolvedId)
     .map((s) => {
@@ -125,8 +179,8 @@ export function generateDeductionProof(params: {
         focusSuspectId: suspect.id,
         focusRoomId: rId,
         text: {
-          en: `Because **${suspect.name}** is lying, negate their clue and eliminate used rows/columns to place **${suspect.name}** at **${coordLabel(pos)}** in **${rEn}**.`,
-          pt: `Como **${suspect.name}** está a mentir, nega a sua pista e elimina linhas/colunas usadas para colocar **${suspect.name}** em **${coordLabel(pos)}** (**${rPt}**).`,
+          en: `Because **${suspect.name}** is lying, negate their clue and eliminate used rows/columns to place **${suspect.name}** at **${coordLabel(pos, twist)}** in **${rEn}**.`,
+          pt: `Como **${suspect.name}** está a mentir, nega a sua pista e elimina linhas/colunas usadas para colocar **${suspect.name}** em **${coordLabel(pos, twist)}** (**${rPt}**).`,
         },
       });
     } else if (domainSize <= 2) {
@@ -135,8 +189,8 @@ export function generateDeductionProof(params: {
         focusSuspectId: suspect.id,
         focusRoomId: rId,
         text: {
-          en: `**${suspect.name}**'s clue restricts them to just ${domainSize === 1 ? 'one square' : 'two squares'}. Cross-checking rows and columns places **${suspect.name}** at **${coordLabel(pos)}** in **${rEn}**.`,
-          pt: `A pista de **${suspect.name}** limita-se a ${domainSize === 1 ? 'um único quadrado' : 'dois quadrados'}. Cruzando linhas e colunas, **${suspect.name}** fica em **${coordLabel(pos)}** (**${rPt}**).`,
+          en: `**${suspect.name}**'s clue restricts them to just ${domainSize === 1 ? 'one square' : 'two squares'}. Cross-checking rows and columns places **${suspect.name}** at **${coordLabel(pos, twist)}** in **${rEn}**.`,
+          pt: `A pista de **${suspect.name}** limita-se a ${domainSize === 1 ? 'um único quadrado' : 'dois quadrados'}. Cruzando linhas e colunas, **${suspect.name}** fica em **${coordLabel(pos, twist)}** (**${rPt}**).`,
         },
       });
     } else {
@@ -145,8 +199,8 @@ export function generateDeductionProof(params: {
         focusSuspectId: suspect.id,
         focusRoomId: rId,
         text: {
-          en: `Combine **${suspect.name}**'s clue with the rows and columns already claimed to deduce **${suspect.name}** is at **${coordLabel(pos)}** in **${rEn}**.`,
-          pt: `Combina a pista de **${suspect.name}** com as linhas e colunas já ocupadas para deduzir **${suspect.name}** em **${coordLabel(pos)}** (**${rPt}**).`,
+          en: `Combine **${suspect.name}**'s clue with the rows and columns already claimed to deduce **${suspect.name}** is at **${coordLabel(pos, twist)}** in **${rEn}**.`,
+          pt: `Combina a pista de **${suspect.name}** com as linhas e colunas já ocupadas para deduzir **${suspect.name}** em **${coordLabel(pos, twist)}** (**${rPt}**).`,
         },
       });
     }
@@ -164,8 +218,8 @@ export function generateDeductionProof(params: {
     focusSuspectId: killer.id,
     focusRoomId: solution.victimRoomId,
     text: {
-      en: `The last open row and column place **${victim.name} (The Victim)** at **${coordLabel(vPos)}** in **${vRoomEn}**, alone with **${killer.name}** — making **${killer.name}** the murderer!`,
-      pt: `A última linha e coluna livres colocam **${victim.name} (A Vítima)** em **${coordLabel(vPos)}** em **${vRoomPt}**, a sós com **${killer.name}** — **${killer.name}** é o assassino!`,
+      en: `The last open row and column place **${victim.name} (The Victim)** at **${coordLabel(vPos, twist)}** in **${vRoomEn}**, alone with **${killer.name}** — making **${killer.name}** the murderer!`,
+      pt: `A última linha e coluna livres colocam **${victim.name} (A Vítima)** em **${coordLabel(vPos, twist)}** em **${vRoomPt}**, a sós com **${killer.name}** — **${killer.name}** é o assassino!`,
     },
   });
 

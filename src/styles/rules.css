@@ -267,7 +267,13 @@
 .rule-twists-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 10px;
+  gap: 8px;
+}
+
+.rule-twists-grid--six .rule-twist-card {
+  padding: 7px 10px;
+  border-radius: 14px;
+  gap: 3px;
 }
 
 .rule-twist-card {

@@ -7,7 +7,26 @@ export interface LocalizedText {
 
 export type Difficulty = 'easy' | 'medium' | 'hard' | 'expert';
 
-export type TwistKind = 'classic' | 'outlaw' | 'uninvolved' | 'missing_piece' | 'liar';
+export type TwistKind =
+  | 'classic'
+  | 'outlaw'
+  | 'uninvolved'
+  | 'missing_piece'
+  | 'liar'
+  | 'time_travel'
+  | 'split_grids'
+  | 'secret_identities';
+
+export type BookEdition = 'vol1' | 'vol2' | 'vol3';
+
+export type CardThemeId =
+  | 'classic'
+  | 'wild_west'
+  | 'pirate'
+  | 'egypt'
+  | 'medieval'
+  | 'stone_age'
+  | 'around_world';
 
 export type PaperThemeId =
   | 'lilac'
@@ -47,6 +66,8 @@ export interface RoomDef {
   texture: string; // e.g. 'squaretile', 'woodentile', etc.
   floorColor: string; // soft pastel tint applied behind texture
   cells: GridCoord[];
+  /** Optional sub-grid ID for Volume 3 Split Crime Scenes */
+  subGridId?: 'A' | 'B';
   /** Optional override for badge position (defaults to widest bottom wall segment) */
   badgeCell?: GridCoord;
 }
@@ -55,7 +76,7 @@ export interface MapObject {
   type: string; // verified object key from OBJECT_CATALOG e.g. 'chair', 'table', 'tv', 'shelf', 'carpet'
   r: number;
   c: number;
-  /** True if a suspect can occupy this square (e.g. chair, bed, carpet, flowers, window) */
+  /** True if a suspect can occupy this square (e.g. chair, bed, carpet, flowers, or era-overridden horse/boat/car) */
   walkable: boolean;
   /** Optional autotile group id if part of multi-cell table or carpet */
   tileIndex?: string; // '01'..'49'
@@ -106,12 +127,50 @@ export interface LiarTwist {
   liarSuspectId: string; // letter initial (never 'V')
 }
 
+/** Volume 2: Time Travel — exact 2 non-victim suspects swapped squares between Past and Present */
+export interface TimeTravelTwist {
+  kind: 'time_travel';
+  swappedPair: [string, string]; // sorted suspect IDs e.g. ['A', 'D']
+}
+
+export interface SubGridSpec {
+  id: 'A' | 'B';
+  name: LocalizedText;
+  rows: number;
+  cols: number;
+  colOffset: number;
+}
+
+/** Volume 3: Multiple Grids — 2 independent crime-scene grids with local N-rooks & global suspect pool */
+export interface SplitGridsTwist {
+  kind: 'split_grids';
+  grids: [SubGridSpec, SubGridSpec];
+}
+
+export interface SecretRoleDef {
+  id: string;
+  title: LocalizedText;
+  clauses: ClueClause[];
+  clueText: LocalizedText;
+}
+
+/** Volume 3: Secret Identities — hidden role titles decoupled from suspect names */
+export interface SecretIdentitiesTwist {
+  kind: 'secret_identities';
+  roles: SecretRoleDef[];
+  /** Key role verified in VerdictModal alongside the murderer */
+  keyRoleId: string;
+}
+
 export type TwistConfig =
   | { kind: 'classic' }
   | OutlawTwist
   | UninvolvedTwist
   | MissingPieceTwist
-  | LiarTwist;
+  | LiarTwist
+  | TimeTravelTwist
+  | SplitGridsTwist
+  | SecretIdentitiesTwist;
 
 export type ClueClause =
   | { kind: 'in_room'; roomId: string }
@@ -144,7 +203,25 @@ export type ClueClause =
   | { kind: 'east_of_outlaw' }
   | { kind: 'west_of_outlaw' }
   | { kind: 'not_the_outlaw' }
-  | { kind: 'beside_outlaw' };
+  | { kind: 'beside_outlaw' }
+  // Volume 2: Time Travel clauses
+  | { kind: 'past_in_room'; roomId: string }
+  | { kind: 'past_beside_object'; objectType: string }
+  | { kind: 'past_same_room_as'; targetId: string }
+  | { kind: 'stayed_in_place' }
+  | { kind: 'moved_in_time' }
+  // Volume 3: Multiple Grids clauses
+  | { kind: 'in_subgrid'; gridId: 'A' | 'B' }
+  | { kind: 'same_subgrid_as'; targetId: string }
+  | { kind: 'different_subgrid_from'; targetId: string }
+  // Volume 3: Secret Identities clauses
+  | { kind: 'has_role'; roleId: string }
+  | { kind: 'not_role'; roleId: string }
+  | { kind: 'same_room_as_role'; roleId: string }
+  | { kind: 'north_of_role'; roleId: string }
+  | { kind: 'south_of_role'; roleId: string }
+  | { kind: 'east_of_role'; roleId: string }
+  | { kind: 'west_of_role'; roleId: string };
 
 export interface SuspectDef {
   /** Single-letter ID: 'A', 'B', 'C', ... and 'V' for Victim */
@@ -169,7 +246,7 @@ export interface ProofStep {
 }
 
 export interface CaseSolution {
-  /** Map of suspectId -> {r, c} (for uninvolved twist, uninvolved suspect is omitted) */
+  /** Map of suspectId -> {r, c} (Present timeline for time_travel; uninvolved suspect omitted) */
   placements: Record<string, GridCoord>;
   murdererId: string;
   victimRoomId: string;
@@ -177,6 +254,11 @@ export interface CaseSolution {
   uninvolvedId?: string;
   correctPatchId?: 'A' | 'B' | 'C' | 'D';
   liarId?: string;
+  /** Volume 2 Time Travel: the 2 suspects who swapped between Past and Present */
+  timeSwappedPair?: [string, string];
+  pastPlacements?: Record<string, GridCoord>;
+  /** Volume 3 Secret Identities: roleId -> suspectId */
+  roleAssignment?: Record<string, string>;
 }
 
 export interface MurdokuCase {
@@ -185,6 +267,11 @@ export interface MurdokuCase {
   pageLeft: number; // Printed bottom-left page number (e.g. 24)
   pageRight: number; // Printed bottom-right page number (e.g. 25)
   volume: 'starter' | 'daily';
+  edition?: BookEdition;
+  chapterLabel?: LocalizedText; // e.g. 'Ancient Egypt' / 'Antarctica'
+  cardTheme?: CardThemeId;
+  /** Volume 2/3 environmental overrides making specific objects walkable (e.g. ['horse'], ['boat'], ['car']) */
+  walkableOverrides?: string[];
   date?: string; // YYYY-MM-DD for daily cases
   title: LocalizedText;
   subtitle: LocalizedText;
@@ -216,5 +303,10 @@ export interface CreativeBrief {
   subtitle: LocalizedText;
   paperTheme: PaperThemeId;
   themeAccessory: ThemeAccessoryId;
+  edition?: BookEdition;
+  chapterLabel?: LocalizedText;
+  cardTheme?: CardThemeId;
+  walkableOverrides?: string[];
+  subGridNames?: [LocalizedText, LocalizedText];
   rooms: CreativeRoomBrief[];
 }

@@ -26,9 +26,13 @@ interface RoomBadgePos {
   cy: number;
 }
 
-function computeRoomBadges(rooms: RoomDef[], rows: number): RoomBadgePos[] {
+function computeRoomBadges(
+  rooms: RoomDef[],
+  rows: number,
+  cellX: (c: number) => number,
+  cellY: (r: number) => number
+): RoomBadgePos[] {
   return rooms.map((room) => {
-    // Find bottom-most row of this room, and take the horizontal center of its widest contiguous run
     let maxR = -1;
     for (const cell of room.cells) {
       if (cell.r > maxR) maxR = cell.r;
@@ -38,7 +42,6 @@ function computeRoomBadges(rooms: RoomDef[], rows: number): RoomBadgePos[] {
       .map((c) => c.c)
       .sort((a, b) => a - b);
 
-    // Find widest contiguous horizontal segment on bottom row
     let bestStart = bottomCols[0];
     let bestLen = 1;
     let curStart = bottomCols[0];
@@ -60,9 +63,10 @@ function computeRoomBadges(rooms: RoomDef[], rows: number): RoomBadgePos[] {
       bestLen = curLen;
     }
 
-    const cx = PAD + (bestStart + bestLen / 2) * CELL;
-    // Sit right on the room's bottom wall (or slightly tucked inward if on outer bottom edge)
-    const cy = PAD + (maxR + 1) * CELL - (maxR === rows - 1 ? 2 : 0);
+    const leftEdge = cellX(bestStart);
+    const rightEdge = cellX(bestStart + bestLen - 1) + CELL;
+    const cx = (leftEdge + rightEdge) / 2;
+    const cy = cellY(maxR) + CELL - (maxR === rows - 1 ? 2 : 0);
     return { room, cx, cy };
   });
 }
@@ -70,9 +74,7 @@ function computeRoomBadges(rooms: RoomDef[], rows: number): RoomBadgePos[] {
 export interface FloorplanSVGProps {
   murdokuCase: MurdokuCase;
   lang: Lang;
-  /** Optional preview patch for Missing Map Piece twist */
   previewPatchId?: 'A' | 'B' | 'C' | 'D';
-  /** Optional solution overlay (for Back-of-Book view) */
   showSolution?: boolean;
 }
 
@@ -83,8 +85,17 @@ export const FloorplanSVG: React.FC<FloorplanSVGProps> = ({
   showSolution = false,
 }) => {
   const { rows, cols, rooms, objects, voidCells = [], twist, solution } = murdokuCase;
-  const width = cols * CELL + PAD * 2;
-  const height = rows * CELL + PAD * 2;
+
+  const isSplit = twist.kind === 'split_grids';
+  const splitGap = isSplit ? 30 : 0;
+  const topHeader = isSplit ? 24 : 0;
+  const colOffsetB = isSplit ? twist.grids[1].colOffset : cols;
+
+  const cellX = (c: number) => PAD + c * CELL + (isSplit && c >= colOffsetB ? splitGap : 0);
+  const cellY = (r: number) => PAD + topHeader + r * CELL;
+
+  const width = cols * CELL + PAD * 2 + splitGap;
+  const height = rows * CELL + PAD * 2 + topHeader;
 
   const { roomGrid, voidSet, wallSegments, badges, visibleObjects } = useMemo(() => {
     const vSet = new Set(voidCells.map((v) => `${v.r},${v.c}`));
@@ -97,29 +108,24 @@ export const FloorplanSVG: React.FC<FloorplanSVGProps> = ({
       }
     }
 
-    // Thick black wall segments wherever adjacent cells belong to different rooms (or outer edge)
     const segs: Array<{ x1: number; y1: number; x2: number; y2: number }> = [];
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
         const rid = rGrid[r][c];
         if (!rid) continue;
-        const x = PAD + c * CELL;
-        const y = PAD + r * CELL;
+        const x = cellX(c);
+        const y = cellY(r);
 
-        // Top
         if (r === 0 || rGrid[r - 1][c] !== rid) {
           segs.push({ x1: x, y1: y, x2: x + CELL, y2: y });
         }
-        // Bottom
         if (r === rows - 1 || rGrid[r + 1][c] !== rid) {
           segs.push({ x1: x, y1: y + CELL, x2: x + CELL, y2: y + CELL });
         }
-        // Left
-        if (c === 0 || rGrid[r][c - 1] !== rid) {
+        if (c === 0 || rGrid[r][c - 1] !== rid || (isSplit && c === colOffsetB)) {
           segs.push({ x1: x, y1: y, x2: x, y2: y + CELL });
         }
-        // Right
-        if (c === cols - 1 || rGrid[r][c + 1] !== rid) {
+        if (c === cols - 1 || rGrid[r][c + 1] !== rid || (isSplit && c === colOffsetB - 1)) {
           segs.push({ x1: x + CELL, y1: y, x2: x + CELL, y2: y + CELL });
         }
       }
@@ -143,7 +149,6 @@ export const FloorplanSVG: React.FC<FloorplanSVGProps> = ({
       }
     }
 
-    // Render walkable carpets/flowers underneath tables/chairs
     const sortedObjs = effObjs.slice().sort((a, b) => {
       const za = a.type === 'carpet' || a.type === 'flowers' || a.type === 'puddle' ? 0 : 1;
       const zb = b.type === 'carpet' || b.type === 'flowers' || b.type === 'puddle' ? 0 : 1;
@@ -154,10 +159,10 @@ export const FloorplanSVG: React.FC<FloorplanSVGProps> = ({
       roomGrid: rGrid,
       voidSet: vSet,
       wallSegments: segs,
-      badges: computeRoomBadges(rooms, rows),
+      badges: computeRoomBadges(rooms, rows, cellX, cellY),
       visibleObjects: sortedObjs,
     };
-  }, [rows, cols, rooms, objects, voidCells, twist, previewPatchId, showSolution, solution.correctPatchId]);
+  }, [rows, cols, rooms, objects, voidCells, twist, previewPatchId, showSolution, solution.correctPatchId, isSplit, colOffsetB]);
 
   const missingTwist: MissingPieceTwist | null =
     twist.kind === 'missing_piece' && !showSolution ? twist : null;
@@ -203,6 +208,30 @@ export const FloorplanSVG: React.FC<FloorplanSVGProps> = ({
         ))}
       </defs>
 
+      {/* Volume 3 Split-Grid Header Banners */}
+      {twist.kind === 'split_grids' &&
+        twist.grids.map((g) => {
+          const xStart = cellX(g.colOffset);
+          const gWidth = g.cols * CELL;
+          const cx = xStart + gWidth / 2;
+          return (
+            <g key={`subhdr-${g.id}`}>
+              <text
+                x={cx}
+                y={PAD + 14}
+                textAnchor="middle"
+                fontFamily="var(--font-badge)"
+                fontWeight="700"
+                fontSize="13.5"
+                letterSpacing="0.06em"
+                fill="#1b1c22"
+              >
+                {g.name[lang].toUpperCase()} ({g.rows}×{g.cols})
+              </text>
+            </g>
+          );
+        })}
+
       {/* 1. Room Floor Cells with Real Pastel-Tinted Textures */}
       {rooms.map((rm) =>
         rm.cells.map((cell) => {
@@ -210,8 +239,8 @@ export const FloorplanSVG: React.FC<FloorplanSVGProps> = ({
           return (
             <rect
               key={`${rm.id}-${cell.r}-${cell.c}`}
-              x={PAD + cell.c * CELL}
-              y={PAD + cell.r * CELL}
+              x={cellX(cell.c)}
+              y={cellY(cell.r)}
               width={CELL}
               height={CELL}
               fill={`url(#tex-${murdokuCase.id}-${showSolution ? 'sol' : 'map'}-${rm.id})`}
@@ -227,8 +256,8 @@ export const FloorplanSVG: React.FC<FloorplanSVGProps> = ({
           return (
             <rect
               key={`grid-${r}-${c}`}
-              x={PAD + c * CELL}
-              y={PAD + r * CELL}
+              x={cellX(c)}
+              y={cellY(r)}
               width={CELL}
               height={CELL}
               fill="none"
@@ -239,7 +268,7 @@ export const FloorplanSVG: React.FC<FloorplanSVGProps> = ({
         })
       )}
 
-      {/* 3. Furniture & Autotiled Tables/Carpets — tinted to match the scene palette */}
+      {/* 3. Furniture & Autotiled Tables/Carpets */}
       {visibleObjects.map((obj, idx) => {
         const isAutotile = (obj.type === 'table' || obj.type === 'carpet') && !!obj.tileIndex;
         const inset = isAutotile ? 0 : 4;
@@ -248,8 +277,8 @@ export const FloorplanSVG: React.FC<FloorplanSVGProps> = ({
           <image
             key={`obj-${idx}-${obj.r}-${obj.c}-${obj.type}`}
             href={getObjectSvgHref(obj)}
-            x={PAD + obj.c * CELL + inset}
-            y={PAD + obj.r * CELL + inset}
+            x={cellX(obj.c) + inset}
+            y={cellY(obj.r) + inset}
             width={CELL - inset * 2}
             height={CELL - inset * 2}
             preserveAspectRatio="xMidYMid meet"
@@ -258,12 +287,12 @@ export const FloorplanSVG: React.FC<FloorplanSVGProps> = ({
         );
       })}
 
-      {/* 4. Book 3 Missing Map Piece Cutout Overlay (when no patch preview selected) */}
+      {/* 4. Book 3 Missing Map Piece Cutout Overlay */}
       {missingTwist && !previewPatchId && (
         <g>
           <rect
-            x={PAD + missingTwist.originC * CELL + 2}
-            y={PAD + missingTwist.originR * CELL + 2}
+            x={cellX(missingTwist.originC) + 2}
+            y={cellY(missingTwist.originR) + 2}
             width={missingTwist.width * CELL - 4}
             height={missingTwist.height * CELL - 4}
             fill="#f7f4ec"
@@ -273,8 +302,8 @@ export const FloorplanSVG: React.FC<FloorplanSVGProps> = ({
             rx="4"
           />
           <text
-            x={PAD + (missingTwist.originC + missingTwist.width / 2) * CELL}
-            y={PAD + (missingTwist.originR + missingTwist.height / 2) * CELL + 8}
+            x={cellX(missingTwist.originC) + (missingTwist.width / 2) * CELL}
+            y={cellY(missingTwist.originR) + (missingTwist.height / 2) * CELL + 8}
             textAnchor="middle"
             fontFamily="var(--font-display)"
             fontWeight="800"
@@ -286,11 +315,10 @@ export const FloorplanSVG: React.FC<FloorplanSVGProps> = ({
         </g>
       )}
 
-      {/* 4b. Highlight frame when previewing a Missing Map Patch */}
       {missingTwist && previewPatchId && (
         <rect
-          x={PAD + missingTwist.originC * CELL + 1.5}
-          y={PAD + missingTwist.originR * CELL + 1.5}
+          x={cellX(missingTwist.originC) + 1.5}
+          y={cellY(missingTwist.originR) + 1.5}
           width={missingTwist.width * CELL - 3}
           height={missingTwist.height * CELL - 3}
           fill="none"
@@ -308,10 +336,10 @@ export const FloorplanSVG: React.FC<FloorplanSVGProps> = ({
         ))}
       </g>
 
-      {/* 6. Official White Pill Room Name Badges sitting on bottom room walls */}
+      {/* 6. Official White Pill Room Name Badges */}
       {badges.map(({ room, cx, cy }) => {
         const label = room.name[lang].toUpperCase();
-        const badgeW = Math.max(54, label.length * 7.6 + 18);
+        const badgeW = Math.max(54, label.length * 7.4 + 16);
         const badgeH = 19;
         const clampedX = Math.max(PAD + badgeW / 2 + 2, Math.min(width - PAD - badgeW / 2 - 2, cx));
         const clampedY = Math.min(height - PAD - 2, cy);
@@ -333,7 +361,7 @@ export const FloorplanSVG: React.FC<FloorplanSVGProps> = ({
               textAnchor="middle"
               fontFamily="var(--font-badge)"
               fontWeight="700"
-              fontSize="11.5"
+              fontSize="11.2"
               letterSpacing="0.03em"
               fill="#111114"
             >
@@ -348,8 +376,8 @@ export const FloorplanSVG: React.FC<FloorplanSVGProps> = ({
         Object.entries(solution.placements).map(([suspectId, pos]) => {
           const isVictim = suspectId === 'V';
           const isMurderer = suspectId === solution.murdererId;
-          const cx = PAD + (pos.c + 0.5) * CELL;
-          const cy = PAD + (pos.r + 0.5) * CELL;
+          const cx = cellX(pos.c) + CELL / 2;
+          const cy = cellY(pos.r) + CELL / 2;
           return (
             <g key={`sol-${suspectId}`}>
               <circle

@@ -4,6 +4,8 @@ import type {
   LocalizedText,
   OutlawCondition,
   RoomDef,
+  SecretRoleDef,
+  SubGridSpec,
   SuspectDef,
   TwistConfig,
 } from './types';
@@ -33,6 +35,16 @@ function formatRoomName(room: RoomDef, lang: 'en' | 'pt'): string {
     .join(' ');
 }
 
+function formatSubGridName(grids: [SubGridSpec, SubGridSpec] | undefined, gridId: 'A' | 'B', lang: 'en' | 'pt'): string {
+  const g = grids?.find((x) => x.id === gridId);
+  if (!g) return gridId === 'A' ? (lang === 'en' ? 'West Wing' : 'Ala Oeste') : (lang === 'en' ? 'East Wing' : 'Ala Este');
+  return g.name[lang]
+    .toLowerCase()
+    .split(' ')
+    .map((w) => (w.length > 0 ? w[0].toUpperCase() + w.slice(1) : w))
+    .join(' ');
+}
+
 function objArticle(objectType: string, lang: 'en' | 'pt'): string {
   const meta = OBJECT_CATALOG[objectType];
   if (!meta) return objectType;
@@ -45,19 +57,26 @@ function objLabel(objectType: string, lang: 'en' | 'pt'): string {
   return meta.label[lang];
 }
 
+export interface ClueFormatExtras {
+  subGrids?: [SubGridSpec, SubGridSpec];
+  rolesById?: Record<string, SecretRoleDef>;
+}
+
 export function formatSingleClause(
   clause: ClueClause,
   gender: Gender,
   roomsById: Record<string, RoomDef>,
   suspectsById: Record<string, { name: string; gender: Gender }>,
   rows: number,
-  cols: number
+  cols: number,
+  extras?: ClueFormatExtras,
+  subjectOverride?: LocalizedText
 ): LocalizedText {
-  const he = gender === 'male' ? 'He' : 'She';
-  const ele = gender === 'male' ? 'Ele' : 'Ela';
-  const sentado = gender === 'male' ? 'sentado' : 'sentada';
-  const sozinho = gender === 'male' ? 'sozinho' : 'sozinha';
-  const unico = gender === 'male' ? 'a única pessoa' : 'a única pessoa';
+  const he = subjectOverride ? subjectOverride.en : gender === 'male' ? 'He' : 'She';
+  const ele = subjectOverride ? subjectOverride.pt : gender === 'male' ? 'Ele' : 'Ela';
+  const sentado = subjectOverride ? 'sentado(a)' : gender === 'male' ? 'sentado' : 'sentada';
+  const sozinho = subjectOverride ? 'sozinho(a)' : gender === 'male' ? 'sozinho' : 'sozinha';
+  const unico = 'a única pessoa';
 
   switch (clause.kind) {
     case 'in_room': {
@@ -108,11 +127,30 @@ export function formatSingleClause(
         en: `${he} was sitting in a **chair**.`,
         pt: `${ele} estava ${sentado} numa **cadeira**.`,
       };
-    case 'on_object':
+    case 'on_object': {
+      if (clause.objectType === 'horse') {
+        return {
+          en: `${he} was riding a **horse**.`,
+          pt: `${ele} estava montado num **cavalo**.`,
+        };
+      }
+      if (clause.objectType === 'boat' || clause.objectType === 'rowboat') {
+        return {
+          en: `${he} was aboard **${objArticle(clause.objectType, 'en')}**.`,
+          pt: `${ele} estava a bordo de **${objArticle(clause.objectType, 'pt')}**.`,
+        };
+      }
+      if (clause.objectType === 'car') {
+        return {
+          en: `${he} was inside a **car**.`,
+          pt: `${ele} estava dentro de um **carro**.`,
+        };
+      }
       return {
         en: `${he} was on **${objArticle(clause.objectType, 'en')}**.`,
         pt: `${ele} estava em cima de **${objArticle(clause.objectType, 'pt')}**.`,
       };
+    }
     case 'beside_person': {
       const t = suspectsById[clause.targetId]?.name ?? clause.targetId;
       return {
@@ -240,6 +278,110 @@ export function formatSingleClause(
         en: `${he} was **beside the Outlaw**.`,
         pt: `${ele} estava **ao lado do Fora-da-Lei**.`,
       };
+    // Volume 2: Time Travel clauses
+    case 'stayed_in_place':
+      return {
+        en: `${he} **did not travel** between Past and Present.`,
+        pt: `${ele} **não mudou de lugar** entre o Passado e o Presente.`,
+      };
+    case 'moved_in_time':
+      return {
+        en: `${he} **shifted places** between Past and Present.`,
+        pt: `${ele} **trocou de lugar** entre o Passado e o Presente.`,
+      };
+    case 'past_in_room': {
+      const rEn = roomsById[clause.roomId] ? formatRoomName(roomsById[clause.roomId], 'en') : clause.roomId;
+      const rPt = roomsById[clause.roomId] ? formatRoomName(roomsById[clause.roomId], 'pt') : clause.roomId;
+      return {
+        en: `In the **Past**, ${he.toLowerCase()} was in the **${rEn}**.`,
+        pt: `No **Passado**, ${ele.toLowerCase()} estava em **${rPt}**.`,
+      };
+    }
+    case 'past_beside_object':
+      return {
+        en: `In the **Past**, ${he.toLowerCase()} was **beside ${objArticle(clause.objectType, 'en')}**.`,
+        pt: `No **Passado**, ${ele.toLowerCase()} estava **ao lado de ${objArticle(clause.objectType, 'pt')}**.`,
+      };
+    case 'past_same_room_as': {
+      const t = suspectsById[clause.targetId]?.name ?? clause.targetId;
+      return {
+        en: `In the **Past**, ${he.toLowerCase()} was in the same room as **${t}**.`,
+        pt: `No **Passado**, ${ele.toLowerCase()} estava na mesma divisão que **${t}**.`,
+      };
+    }
+    // Volume 3: Multiple Grids clauses
+    case 'in_subgrid': {
+      const gEn = formatSubGridName(extras?.subGrids, clause.gridId, 'en');
+      const gPt = formatSubGridName(extras?.subGrids, clause.gridId, 'pt');
+      return {
+        en: `${he} was in **${gEn}**.`,
+        pt: `${ele} estava em **${gPt}**.`,
+      };
+    }
+    case 'same_subgrid_as': {
+      const t = suspectsById[clause.targetId]?.name ?? clause.targetId;
+      return {
+        en: `${he} was in the **same zone as ${t}**.`,
+        pt: `${ele} estava na **mesma zona que ${t}**.`,
+      };
+    }
+    case 'different_subgrid_from': {
+      const t = suspectsById[clause.targetId]?.name ?? clause.targetId;
+      return {
+        en: `${he} was in a **different zone than ${t}**.`,
+        pt: `${ele} estava numa **zona diferente de ${t}**.`,
+      };
+    }
+    // Volume 3: Secret Identities clauses
+    case 'has_role': {
+      const role = extras?.rolesById?.[clause.roleId];
+      return {
+        en: `${he} is **${role?.title.en ?? clause.roleId}**.`,
+        pt: `${ele} é **${role?.title.pt ?? clause.roleId}**.`,
+      };
+    }
+    case 'not_role': {
+      const role = extras?.rolesById?.[clause.roleId];
+      return {
+        en: `${he} is **not ${role?.title.en ?? clause.roleId}**.`,
+        pt: `${ele} **não é ${role?.title.pt ?? clause.roleId}**.`,
+      };
+    }
+    case 'same_room_as_role': {
+      const role = extras?.rolesById?.[clause.roleId];
+      return {
+        en: `${he} was in the same room as **${role?.title.en ?? clause.roleId}**.`,
+        pt: `${ele} estava na mesma divisão que **${role?.title.pt ?? clause.roleId}**.`,
+      };
+    }
+    case 'north_of_role': {
+      const role = extras?.rolesById?.[clause.roleId];
+      return {
+        en: `${he} was **north of ${role?.title.en ?? clause.roleId}**.`,
+        pt: `${ele} estava a **norte de ${role?.title.pt ?? clause.roleId}**.`,
+      };
+    }
+    case 'south_of_role': {
+      const role = extras?.rolesById?.[clause.roleId];
+      return {
+        en: `${he} was **south of ${role?.title.en ?? clause.roleId}**.`,
+        pt: `${ele} estava a **sul de ${role?.title.pt ?? clause.roleId}**.`,
+      };
+    }
+    case 'east_of_role': {
+      const role = extras?.rolesById?.[clause.roleId];
+      return {
+        en: `${he} was **east of ${role?.title.en ?? clause.roleId}**.`,
+        pt: `${ele} estava a **este de ${role?.title.pt ?? clause.roleId}**.`,
+      };
+    }
+    case 'west_of_role': {
+      const role = extras?.rolesById?.[clause.roleId];
+      return {
+        en: `${he} was **west of ${role?.title.en ?? clause.roleId}**.`,
+        pt: `${ele} estava a **oeste de ${role?.title.pt ?? clause.roleId}**.`,
+      };
+    }
   }
 }
 
@@ -248,7 +390,8 @@ export function formatSuspectClue(
   roomsById: Record<string, RoomDef>,
   suspectsById: Record<string, { name: string; gender: Gender }>,
   rows: number,
-  cols: number
+  cols: number,
+  extras?: ClueFormatExtras
 ): LocalizedText {
   if (suspect.isVictim) {
     const he = suspect.gender === 'male' ? 'He' : 'She';
@@ -261,7 +404,27 @@ export function formatSuspectClue(
   }
 
   const parts = suspect.clauses.map((cl) =>
-    formatSingleClause(cl, suspect.gender, roomsById, suspectsById, rows, cols)
+    formatSingleClause(cl, suspect.gender, roomsById, suspectsById, rows, cols, extras)
+  );
+  return {
+    en: parts.map((p) => p.en).join(' '),
+    pt: parts.map((p) => p.pt).join(' '),
+  };
+}
+
+export function formatRoleClue(
+  role: Pick<SecretRoleDef, 'title' | 'clauses'>,
+  roomsById: Record<string, RoomDef>,
+  suspectsById: Record<string, { name: string; gender: Gender }>,
+  rows: number,
+  cols: number,
+  extras?: ClueFormatExtras
+): LocalizedText {
+  const parts = role.clauses.map((cl) =>
+    formatSingleClause(cl, 'male', roomsById, suspectsById, rows, cols, extras, {
+      en: `**${role.title.en}**`,
+      pt: `**${role.title.pt}**`,
+    })
   );
   return {
     en: parts.map((p) => p.en).join(' '),
@@ -295,31 +458,65 @@ export function formatOutlawCondition(condition: OutlawCondition, rows: number, 
   }
 }
 
-export function formatTwistBanner(twist: TwistConfig, rows: number, cols: number): LocalizedText | null {
+export function formatTwistBanner(
+  twist: TwistConfig,
+  rows: number,
+  cols: number,
+  walkableOverrides?: string[]
+): LocalizedText | null {
+  const overrideNote =
+    walkableOverrides && walkableOverrides.length > 0
+      ? {
+          en: ` · Era Rule: suspects **can occupy ${walkableOverrides.map((o) => objLabel(o, 'en')).join('/')}** tiles.`,
+          pt: ` · Regra da Era: suspeitos **podem ocupar ${walkableOverrides.map((o) => objLabel(o, 'pt')).join('/')}**.`,
+        }
+      : { en: '', pt: '' };
+
   switch (twist.kind) {
     case 'classic':
-      return null;
+      if (!walkableOverrides || walkableOverrides.length === 0) return null;
+      return {
+        en: `**ERA RULE:** Suspects **can occupy ${walkableOverrides.map((o) => objLabel(o, 'en')).join(' & ')}** squares (check Occupancy Stamps on the map).`,
+        pt: `**REGRA DA ERA:** Os suspeitos **podem ocupar ${walkableOverrides.map((o) => objLabel(o, 'pt')).join(' e ')}** (vê os Selos na planta).`,
+      };
     case 'outlaw': {
       const cond = formatOutlawCondition(twist.condition, rows, cols);
       return {
-        en: `**OUTLAW RULE:** One suspect (never the Victim) is the hidden **Outlaw**, who was ${cond.en}.`,
-        pt: `**REGRA FORA-DA-LEI:** Um suspeito (nunca a Vítima) é o **Fora-da-Lei**, que estava ${cond.pt}.`,
+        en: `**OUTLAW RULE:** One suspect (never the Victim) is the hidden **Outlaw**, who was ${cond.en}.${overrideNote.en}`,
+        pt: `**REGRA FORA-DA-LEI:** Um suspeito (nunca a Vítima) é o **Fora-da-Lei**, que estava ${cond.pt}.${overrideNote.pt}`,
       };
     }
     case 'uninvolved':
       return {
-        en: `**ALIBI RULE:** One suspect has a solid alibi and **was not at the scene** — rule them out!`,
-        pt: `**REGRA DO ÁLIBI:** Um suspeito tem álibi e **não esteve no local** — descarta-o!`,
+        en: `**ALIBI RULE:** One suspect has a solid alibi and **was not at the scene** — rule them out!${overrideNote.en}`,
+        pt: `**REGRA DO ÁLIBI:** Um suspeito tem álibi e **não esteve no local** — descarta-o!${overrideNote.pt}`,
       };
     case 'missing_piece':
       return {
-        en: `**TORN MAP RULE:** A piece of the map is missing. Only **one fragment (A–D)** yields a valid solution.`,
-        pt: `**PLANTA RASGADA:** Falta um pedaço do mapa. Apenas **um fragmento (A–D)** permite solução.`,
+        en: `**TORN MAP RULE:** A piece of the map is missing. Only **one fragment (A–D)** yields a valid solution.${overrideNote.en}`,
+        pt: `**PLANTA RASGADA:** Falta um pedaço do mapa. Apenas **um fragmento (A–D)** permite solução.${overrideNote.pt}`,
       };
     case 'liar':
       return {
-        en: `**LIAR RULE:** Exactly **one suspect** (never the Victim) is lying — their entire statement is false.`,
-        pt: `**REGRA DO MENTIROSO:** Exatamente **um suspeito** (nunca a Vítima) está a mentir — toda a sua pista é falsa.`,
+        en: `**LIAR RULE:** Exactly **one suspect** (never the Victim) is lying — their entire statement is false.${overrideNote.en}`,
+        pt: `**REGRA DO MENTIROSO:** Exatamente **um suspeito** (nunca a Vítima) está a mentir — toda a sua pista é falsa.${overrideNote.pt}`,
+      };
+    case 'time_travel':
+      return {
+        en: `**TIME TRAVEL (VOL. 2):** Between **Past** and **Present**, exactly **2 suspects swapped places** (never the Victim). The murder occurred in the **Present**!${overrideNote.en}`,
+        pt: `**VIAGEM NO TEMPO (VOL. 2):** Entre o **Passado** e o **Presente**, exatamente **2 suspeitos trocaram de lugar** (nunca a Vítima). O crime ocorreu no **Presente**!${overrideNote.pt}`,
+      };
+    case 'split_grids': {
+      const [gA, gB] = twist.grids;
+      return {
+        en: `**SPLIT GRIDS (VOL. 3):** Two separate crime scenes (**${gA.name.en}** & **${gB.name.en}**). Each grid has its own **independent** row/column rules!${overrideNote.en}`,
+        pt: `**GRELHAS SEPARADAS (VOL. 3):** Duas cenas separadas (**${gA.name.pt}** e **${gB.name.pt}**). Cada grelha tem regras de linha/coluna **independentes**!${overrideNote.pt}`,
+      };
+    }
+    case 'secret_identities':
+      return {
+        en: `**SECRET IDENTITIES (VOL. 3):** Match each hidden **Role** below to a distinct suspect (never the Victim) to solve both identities and locations!${overrideNote.en}`,
+        pt: `**IDENTIDADES SECRETAS (VOL. 3):** Associa cada **Papel Secreto** abaixo a um suspeito distinto (nunca a Vítima) para resolver identidades e posições!${overrideNote.pt}`,
       };
   }
 }

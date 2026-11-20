@@ -13,6 +13,7 @@ export interface BoardIndex {
   cols: number;
   voidMask: boolean[][];
   roomGrid: (string | null)[][];
+  subGridGrid: ('A' | 'B' | null)[][];
   blockedMask: boolean[][];
   objectsAt: Map<string, MapObject[]>;
   /** All cells where a person is legally allowed to stand/sit */
@@ -28,6 +29,14 @@ export interface BoardIndex {
   inCorner: boolean[][];
   /** Precomputed whether cell touches any room wall or outer boundary */
   besideWall: boolean[][];
+}
+
+export interface EvalContext {
+  outlawId?: string;
+  pastPlacements?: Record<string, GridCoord>;
+  swappedPair?: [string, string];
+  /** Map of roleId -> suspectId */
+  roleAssignment?: Record<string, string>;
 }
 
 export function cellKey(r: number, c: number): string {
@@ -50,10 +59,12 @@ export function buildBoardIndex(
   }
 
   const roomGrid: (string | null)[][] = Array.from({ length: rows }, () => Array(cols).fill(null));
+  const subGridGrid: ('A' | 'B' | null)[][] = Array.from({ length: rows }, () => Array(cols).fill(null));
   for (const room of rooms) {
     for (const cell of room.cells) {
       if (cell.r >= 0 && cell.r < rows && cell.c >= 0 && cell.c < cols && !voidMask[cell.r][cell.c]) {
         roomGrid[cell.r][cell.c] = room.id;
+        subGridGrid[cell.r][cell.c] = room.subGridId ?? null;
       }
     }
   }
@@ -156,7 +167,6 @@ export function buildBoardIndex(
 
       besideObjects.set(k, adjObjs);
       besideWall[r][c] = wallFlags.some(Boolean);
-      // Corner = at least two perpendicular walls (N&E, E&S, S&W, or W&N)
       inCorner[r][c] =
         (wallFlags[0] && wallFlags[1]) ||
         (wallFlags[1] && wallFlags[2]) ||
@@ -170,6 +180,7 @@ export function buildBoardIndex(
     cols,
     voidMask,
     roomGrid,
+    subGridGrid,
     blockedMask,
     objectsAt,
     openCells,
@@ -192,7 +203,7 @@ export function areSameRoomOrthogonal(board: BoardIndex, a: GridCoord, b: GridCo
 
 /**
  * Evaluates a unary (single-cell) clause immediately without knowing other suspects.
- * Returns null if the clause depends on other suspects' positions.
+ * Returns null if the clause depends on other suspects' positions or twist context.
  */
 export function evaluateUnaryClause(
   board: BoardIndex,
@@ -207,6 +218,8 @@ export function evaluateUnaryClause(
       return room === clause.roomId;
     case 'not_in_room':
       return room !== clause.roomId;
+    case 'in_subgrid':
+      return board.subGridGrid[pos.r][pos.c] === clause.gridId;
     case 'beside_object':
       return board.besideObjects.get(k)?.has(clause.objectType) ?? false;
     case 'not_beside_object':
@@ -260,6 +273,12 @@ export function evaluateOutlawCondition(
   }
 }
 
+function normalizeCtx(ctxOrOutlaw?: string | EvalContext): EvalContext {
+  if (!ctxOrOutlaw) return {};
+  if (typeof ctxOrOutlaw === 'string') return { outlawId: ctxOrOutlaw };
+  return ctxOrOutlaw;
+}
+
 /**
  * Evaluates a single ClueClause against a complete placement assignment.
  */
@@ -268,7 +287,7 @@ export function evaluateClauseFull(
   suspectId: string,
   clause: ClueClause,
   placements: Record<string, GridCoord>,
-  outlawId?: string
+  ctxOrOutlaw?: string | EvalContext
 ): boolean {
   const pos = placements[suspectId];
   if (!pos) return false;
@@ -276,7 +295,10 @@ export function evaluateClauseFull(
   const unary = evaluateUnaryClause(board, pos, clause);
   if (unary !== null) return unary;
 
+  const ctx = normalizeCtx(ctxOrOutlaw);
+  const { outlawId, pastPlacements, swappedPair, roleAssignment } = ctx;
   const myRoom = board.roomGrid[pos.r][pos.c];
+  const mySub = board.subGridGrid[pos.r][pos.c];
   const allEntries = Object.entries(placements);
 
   switch (clause.kind) {
@@ -312,26 +334,31 @@ export function evaluateClauseFull(
     case 'north_of': {
       const other = placements[clause.targetId];
       if (!other) return false;
+      if (mySub !== null && board.subGridGrid[other.r][other.c] !== mySub) return false;
       return pos.r < other.r;
     }
     case 'south_of': {
       const other = placements[clause.targetId];
       if (!other) return false;
+      if (mySub !== null && board.subGridGrid[other.r][other.c] !== mySub) return false;
       return pos.r > other.r;
     }
     case 'east_of': {
       const other = placements[clause.targetId];
       if (!other) return false;
+      if (mySub !== null && board.subGridGrid[other.r][other.c] !== mySub) return false;
       return pos.c > other.c;
     }
     case 'west_of': {
       const other = placements[clause.targetId];
       if (!other) return false;
+      if (mySub !== null && board.subGridGrid[other.r][other.c] !== mySub) return false;
       return pos.c < other.c;
     }
     case 'same_diagonal': {
       const other = placements[clause.targetId];
       if (!other) return false;
+      if (mySub !== null && board.subGridGrid[other.r][other.c] !== mySub) return false;
       return Math.abs(pos.r - other.r) === Math.abs(pos.c - other.c) && (pos.r !== other.r || pos.c !== other.c);
     }
     case 'only_person_beside': {
@@ -396,6 +423,80 @@ export function evaluateClauseFull(
       const op = placements[outlawId];
       return !!op && areSameRoomOrthogonal(board, pos, op);
     }
+    // Volume 2: Time Travel clauses
+    case 'stayed_in_place': {
+      if (!swappedPair) return false;
+      return suspectId !== swappedPair[0] && suspectId !== swappedPair[1];
+    }
+    case 'moved_in_time': {
+      if (!swappedPair) return false;
+      return suspectId === swappedPair[0] || suspectId === swappedPair[1];
+    }
+    case 'past_in_room': {
+      const pp = pastPlacements?.[suspectId];
+      if (!pp) return false;
+      return board.roomGrid[pp.r][pp.c] === clause.roomId;
+    }
+    case 'past_beside_object': {
+      const pp = pastPlacements?.[suspectId];
+      if (!pp) return false;
+      return board.besideObjects.get(cellKey(pp.r, pp.c))?.has(clause.objectType) ?? false;
+    }
+    case 'past_same_room_as': {
+      const pp = pastPlacements?.[suspectId];
+      const op = pastPlacements?.[clause.targetId];
+      if (!pp || !op) return false;
+      const r1 = board.roomGrid[pp.r][pp.c];
+      return r1 !== null && r1 === board.roomGrid[op.r][op.c];
+    }
+    // Volume 3: Multiple Grids clauses
+    case 'same_subgrid_as': {
+      const other = placements[clause.targetId];
+      if (!other || mySub === null) return false;
+      return mySub === board.subGridGrid[other.r][other.c];
+    }
+    case 'different_subgrid_from': {
+      const other = placements[clause.targetId];
+      if (!other || mySub === null) return false;
+      return mySub !== board.subGridGrid[other.r][other.c];
+    }
+    // Volume 3: Secret Identities clauses
+    case 'has_role': {
+      return roleAssignment?.[clause.roleId] === suspectId;
+    }
+    case 'not_role': {
+      return roleAssignment !== undefined && roleAssignment[clause.roleId] !== suspectId;
+    }
+    case 'same_room_as_role': {
+      const holderId = roleAssignment?.[clause.roleId];
+      if (!holderId || holderId === suspectId) return false;
+      const hp = placements[holderId];
+      return !!hp && myRoom !== null && myRoom === board.roomGrid[hp.r][hp.c];
+    }
+    case 'north_of_role': {
+      const holderId = roleAssignment?.[clause.roleId];
+      if (!holderId || holderId === suspectId) return false;
+      const hp = placements[holderId];
+      return !!hp && pos.r < hp.r;
+    }
+    case 'south_of_role': {
+      const holderId = roleAssignment?.[clause.roleId];
+      if (!holderId || holderId === suspectId) return false;
+      const hp = placements[holderId];
+      return !!hp && pos.r > hp.r;
+    }
+    case 'east_of_role': {
+      const holderId = roleAssignment?.[clause.roleId];
+      if (!holderId || holderId === suspectId) return false;
+      const hp = placements[holderId];
+      return !!hp && pos.c > hp.c;
+    }
+    case 'west_of_role': {
+      const holderId = roleAssignment?.[clause.roleId];
+      if (!holderId || holderId === suspectId) return false;
+      const hp = placements[holderId];
+      return !!hp && pos.c < hp.c;
+    }
     default:
       return false;
   }
@@ -410,7 +511,7 @@ export function isClausePartiallyConsistent(
   suspectId: string,
   clause: ClueClause,
   placements: Record<string, GridCoord>,
-  outlawId?: string
+  ctxOrOutlaw?: string | EvalContext
 ): boolean {
   const pos = placements[suspectId];
   if (!pos) return true;
@@ -418,7 +519,18 @@ export function isClausePartiallyConsistent(
   const unary = evaluateUnaryClause(board, pos, clause);
   if (unary !== null) return unary;
 
+  const ctx = normalizeCtx(ctxOrOutlaw);
+  const { outlawId, swappedPair, roleAssignment } = ctx;
   const myRoom = board.roomGrid[pos.r][pos.c];
+  const mySub = board.subGridGrid[pos.r][pos.c];
+
+  // For Time Travel, compute pastPos for suspectId if available!
+  const getPastPos = (id: string): GridCoord | undefined => {
+    if (!swappedPair) return undefined;
+    if (id === swappedPair[0]) return placements[swappedPair[1]];
+    if (id === swappedPair[1]) return placements[swappedPair[0]];
+    return placements[id];
+  };
 
   switch (clause.kind) {
     case 'same_room_as': {
@@ -452,26 +564,31 @@ export function isClausePartiallyConsistent(
     case 'north_of': {
       const other = placements[clause.targetId];
       if (!other) return true;
+      if (mySub !== null && board.subGridGrid[other.r][other.c] !== mySub) return false;
       return pos.r < other.r;
     }
     case 'south_of': {
       const other = placements[clause.targetId];
       if (!other) return true;
+      if (mySub !== null && board.subGridGrid[other.r][other.c] !== mySub) return false;
       return pos.r > other.r;
     }
     case 'east_of': {
       const other = placements[clause.targetId];
       if (!other) return true;
+      if (mySub !== null && board.subGridGrid[other.r][other.c] !== mySub) return false;
       return pos.c > other.c;
     }
     case 'west_of': {
       const other = placements[clause.targetId];
       if (!other) return true;
+      if (mySub !== null && board.subGridGrid[other.r][other.c] !== mySub) return false;
       return pos.c < other.c;
     }
     case 'same_diagonal': {
       const other = placements[clause.targetId];
       if (!other) return true;
+      if (mySub !== null && board.subGridGrid[other.r][other.c] !== mySub) return false;
       return Math.abs(pos.r - other.r) === Math.abs(pos.c - other.c);
     }
     case 'only_person_beside': {
@@ -539,6 +656,78 @@ export function isClausePartiallyConsistent(
       if (suspectId === outlawId) return false;
       const op = placements[outlawId];
       return !op || areSameRoomOrthogonal(board, pos, op);
+    }
+    // Volume 2: Time Travel
+    case 'stayed_in_place':
+      return !swappedPair || (suspectId !== swappedPair[0] && suspectId !== swappedPair[1]);
+    case 'moved_in_time':
+      return !swappedPair || suspectId === swappedPair[0] || suspectId === swappedPair[1];
+    case 'past_in_room': {
+      const pp = getPastPos(suspectId);
+      if (!pp) return true;
+      return board.roomGrid[pp.r][pp.c] === clause.roomId;
+    }
+    case 'past_beside_object': {
+      const pp = getPastPos(suspectId);
+      if (!pp) return true;
+      return board.besideObjects.get(cellKey(pp.r, pp.c))?.has(clause.objectType) ?? false;
+    }
+    case 'past_same_room_as': {
+      const pp = getPastPos(suspectId);
+      const op = getPastPos(clause.targetId);
+      if (!pp || !op) return true;
+      return board.roomGrid[pp.r][pp.c] === board.roomGrid[op.r][op.c];
+    }
+    // Volume 3: Multiple Grids
+    case 'same_subgrid_as': {
+      const other = placements[clause.targetId];
+      if (!other || mySub === null) return true;
+      return mySub === board.subGridGrid[other.r][other.c];
+    }
+    case 'different_subgrid_from': {
+      const other = placements[clause.targetId];
+      if (!other || mySub === null) return true;
+      return mySub !== board.subGridGrid[other.r][other.c];
+    }
+    // Volume 3: Secret Identities
+    case 'has_role':
+      return !roleAssignment || roleAssignment[clause.roleId] === suspectId;
+    case 'not_role':
+      return !roleAssignment || roleAssignment[clause.roleId] !== suspectId;
+    case 'same_room_as_role': {
+      const holderId = roleAssignment?.[clause.roleId];
+      if (!holderId) return true;
+      if (holderId === suspectId) return false;
+      const hp = placements[holderId];
+      return !hp || myRoom === board.roomGrid[hp.r][hp.c];
+    }
+    case 'north_of_role': {
+      const holderId = roleAssignment?.[clause.roleId];
+      if (!holderId) return true;
+      if (holderId === suspectId) return false;
+      const hp = placements[holderId];
+      return !hp || pos.r < hp.r;
+    }
+    case 'south_of_role': {
+      const holderId = roleAssignment?.[clause.roleId];
+      if (!holderId) return true;
+      if (holderId === suspectId) return false;
+      const hp = placements[holderId];
+      return !hp || pos.r > hp.r;
+    }
+    case 'east_of_role': {
+      const holderId = roleAssignment?.[clause.roleId];
+      if (!holderId) return true;
+      if (holderId === suspectId) return false;
+      const hp = placements[holderId];
+      return !hp || pos.c > hp.c;
+    }
+    case 'west_of_role': {
+      const holderId = roleAssignment?.[clause.roleId];
+      if (!holderId) return true;
+      if (holderId === suspectId) return false;
+      const hp = placements[holderId];
+      return !hp || pos.c < hp.c;
     }
     default:
       return true;

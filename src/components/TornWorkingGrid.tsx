@@ -32,8 +32,15 @@ export const TornWorkingGrid: React.FC<TornWorkingGridProps> = ({
   const [activeCell, setActiveCell] = useState<string | null>(null);
   const t = UI_STRINGS[lang];
 
-  const width = cols * CELL + PAD * 2;
-  const height = rows * CELL + PAD * 2;
+  const isSplit = twist.kind === 'split_grids';
+  const splitGap = isSplit ? 16 : 0;
+  const topHeader = isSplit ? 14 : 0;
+  const colOffsetB = isSplit ? twist.grids[1].colOffset : cols;
+  const cellX = (c: number) => PAD + c * CELL + (isSplit && c >= colOffsetB ? splitGap : 0);
+  const cellY = (r: number) => PAD + topHeader + r * CELL;
+
+  const width = cols * CELL + PAD * 2 + splitGap;
+  const height = rows * CELL + PAD * 2 + topHeader;
 
   const { roomGrid, blockedSet, wallSegments } = useMemo(() => {
     const vSet = new Set(voidCells.map((v) => `${v.r},${v.c}`));
@@ -70,17 +77,17 @@ export const TornWorkingGrid: React.FC<TornWorkingGridProps> = ({
       for (let c = 0; c < cols; c++) {
         const rid = rGrid[r][c];
         if (!rid) continue;
-        const x = PAD + c * CELL;
-        const y = PAD + r * CELL;
+        const x = cellX(c);
+        const y = cellY(r);
         if (r === 0 || rGrid[r - 1][c] !== rid) segs.push({ x1: x, y1: y, x2: x + CELL, y2: y });
         if (r === rows - 1 || rGrid[r + 1][c] !== rid) segs.push({ x1: x, y1: y + CELL, x2: x + CELL, y2: y + CELL });
-        if (c === 0 || rGrid[r][c - 1] !== rid) segs.push({ x1: x, y1: y, x2: x, y2: y + CELL });
-        if (c === cols - 1 || rGrid[r][c + 1] !== rid) segs.push({ x1: x + CELL, y1: y, x2: x + CELL, y2: y + CELL });
+        if (c === 0 || rGrid[r][c - 1] !== rid || (isSplit && c === colOffsetB)) segs.push({ x1: x, y1: y, x2: x, y2: y + CELL });
+        if (c === cols - 1 || rGrid[r][c + 1] !== rid || (isSplit && c === colOffsetB - 1)) segs.push({ x1: x + CELL, y1: y, x2: x + CELL, y2: y + CELL });
       }
     }
 
     return { roomGrid: rGrid, blockedSet: bSet, wallSegments: segs };
-  }, [rows, cols, rooms, objects, voidCells, twist, previewPatchId]);
+  }, [rows, cols, rooms, objects, voidCells, twist, previewPatchId, isSplit, colOffsetB]);
 
   const handleCellClick = (r: number, c: number) => {
     if (!tapAssistEnabled) return;
@@ -144,14 +151,30 @@ export const TornWorkingGrid: React.FC<TornWorkingGridProps> = ({
             </pattern>
           </defs>
 
+          {twist.kind === 'split_grids' &&
+            twist.grids.map((g) => (
+              <text
+                key={`wg-hdr-${g.id}`}
+                x={cellX(g.colOffset) + (g.cols * CELL) / 2}
+                y={PAD + 9}
+                textAnchor="middle"
+                fontFamily="var(--font-display)"
+                fontWeight="700"
+                fontSize="9"
+                fill="#6b707c"
+              >
+                {g.name[lang].toUpperCase()}
+              </text>
+            ))}
+
           {Array.from({ length: rows }).map((_, r) =>
             Array.from({ length: cols }).map((__, c) => {
               if (!roomGrid[r][c]) return null;
               const key = `${r},${c}`;
               const isBlocked = blockedSet.has(key);
               const mark = tapMarks[key];
-              const x = PAD + c * CELL;
-              const y = PAD + r * CELL;
+              const x = cellX(c);
+              const y = cellY(r);
 
               return (
                 <g key={key} onClick={() => handleCellClick(r, c)}>

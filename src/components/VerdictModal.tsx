@@ -25,10 +25,22 @@ export const VerdictModal: React.FC<VerdictModalProps> = ({
   const nonVictims = murdokuCase.suspects.filter((s) => !s.isVictim);
   const [murdererId, setMurdererId] = useState<string>('');
   const [twistAnswer, setTwistAnswer] = useState<string>(initialPatchId ?? '');
+  const [swapPair, setSwapPair] = useState<string[]>([]);
   const [status, setStatus] = useState<'idle' | 'correct' | 'wrong'>('idle');
 
   const twist = murdokuCase.twist;
-  const needsTwistAnswer = twist.kind !== 'classic';
+  const needsSingleTwist =
+    twist.kind === 'outlaw' ||
+    twist.kind === 'uninvolved' ||
+    twist.kind === 'missing_piece' ||
+    twist.kind === 'liar' ||
+    twist.kind === 'secret_identities';
+  const needsSwapPair = twist.kind === 'time_travel';
+
+  const keyRole =
+    twist.kind === 'secret_identities'
+      ? twist.roles.find((r) => r.id === twist.keyRoleId) ?? twist.roles[0]
+      : null;
 
   const twistPrompt =
     twist.kind === 'outlaw'
@@ -39,7 +51,18 @@ export const VerdictModal: React.FC<VerdictModalProps> = ({
           ? t.selectPatch
           : twist.kind === 'liar'
             ? t.selectLiar
-            : '';
+            : twist.kind === 'secret_identities' && keyRole
+              ? `${t.selectRoleHolder} ${keyRole.title[lang]}?`
+              : '';
+
+  const toggleSwapCandidate = (id: string) => {
+    setStatus('idle');
+    setSwapPair((prev) => {
+      if (prev.includes(id)) return prev.filter((x) => x !== id);
+      if (prev.length >= 2) return [prev[1], id];
+      return [...prev, id];
+    });
+  };
 
   const checkVerdict = () => {
     let ok = murdererId === murdokuCase.solution.murdererId;
@@ -47,6 +70,14 @@ export const VerdictModal: React.FC<VerdictModalProps> = ({
     if (ok && twist.kind === 'uninvolved') ok = twistAnswer === murdokuCase.solution.uninvolvedId;
     if (ok && twist.kind === 'missing_piece') ok = twistAnswer === murdokuCase.solution.correctPatchId;
     if (ok && twist.kind === 'liar') ok = twistAnswer === murdokuCase.solution.liarId;
+    if (ok && twist.kind === 'secret_identities' && keyRole) {
+      ok = twistAnswer === murdokuCase.solution.roleAssignment?.[keyRole.id];
+    }
+    if (ok && twist.kind === 'time_travel' && murdokuCase.solution.timeSwappedPair) {
+      const sortedSel = [...swapPair].sort();
+      const sortedAns = [...murdokuCase.solution.timeSwappedPair].sort();
+      ok = sortedSel.length === 2 && sortedSel[0] === sortedAns[0] && sortedSel[1] === sortedAns[1];
+    }
 
     if (ok) {
       setStatus('correct');
@@ -55,6 +86,11 @@ export const VerdictModal: React.FC<VerdictModalProps> = ({
       setStatus('wrong');
     }
   };
+
+  const canSubmit =
+    Boolean(murdererId) &&
+    (!needsSingleTwist || Boolean(twistAnswer)) &&
+    (!needsSwapPair || swapPair.length === 2);
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
@@ -79,7 +115,7 @@ export const VerdictModal: React.FC<VerdictModalProps> = ({
           ))}
         </div>
 
-        {needsTwistAnswer && (
+        {needsSingleTwist && (
           <>
             <div style={{ fontWeight: 700, fontSize: 13.5, marginBottom: 8 }}>{twistPrompt}</div>
             <div className="choice-grid">
@@ -110,6 +146,26 @@ export const VerdictModal: React.FC<VerdictModalProps> = ({
                       {s.name}
                     </button>
                   ))}
+            </div>
+          </>
+        )}
+
+        {needsSwapPair && (
+          <>
+            <div style={{ fontWeight: 700, fontSize: 13.5, marginBottom: 8 }}>
+              {t.selectTimeSwap} ({swapPair.length}/2)
+            </div>
+            <div className="choice-grid">
+              {nonVictims.map((s) => (
+                <button
+                  key={s.id}
+                  type="button"
+                  className={`choice-chip ${swapPair.includes(s.id) ? 'selected' : ''}`}
+                  onClick={() => toggleSwapCandidate(s.id)}
+                >
+                  {s.name}
+                </button>
+              ))}
             </div>
           </>
         )}
@@ -159,7 +215,7 @@ export const VerdictModal: React.FC<VerdictModalProps> = ({
             <button
               type="button"
               className="btn-primary"
-              disabled={!murdererId || (needsTwistAnswer && !twistAnswer)}
+              disabled={!canSubmit}
               onClick={checkVerdict}
             >
               {t.verifyVerdict}

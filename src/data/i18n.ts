@@ -34,6 +34,15 @@ export interface UIStrings {
   selectUninvolved: string;
   selectPatch: string;
   selectLiar: string;
+  selectTimeSwap: string;
+  selectRoleHolder: string;
+  secretRolesHeading: string;
+  occupancyCan: string;
+  occupancyCannot: string;
+  volAll: string;
+  vol1Label: string;
+  vol2Label: string;
+  vol3Label: string;
   verifyVerdict: string;
   verdictCorrectTitle: string;
   verdictCorrectBody: string;
@@ -119,6 +128,15 @@ export const UI_STRINGS: Record<Lang, UIStrings> = {
     selectUninvolved: 'Who was uninvolved (alibi)?',
     selectPatch: 'Which map fragment completes the scene?',
     selectLiar: 'Who was lying?',
+    selectTimeSwap: 'Which 2 suspects swapped places across time?',
+    selectRoleHolder: 'Who holds this secret identity:',
+    secretRolesHeading: 'Secret Identities Dossier',
+    occupancyCan: 'Can occupy',
+    occupancyCannot: 'Blocked',
+    volAll: 'All',
+    vol1Label: 'Vol. 1',
+    vol2Label: 'Vol. 2 · Time',
+    vol3Label: 'Vol. 3 · World',
     verifyVerdict: 'Check Verdict',
     verdictCorrectTitle: 'Case Closed!',
     verdictCorrectBody: 'Your deduction is spot-on. You caught the culprit!',
@@ -165,10 +183,13 @@ export const UI_STRINGS: Record<Lang, UIStrings> = {
     },
     twistBadges: {
       classic: 'Classic',
-      outlaw: 'Book 2 · Outlaw',
-      uninvolved: 'Book 3 · Alibi',
-      missing_piece: 'Book 3 · Torn Map',
-      liar: 'Book 2/3 · Liar',
+      outlaw: 'Vol. 2 · Outlaw',
+      uninvolved: 'Vol. 3 · Alibi',
+      missing_piece: 'Vol. 3 · Torn Map',
+      liar: 'Vol. 2/3 · Liar',
+      time_travel: 'Vol. 2 · Time Travel',
+      split_grids: 'Vol. 3 · Split Grids',
+      secret_identities: 'Vol. 3 · Secret Roles',
     },
     rulesTitle: 'How to Solve a Murdoku',
     rulesSubtitle: 'Every puzzle has one unique logical solution — no guessing required.',
@@ -241,6 +262,15 @@ export const UI_STRINGS: Record<Lang, UIStrings> = {
     selectUninvolved: 'Quem tem álibi (não esteve no local)?',
     selectPatch: 'Qual o fragmento que completa a planta?',
     selectLiar: 'Quem estava a mentir?',
+    selectTimeSwap: 'Quais os 2 suspeitos que trocaram no tempo?',
+    selectRoleHolder: 'Quem tem esta identidade secreta:',
+    secretRolesHeading: 'Dossier de Identidades Secretas',
+    occupancyCan: 'Ocupável',
+    occupancyCannot: 'Bloqueado',
+    volAll: 'Todos',
+    vol1Label: 'Vol. 1',
+    vol2Label: 'Vol. 2 · Tempo',
+    vol3Label: 'Vol. 3 · Mundo',
     verifyVerdict: 'Verificar Veredicto',
     verdictCorrectTitle: 'Caso Encerrado!',
     verdictCorrectBody: 'Dedução impecável. Apanhaste o culpado!',
@@ -287,10 +317,13 @@ export const UI_STRINGS: Record<Lang, UIStrings> = {
     },
     twistBadges: {
       classic: 'Clássico',
-      outlaw: 'Livro 2 · Fora-da-Lei',
-      uninvolved: 'Livro 3 · Álibi',
-      missing_piece: 'Livro 3 · Planta Rasgada',
-      liar: 'Livro 2/3 · Mentiroso',
+      outlaw: 'Vol. 2 · Fora-da-Lei',
+      uninvolved: 'Vol. 3 · Álibi',
+      missing_piece: 'Vol. 3 · Planta Rasgada',
+      liar: 'Vol. 2/3 · Mentiroso',
+      time_travel: 'Vol. 2 · Viagem no Tempo',
+      split_grids: 'Vol. 3 · Grelhas Separadas',
+      secret_identities: 'Vol. 3 · Identidades Secretas',
     },
     rulesTitle: 'Como Resolver um Murdoku',
     rulesSubtitle: 'Cada puzzle tem uma única solução lógica — nunca precisas de adivinhar.',

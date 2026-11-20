@@ -13,6 +13,9 @@ describe('Deterministic Puzzle Generator Stress Test', () => {
     { twist: 'uninvolved', rows: 6, cols: 6 },
     { twist: 'missing_piece', rows: 6, cols: 6 },
     { twist: 'liar', rows: 6, cols: 6 },
+    { twist: 'time_travel', rows: 6, cols: 6 },
+    { twist: 'split_grids', rows: 6, cols: 6 },
+    { twist: 'secret_identities', rows: 6, cols: 6 },
   ];
 
   for (const m of modes) {
@@ -50,10 +53,10 @@ describe('Deterministic Puzzle Generator Stress Test', () => {
     });
   }
 
-  it('cycles strictly through Easy -> Medium -> Hard -> Expert every 4 days and repeats across all twists', () => {
+  it('cycles strictly through Easy -> Medium -> Hard -> Expert every 4 days and repeats across all 8 twists', () => {
     const seq = [];
     const twists = new Set<TwistKind>();
-    for (let d = 1; d <= 12; d++) {
+    for (let d = 1; d <= 16; d++) {
       const dateStr = `2026-11-${String(d).padStart(2, '0')}`;
       const sched = getDailyScheduleForDate(dateStr);
       seq.push(sched.difficulty);
@@ -63,6 +66,7 @@ describe('Deterministic Puzzle Generator Stress Test', () => {
     expect(new Set(seq.slice(0, 4)).size).toBe(4);
     expect(seq.slice(4, 8)).toEqual(seq.slice(0, 4));
     expect(seq.slice(8, 12)).toEqual(seq.slice(0, 4));
-    expect(twists.size).toBe(5);
+    expect(seq.slice(12, 16)).toEqual(seq.slice(0, 4));
+    expect(twists.size).toBe(8);
   });
 });

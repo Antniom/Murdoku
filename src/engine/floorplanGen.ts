@@ -162,8 +162,22 @@ export function generateFloorplan(params: {
   roomBriefs: CreativeRoomBrief[];
   rng: PRNG;
   allowIrregularVoid?: boolean;
+  walkableOverrides?: string[];
+  subGridId?: 'A' | 'B';
+  roomIdPrefix?: string;
 }): GeneratedFloorplan {
-  const { rows, cols, roomBriefs, rng, allowIrregularVoid = false } = params;
+  const {
+    rows,
+    cols,
+    roomBriefs,
+    rng,
+    allowIrregularVoid = false,
+    walkableOverrides = [],
+    subGridId,
+    roomIdPrefix = 'room',
+  } = params;
+  const overrideSet = new Set(walkableOverrides);
+  const isWalkableType = (id: string) => (OBJECT_CATALOG[id]?.walkable ?? false) || overrideSet.has(id);
 
   const voidCells: GridCoord[] = [];
   const voidSet = new Set<string>();
@@ -177,7 +191,13 @@ export function generateFloorplan(params: {
     voidSet.add(key(cr, cc));
   }
 
-  const rooms = partitionRooms(rows, cols, voidSet, roomBriefs, rng);
+  const rawRooms = partitionRooms(rows, cols, voidSet, roomBriefs, rng);
+  const rooms: RoomDef[] = rawRooms.map((rm, idx) => ({
+    ...rm,
+    id: `${roomIdPrefix}_${idx + 1}`,
+    ...(subGridId ? { subGridId } : {}),
+  }));
+
   const roomGrid: (string | null)[][] = Array.from({ length: rows }, () => Array(cols).fill(null));
   for (const rm of rooms) {
     for (const c of rm.cells) roomGrid[c.r][c.c] = rm.id;
@@ -213,7 +233,6 @@ export function generateFloorplan(params: {
     const pairRooms = Array.from(byRoom.values()).filter((idxs) => idxs.length === 2);
     if (pairRooms.length > 0) {
       const chosenPair = rng.pick(pairRooms);
-      // Swap so Victim is at index rows - 1 (matching 'V' being the last suspect)
       const [a, b] = chosenPair;
       const last = rows - 1;
       const permCoords = coords.slice();
@@ -226,7 +245,6 @@ export function generateFloorplan(params: {
     }
   }
 
-  // Fallback if somehow none found
   if (groundTruth.length === 0) {
     groundTruth = Array.from({ length: rows }, (_, i) => ({ r: i, c: i }));
     victimIndex = rows - 1;
@@ -243,24 +261,23 @@ export function generateFloorplan(params: {
     if (r < 0 || r >= rows || c < 0 || c >= cols) return false;
     const k = key(r, c);
     if (voidSet.has(k) || !roomGrid[r][c] || placedObjSet.has(k)) return false;
-    if (!meta.walkable && occupiedSet.has(k)) return false;
-    objects.push({ type, r, c, walkable: meta.walkable });
+    const walkable = isWalkableType(type);
+    if (!walkable && occupiedSet.has(k)) return false;
+    objects.push({ type, r, c, walkable });
     placedObjSet.add(k);
     return true;
   };
 
-  // Place multi-cell autotiled tables, walkable chairs/carpets, and themed blocking objects per room
   rooms.forEach((room, rIdx) => {
     const brief = roomBriefs[rIdx % roomBriefs.length];
     const pref = brief.preferredObjects.filter((id) => OBJECT_CATALOG[id]);
-    const blockingPrefs = pref.filter((id) => !OBJECT_CATALOG[id].walkable && id !== 'table');
-    const walkablePrefs = pref.filter((id) => OBJECT_CATALOG[id].walkable);
+    const blockingPrefs = pref.filter((id) => !isWalkableType(id) && id !== 'table');
+    const walkablePrefs = pref.filter((id) => isWalkableType(id));
 
     const freeForBlocking = rng.shuffle(
       room.cells.filter((c) => !occupiedSet.has(key(c.r, c.c)) && !placedObjSet.has(key(c.r, c.c)))
     );
 
-    // 1. Try placing a 2-cell or L-shaped autotiled table in larger rooms!
     if (freeForBlocking.length >= 3 && (pref.includes('table') || rng.chance(0.55))) {
       for (const start of freeForBlocking) {
         const horiz = rng.chance(0.5);
@@ -276,7 +293,6 @@ export function generateFloorplan(params: {
         if (canN1) {
           tryPlace('table', start.r, start.c);
           tryPlace('table', n1.r, n1.c);
-          // Optional 3rd cell for an L-shape or 3-long desk
           const n2 = rng.chance(0.5)
             ? { r: n1.r + dc, c: n1.c + dr }
             : { r: n1.r + dr, c: n1.c + dc };
@@ -297,8 +313,7 @@ export function generateFloorplan(params: {
       }
     }
 
-    // 2. Place 1–3 themed blocking objects in remaining free non-occupied squares (target ~35% room density)
-    const maxBlocking = Math.max(1, Math.floor(room.cells.length * 0.38));
+    const maxBlocking = Math.max(1, Math.floor(room.cells.length * 0.36));
     let placedInRoom = objects.filter((o) => roomGrid[o.r][o.c] === room.id && !o.walkable).length;
     for (const cell of freeForBlocking) {
       if (placedInRoom >= maxBlocking) break;
@@ -310,7 +325,6 @@ export function generateFloorplan(params: {
       }
     }
 
-    // 3. Place 1–2 walkable chairs / beds / carpets (can sit directly under a suspect OR on an empty open cell!)
     const walkableType = walkablePrefs.length > 0 ? rng.pick(walkablePrefs) : 'chair';
     const walkableCandidates = rng.shuffle(room.cells.filter((c) => !placedObjSet.has(key(c.r, c.c))));
     const walkableCount = room.cells.length >= 6 ? 2 : 1;
@@ -332,5 +346,85 @@ export function generateFloorplan(params: {
     groundTruth,
     victimIndex,
     killerIndex,
+  };
+}
+
+/**
+ * Volume 3 Multiple Grids generator: builds two independent sub-grids (e.g. 3×3 + 3×3 or 4×4 + 3×3)
+ * stored side-by-side in a unified coordinate space with `subGridId: 'A' | 'B'` and `colOffset`.
+ */
+export function generateSplitFloorplan(params: {
+  sizeA: number;
+  sizeB: number;
+  roomBriefs: CreativeRoomBrief[];
+  rng: PRNG;
+  walkableOverrides?: string[];
+}): GeneratedFloorplan & { sizeA: number; sizeB: number; colOffsetB: number } {
+  const { sizeA, sizeB, roomBriefs, rng, walkableOverrides = [] } = params;
+  const half = Math.max(2, Math.ceil(roomBriefs.length / 2));
+  const briefsA = roomBriefs.slice(0, half);
+  const briefsB = roomBriefs.slice(half).length >= 2 ? roomBriefs.slice(half) : roomBriefs.slice(0, 2);
+
+  const fpA = generateFloorplan({
+    rows: sizeA,
+    cols: sizeA,
+    roomBriefs: briefsA,
+    rng,
+    walkableOverrides,
+    subGridId: 'A',
+    roomIdPrefix: 'roomA',
+  });
+
+  const fpB = generateFloorplan({
+    rows: sizeB,
+    cols: sizeB,
+    roomBriefs: briefsB,
+    rng,
+    walkableOverrides,
+    subGridId: 'B',
+    roomIdPrefix: 'roomB',
+  });
+
+  const colOffsetB = sizeA;
+  const totalRows = Math.max(sizeA, sizeB);
+  const totalCols = sizeA + sizeB;
+
+  const shiftedRoomsB: RoomDef[] = fpB.rooms.map((rm) => ({
+    ...rm,
+    cells: rm.cells.map((cell) => ({ r: cell.r, c: cell.c + colOffsetB })),
+  }));
+
+  const shiftedObjsB: MapObject[] = fpB.objects.map((o) => ({
+    ...o,
+    c: o.c + colOffsetB,
+  }));
+
+  // Void cells for padding if sizeA !== sizeB (e.g. 4×4 + 3×3 leaves row 3 in Grid B void)
+  const voidCells: GridCoord[] = [];
+  for (let r = sizeA; r < totalRows; r++) {
+    for (let c = 0; c < sizeA; c++) voidCells.push({ r, c });
+  }
+  for (let r = sizeB; r < totalRows; r++) {
+    for (let c = colOffsetB; c < totalCols; c++) voidCells.push({ r, c });
+  }
+
+  // Combine groundTruth placing Victim (from Grid B's pair room) at the very last index!
+  const shiftedTruthB = fpB.groundTruth.map((p) => ({ r: p.r, c: p.c + colOffsetB }));
+  const groundTruth = [...fpA.groundTruth, ...shiftedTruthB];
+  const victimIndex = groundTruth.length - 1;
+  const killerIndex = fpA.groundTruth.length + fpB.killerIndex;
+
+  return {
+    rows: totalRows,
+    cols: totalCols,
+    voidCells,
+    rooms: [...fpA.rooms, ...shiftedRoomsB],
+    objects: [...fpA.objects, ...shiftedObjsB],
+    groundTruth,
+    victimIndex,
+    killerIndex,
+    sizeA,
+    sizeB,
+    colOffsetB,
   };
 }

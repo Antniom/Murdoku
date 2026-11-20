@@ -384,71 +384,106 @@ export const RulesSpread: React.FC<RulesSpreadProps> = ({ lang }) => {
 
         {/* Book 2 & 3 Chapter Twists */}
         <div className="rule-section-heading">
-          {isPt ? 'Variantes dos Livros 2 e 3' : 'Book 2 & Book 3 Chapter Twists'}
+          {isPt ? 'Variantes dos Livros 2 (No Tempo) e 3 (Volta ao Mundo)' : 'Book 2 (Back in Time) & Book 3 (Around the World) Twists'}
         </div>
 
-        <div className="rule-twists-grid">
+        <div className="rule-twists-grid rule-twists-grid--six">
           <div className="rule-twist-card">
             <div className="rule-twist-card__top">
-              <span className="rule-twist-tag">{isPt ? 'FORA-DA-LEI' : 'OUTLAW'}</span>
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#8a372a" strokeWidth="1.8" aria-hidden="true">
+              <span className="rule-twist-tag">{isPt ? 'VOL. 2 · TEMPO' : 'VOL. 2 · TIME'}</span>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#8a372a" strokeWidth="1.9" aria-hidden="true">
+                <circle cx="12" cy="12" r="9" fill="#f7eadb" />
+                <polyline points="12 7 12 12 15.5 14" strokeLinecap="round" />
+              </svg>
+            </div>
+            <h3 className="rule-twist-card__title">
+              {isPt ? 'Viagem no Tempo' : 'Time Travel (Past vs. Present)'}
+            </h3>
+            <p className="rule-twist-card__body">
+              {isPt
+                ? 'Dois suspeitos (nunca a Vítima) trocaram de lugar entre o Passado e o Presente; o crime ocorreu no Presente.'
+                : 'Two suspects (never the Victim) swapped squares between Past and Present; the murder took place in the Present.'}
+            </p>
+          </div>
+
+          <div className="rule-twist-card">
+            <div className="rule-twist-card__top">
+              <span className="rule-twist-tag">{isPt ? 'VOL. 3 · GRELHAS' : 'VOL. 3 · SPLIT'}</span>
+              <svg width="26" height="20" viewBox="0 0 28 20" aria-hidden="true">
+                <rect x="1.5" y="2" width="10.5" height="16" rx="1.5" fill="#dcebf5" stroke="#2c3c5a" strokeWidth="1.5" />
+                <rect x="16" y="2" width="10.5" height="16" rx="1.5" fill="#e2efe5" stroke="#2c3c5a" strokeWidth="1.5" />
+              </svg>
+            </div>
+            <h3 className="rule-twist-card__title">
+              {isPt ? 'Cenas Divididas' : 'Split Crime Scenes'}
+            </h3>
+            <p className="rule-twist-card__body">
+              {isPt
+                ? 'Duas grelhas independentes lado a lado: cada uma aplica a sua própria regra de 1 por linha e 1 por coluna.'
+                : 'Two side-by-side grids share one suspect pool, but each enforces its own independent 1-per-row & 1-per-column rule.'}
+            </p>
+          </div>
+
+          <div className="rule-twist-card">
+            <div className="rule-twist-card__top">
+              <span className="rule-twist-tag">{isPt ? 'VOL. 3 · PAPÉIS' : 'VOL. 3 · ROLES'}</span>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2c3c5a" strokeWidth="1.8" aria-hidden="true">
+                <path d="M3 11c2-4 5-5 9-5s7 1 9 5c-2 4-5 5-9 5s-7-1-9-5z" fill="#e8e2f4" />
+                <circle cx="9" cy="11" r="1.5" fill="#2c3c5a" />
+                <circle cx="15" cy="11" r="1.5" fill="#2c3c5a" />
+              </svg>
+            </div>
+            <h3 className="rule-twist-card__title">
+              {isPt ? 'Identidades & Selos' : 'Secret Roles & Stamps'}
+            </h3>
+            <p className="rule-twist-card__body">
+              {isPt
+                ? 'Cruza o Dossiê de Papéis Ocultos com as pistas dos suspeitos. Consulta os selos ✓/✕ sob a planta.'
+                : 'Cross-reference hidden titles in the Secret Roles dossier with suspect clues, and check ✓/✕ occupancy stamps under the map.'}
+            </p>
+          </div>
+
+          <div className="rule-twist-card">
+            <div className="rule-twist-card__top">
+              <span className="rule-twist-tag">{isPt ? 'VOL. 2 · ERAS' : 'VOL. 2 · ERAS'}</span>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#8a372a" strokeWidth="1.8" aria-hidden="true">
                 <polygon points="12 2 14.9 8.6 22 9.3 16.6 14 18.2 21 12 17.3 5.8 21 7.4 14 2 9.3 9.1 8.6 12 2" fill="#f2d6c9" />
               </svg>
             </div>
             <h3 className="rule-twist-card__title">
-              {isPt ? 'O Fora-da-Lei Oculto' : 'The Hidden Outlaw'}
+              {isPt ? 'Fora-da-Lei & Regras de Era' : 'Outlaw & Era Rules'}
             </h3>
             <p className="rule-twist-card__body">
               {isPt
-                ? 'Um suspeito (nunca a Vítima) cumpre a condição do Fora-da-Lei no topo da página. Outras pistas referem-no.'
-                : 'One suspect (never the Victim) obeys the public Outlaw rule at the top of the page. Other clues refer to them.'}
+                ? 'Um Fora-da-Lei oculto cumpre a regra do topo. Em certas eras, cavalos, barcos ou carros podem ser ocupados.'
+                : 'One hidden Outlaw obeys the header rule. Era headers can also make horses, boats, or cars occupiable.'}
             </p>
           </div>
 
           <div className="rule-twist-card">
             <div className="rule-twist-card__top">
-              <span className="rule-twist-tag">{isPt ? 'ÁLIBI' : 'ALIBI'}</span>
-              <svg width="34" height="22" viewBox="0 0 38 24" aria-hidden="true">
-                <rect x="2" y="3" width="14" height="18" rx="2" fill="#ffffff" stroke="#18181b" strokeWidth="1.5" />
-                <rect x="20" y="3" width="14" height="18" rx="2" fill="#f7dede" stroke="#b83838" strokeWidth="1.5" />
-                <line x1="23" y1="7" x2="31" y2="17" stroke="#b83838" strokeWidth="2" strokeLinecap="round" />
-                <line x1="31" y1="7" x2="23" y2="17" stroke="#b83838" strokeWidth="2" strokeLinecap="round" />
-              </svg>
-            </div>
-            <h3 className="rule-twist-card__title">
-              {isPt ? 'O Suspeito com Álibi' : 'The Uninvolved Suspect'}
-            </h3>
-            <p className="rule-twist-card__body">
-              {isPt
-                ? 'Há uma carta a mais! Uma pessoa nunca esteve na cena do crime e deve ser descartada por contradição.'
-                : 'There is one extra suspect card! One person was never at the crime scene and must be ruled out.'}
-            </p>
-          </div>
-
-          <div className="rule-twist-card">
-            <div className="rule-twist-card__top">
-              <span className="rule-twist-tag">{isPt ? 'PLANTA RASGADA' : 'TORN MAP'}</span>
-              <svg width="26" height="22" viewBox="0 0 28 24" aria-hidden="true">
-                <rect x="2" y="2" width="24" height="20" rx="3" fill="#f7f4ec" stroke="#8a372a" strokeWidth="1.6" strokeDasharray="3 2" />
-                <text x="14" y="16" textAnchor="middle" fontFamily="var(--font-display)" fontWeight="800" fontSize="13" fill="#8a372a">
+              <span className="rule-twist-tag">{isPt ? 'ÁLIBI / RASGADA' : 'ALIBI / TORN'}</span>
+              <svg width="26" height="20" viewBox="0 0 28 22" aria-hidden="true">
+                <rect x="2" y="2" width="24" height="18" rx="3" fill="#f7f4ec" stroke="#8a372a" strokeWidth="1.6" strokeDasharray="3 2" />
+                <text x="14" y="15" textAnchor="middle" fontFamily="var(--font-display)" fontWeight="800" fontSize="12" fill="#8a372a">
                   ?
                 </text>
               </svg>
             </div>
             <h3 className="rule-twist-card__title">
-              {isPt ? 'Fragmento em Falta' : 'Missing Map Fragment'}
+              {isPt ? 'Álibi ou Planta Rasgada' : 'Alibi or Torn Map'}
             </h3>
             <p className="rule-twist-card__body">
               {isPt
-                ? 'Falta um quadrado da planta. Toca nos fragmentos A–D para testar qual é o único que funciona.'
-                : 'A section of the map is missing. Tap fragments A–D to preview which single patch solves the case.'}
+                ? 'Descarta o suspeito extra ausente (Álibi) ou testa os fragmentos A–D até encontrares o único válido.'
+                : 'Rule out the extra absent suspect (Alibi) or tap fragments A–D to find the sole valid map patch.'}
             </p>
           </div>
 
           <div className="rule-twist-card">
             <div className="rule-twist-card__top">
               <span className="rule-twist-tag">{isPt ? 'MENTIROSO' : 'LIAR'}</span>
-              <svg width="28" height="22" viewBox="0 0 32 22" aria-hidden="true">
+              <svg width="26" height="20" viewBox="0 0 32 22" aria-hidden="true">
                 <rect x="2" y="3" width="28" height="16" rx="8" fill="#ffffff" stroke="#8a372a" strokeWidth="1.6" />
                 <line x1="9" y1="8" x2="23" y2="14" stroke="#c63636" strokeWidth="2.2" strokeLinecap="round" />
                 <line x1="23" y1="8" x2="9" y2="14" stroke="#c63636" strokeWidth="2.2" strokeLinecap="round" />
@@ -459,7 +494,7 @@ export const RulesSpread: React.FC<RulesSpreadProps> = ({ lang }) => {
             </h3>
             <p className="rule-twist-card__body">
               {isPt
-                ? 'Exatamente um suspeito (nunca a Vítima) mente — toda a sua pista é falsa, enquanto os outros dizem a verdade.'
+                ? 'Exatamente um suspeito (nunca a Vítima) mente — toda a sua pista é falsa enquanto os outros dizem a verdade.'
                 : 'Exactly one suspect (never the Victim) is lying — their entire statement is false while all others are true.'}
             </p>
           </div>

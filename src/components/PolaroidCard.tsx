@@ -1,5 +1,5 @@
 import React from 'react';
-import type { Lang, SuspectDef, ThemeAccessoryId } from '../engine/types';
+import type { CardThemeId, Lang, SuspectDef, ThemeAccessoryId } from '../engine/types';
 import { RichText } from './RichText';
 
 const AccessoryOverlay: React.FC<{ accessory?: ThemeAccessoryId }> = ({ accessory }) => {
@@ -81,11 +81,13 @@ const AccessoryOverlay: React.FC<{ accessory?: ThemeAccessoryId }> = ({ accessor
 export interface PolaroidCardProps {
   suspect: SuspectDef;
   lang: Lang;
+  cardTheme?: CardThemeId;
 }
 
-export const PolaroidCard: React.FC<PolaroidCardProps> = ({ suspect, lang }) => {
+export const PolaroidCard: React.FC<PolaroidCardProps> = ({ suspect, lang, cardTheme }) => {
+  const themeClass = cardTheme && cardTheme !== 'classic' ? `suspect-card--${cardTheme}` : '';
   return (
-    <article className="suspect-card" aria-label={suspect.name}>
+    <article className={`suspect-card ${themeClass}`} aria-label={suspect.name}>
       <div className={`polaroid-frame ${suspect.isVictim ? 'polaroid-frame--victim' : ''}`}>
         <div className="polaroid-photo" style={{ backgroundColor: suspect.cardBg }}>
           <img src={suspect.svgPath} alt={suspect.name} draggable={false} />
