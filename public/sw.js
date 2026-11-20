@@ -1,9 +1,9 @@
-const CACHE_NAME = 'murdoku-book-v8';
+const CACHE_NAME = 'murdoku-book-v9';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(['/manifest.webmanifest']))
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(['/manifest.webmanifest?v=9']))
   );
 });
 
@@ -15,6 +15,17 @@ self.addEventListener('activate', (event) => {
         Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
       )
       .then(() => self.clients.claim())
+      .then(() => self.clients.matchAll({ type: 'window', includeUncontrolled: true }))
+      .then((clients) =>
+        Promise.all(
+          clients.map((client) => {
+            if ('navigate' in client) {
+              return client.navigate(client.url).catch(() => {});
+            }
+            return Promise.resolve();
+          })
+        )
+      )
   );
 });
 
