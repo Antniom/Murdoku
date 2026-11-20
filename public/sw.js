@@ -1,9 +1,9 @@
-const CACHE_NAME = 'murdoku-book-v10';
+const CACHE_NAME = 'murdoku-book-v11';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(['/manifest.webmanifest?v=10']))
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(['/manifest.webmanifest?v=11']))
   );
 });
 

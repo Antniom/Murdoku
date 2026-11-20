@@ -1,15 +1,24 @@
 import React, { useMemo, useState } from 'react';
-import type { Lang, MurdokuCase } from '../engine/types';
+import type { Lang, MapObject, MurdokuCase } from '../engine/types';
+import { OBJECT_CATALOG } from '../data/assets';
+import { getAutotileSvgPath } from '../engine/autotile';
 import { UI_STRINGS } from '../data/i18n';
 import { IconClose, IconEraser } from './Icons';
 
 const CELL = 38;
 const PAD = 4;
 
+function getWorkingGridObjHref(obj: MapObject): string {
+  if ((obj.type === 'table' || obj.type === 'carpet') && obj.tileIndex) {
+    return getAutotileSvgPath(obj.type, obj.tileIndex);
+  }
+  return OBJECT_CATALOG[obj.type]?.svgPath ?? '/assets/objects/obj_box.svg';
+}
+
 export interface TornWorkingGridProps {
   murdokuCase: MurdokuCase;
   lang?: Lang;
-  /** Book 2/3 optional aid: faintly shade blocked furniture squares */
+  /** Book 2/3 optional aid: grey out blocked furniture squares with actual asset outlines */
   showObstacleAid: boolean;
   /** Optional Stamp Grid mode for finger/mouse users */
   tapAssistEnabled: boolean;
@@ -41,8 +50,9 @@ export const TornWorkingGrid: React.FC<TornWorkingGridProps> = ({
 
   const width = cols * CELL + PAD * 2 + splitGap;
   const height = rows * CELL + PAD * 2 + topHeader;
+  const outlineFilterId = `aid-outline-${murdokuCase.id}`;
 
-  const { roomGrid, blockedSet, wallSegments } = useMemo(() => {
+  const { roomGrid, blockedObjsByCell, wallSegments } = useMemo(() => {
     const vSet = new Set(voidCells.map((v) => `${v.r},${v.c}`));
     const rGrid: (string | null)[][] = Array.from({ length: rows }, () => Array(cols).fill(null));
     for (const rm of rooms) {
@@ -67,9 +77,14 @@ export const TornWorkingGrid: React.FC<TornWorkingGridProps> = ({
       }
     }
 
-    const bSet = new Set<string>();
+    const bMap = new Map<string, MapObject[]>();
     for (const o of effObjs) {
-      if (!o.walkable) bSet.add(`${o.r},${o.c}`);
+      if (!o.walkable) {
+        const key = `${o.r},${o.c}`;
+        const list = bMap.get(key) ?? [];
+        list.push(o);
+        bMap.set(key, list);
+      }
     }
 
     const segs: Array<{ x1: number; y1: number; x2: number; y2: number }> = [];
@@ -86,7 +101,7 @@ export const TornWorkingGrid: React.FC<TornWorkingGridProps> = ({
       }
     }
 
-    return { roomGrid: rGrid, blockedSet: bSet, wallSegments: segs };
+    return { roomGrid: rGrid, blockedObjsByCell: bMap, wallSegments: segs };
   }, [rows, cols, rooms, objects, voidCells, twist, previewPatchId, isSplit, colOffsetB]);
 
   const handleCellClick = (r: number, c: number) => {
@@ -146,9 +161,16 @@ export const TornWorkingGrid: React.FC<TornWorkingGridProps> = ({
       <div className={`torn-grid-shell ${tapAssistEnabled ? 'torn-grid-shell--tap-active' : ''}`}>
         <svg className="working-grid-svg" viewBox={`0 0 ${width} ${height}`}>
           <defs>
-            <pattern id="aid-hatch" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-              <line x1="0" y1="0" x2="0" y2="8" stroke="rgba(120,126,138,0.28)" strokeWidth="2" />
-            </pattern>
+            {/* Extracts crisp monochrome line-art outlines from the actual board object SVGs */}
+            <filter id={outlineFilterId} colorInterpolationFilters="sRGB">
+              <feColorMatrix
+                type="matrix"
+                values="0.33 0.33 0.33 0 0  0.33 0.33 0.33 0 0  0.33 0.33 0.33 0 0  -1.4 -1.4 -1.4 1.1 0"
+                result="linesOnly"
+              />
+              <feFlood floodColor="#697182" floodOpacity="0.72" result="ink" />
+              <feComposite in="ink" in2="linesOnly" operator="in" />
+            </filter>
           </defs>
 
           {twist.kind === 'split_grids' &&
@@ -171,7 +193,8 @@ export const TornWorkingGrid: React.FC<TornWorkingGridProps> = ({
             Array.from({ length: cols }).map((__, c) => {
               if (!roomGrid[r][c]) return null;
               const key = `${r},${c}`;
-              const isBlocked = blockedSet.has(key);
+              const blockedObjs = blockedObjsByCell.get(key);
+              const isBlocked = !!blockedObjs && blockedObjs.length > 0;
               const mark = tapMarks[key];
               const x = cellX(c);
               const y = cellY(r);
@@ -183,13 +206,32 @@ export const TornWorkingGrid: React.FC<TornWorkingGridProps> = ({
                     y={y}
                     width={CELL}
                     height={CELL}
-                    fill={showObstacleAid && isBlocked ? 'url(#aid-hatch)' : '#ffffff'}
+                    fill={showObstacleAid && isBlocked ? '#e4e7ef' : '#ffffff'}
                     stroke="#dcdfe6"
                     strokeWidth="1"
                     className={
                       tapAssistEnabled ? 'working-grid-cell working-grid-cell--interactive' : 'working-grid-cell'
                     }
                   />
+                  {showObstacleAid &&
+                    isBlocked &&
+                    blockedObjs.map((obj, oIdx) => {
+                      const isAutotile = (obj.type === 'table' || obj.type === 'carpet') && !!obj.tileIndex;
+                      const inset = isAutotile ? 0 : 3;
+                      return (
+                        <image
+                          key={`${key}-aid-${oIdx}-${obj.type}`}
+                          href={getWorkingGridObjHref(obj)}
+                          x={x + inset}
+                          y={y + inset}
+                          width={CELL - inset * 2}
+                          height={CELL - inset * 2}
+                          preserveAspectRatio="xMidYMid meet"
+                          filter={`url(#${outlineFilterId})`}
+                          pointerEvents="none"
+                        />
+                      );
+                    })}
                   {activeCell === key && (
                     <rect
                       x={x + 1}
