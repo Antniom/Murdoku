@@ -84,7 +84,7 @@ export const BookCover: React.FC<BookCoverProps> = ({
             </div>
 
             <div className="cover-footer">
-              <span>iPad &amp; Apple Pencil Ready · v2.2.2</span>
+              <span>iPad &amp; Apple Pencil Ready · v2.2.3</span>
               <button type="button" className="lang-pill" onClick={onToggleLang}>
                 {lang === 'en' ? 'EN · Português' : 'PT · English'}
               </button>

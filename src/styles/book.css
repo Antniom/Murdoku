@@ -1,4 +1,5 @@
 .app-shell {
+  --topbar-clearance: calc(max(10px, env(safe-area-inset-top)) + 56px);
   width: 100%;
   height: 100%;
   background: var(--desk-radial);
@@ -157,7 +158,7 @@
   height: 100%;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: calc(max(10px, env(safe-area-inset-top)) + 52px) 28px calc(max(14px, env(safe-area-inset-bottom)) + 76px);
+  padding: var(--topbar-clearance) 28px calc(max(14px, env(safe-area-inset-bottom)) + 76px);
   scrollbar-width: thin;
   scrollbar-color: rgba(0, 0, 0, 0.15) transparent;
 }
@@ -199,7 +200,7 @@
 /* Solved Wax Stamp */
 .solved-ribbon {
   position: absolute;
-  top: calc(max(10px, env(safe-area-inset-top)) + 56px);
+  top: calc(var(--topbar-clearance) + 4px);
   right: 26px;
   padding: 3px 10px;
   border: 2px solid #2b7a4b;
@@ -215,20 +216,14 @@
   z-index: 16;
 }
 
-/* Standalone / Fullscreen PWA (iPadOS / iOS): place top-bar cleanly below native status-bar blur */
+/* Standalone / Fullscreen PWA (iPadOS / iOS): place top-bar neatly below native status bar with zero page overlap */
 @media (display-mode: standalone), (display-mode: fullscreen) {
+  .app-shell {
+    --topbar-clearance: calc(max(22px, env(safe-area-inset-top)) + 64px);
+  }
+
   .top-bar {
-    top: calc(max(24px, env(safe-area-inset-top)) + 34px);
-  }
-
-  .book-page,
-  .book-page--left,
-  .book-page--right {
-    padding-top: calc(max(24px, env(safe-area-inset-top)) + 86px);
-  }
-
-  .solved-ribbon {
-    top: calc(max(24px, env(safe-area-inset-top)) + 90px);
+    top: calc(max(22px, env(safe-area-inset-top)) + 8px);
   }
 }
 

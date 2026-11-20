@@ -153,8 +153,8 @@ const BesideMiniGrid: React.FC = () => (
 );
 
 /** Illustrated Compass Diagram for Card 4 (N/S/E/W anywhere on the grid) */
-const CompassMiniGrid: React.FC = () => (
-  <svg width="82" height="82" viewBox="0 0 96 96" aria-hidden="true" style={{ flexShrink: 0 }}>
+const CompassMiniGrid: React.FC<{ isPt: boolean }> = ({ isPt }) => (
+  <svg width="76" height="76" viewBox="0 0 96 96" aria-hidden="true" style={{ flexShrink: 0 }}>
     {/* 3x3 light grid */}
     <rect x="3" y="3" width="90" height="90" fill="#e6eff5" stroke="#111114" strokeWidth="3" />
     {/* North row highlight */}
@@ -186,10 +186,51 @@ const CompassMiniGrid: React.FC = () => (
       E →
     </text>
     <text x="18" y="52" textAnchor="middle" fontFamily="var(--font-display)" fontWeight="800" fontSize="11" fill="#5b4394">
-      ← W
+      {isPt ? '← O' : '← W'}
     </text>
     <text x="48" y="82" textAnchor="middle" fontFamily="var(--font-display)" fontWeight="800" fontSize="11.5" fill="#8a372a">
       S ↓
+    </text>
+  </svg>
+);
+
+/** Illustrated 45° Diagonal Diagram for Card 4 ("Same Diagonal" across rooms) */
+const DiagonalMiniGrid: React.FC = () => (
+  <svg width="76" height="76" viewBox="0 0 96 96" aria-hidden="true" style={{ flexShrink: 0 }}>
+    <rect x="3" y="3" width="90" height="90" fill="#f2edf6" stroke="#111114" strokeWidth="3" />
+    {/* Four 45° diagonal corner squares highlighted */}
+    <rect x="4.5" y="4.5" width="28.5" height="28.5" fill="#dfd2f2" />
+    <rect x="63" y="4.5" width="28.5" height="28.5" fill="#dfd2f2" />
+    <rect x="4.5" y="63" width="28.5" height="28.5" fill="#dfd2f2" />
+    <rect x="63" y="63" width="28.5" height="28.5" fill="#dfd2f2" />
+    <g stroke="#2a3538" strokeWidth="1" opacity="0.55">
+      <line x1="33" y1="3" x2="33" y2="93" />
+      <line x1="63" y1="3" x2="63" y2="93" />
+      <line x1="3" y1="33" x2="93" y2="33" />
+      <line x1="3" y1="63" x2="93" y2="63" />
+    </g>
+    {/* Dashed 45° diagonal axes */}
+    <g stroke="#6a45a8" strokeWidth="2.2" strokeDasharray="4 3" opacity="0.78">
+      <line x1="12" y1="12" x2="84" y2="84" />
+      <line x1="84" y1="12" x2="12" y2="84" />
+    </g>
+    {/* Diagonal arrows */}
+    <text x="18" y="22" textAnchor="middle" fontFamily="var(--font-display)" fontWeight="800" fontSize="12" fill="#5b3599">
+      ↖
+    </text>
+    <text x="78" y="22" textAnchor="middle" fontFamily="var(--font-display)" fontWeight="800" fontSize="12" fill="#5b3599">
+      ↗
+    </text>
+    <text x="18" y="82" textAnchor="middle" fontFamily="var(--font-display)" fontWeight="800" fontSize="12" fill="#5b3599">
+      ↙
+    </text>
+    <text x="78" y="82" textAnchor="middle" fontFamily="var(--font-display)" fontWeight="800" fontSize="12" fill="#5b3599">
+      ↘
+    </text>
+    {/* Center suspect B */}
+    <circle cx="48" cy="48" r="10.5" fill="#ffffff" stroke="#111114" strokeWidth="2.2" />
+    <text x="48" y="52.5" textAnchor="middle" fontFamily="var(--font-display)" fontWeight="800" fontSize="13.5" fill="#111114">
+      B
     </text>
   </svg>
 );
@@ -356,26 +397,35 @@ export const RulesSpread: React.FC<RulesSpreadProps> = ({ lang }) => {
 
       {/* RIGHT PAGE (Page 5): Compass Rule + Book 2 & 3 Visual Twists + Apple Pencil Shortcuts */}
       <section className="book-page book-page--right rules-page rules-page--right">
-        {/* Card 4: Compass Directions */}
+        {/* Card 4: Compass Directions, Diagonals & Room Corners */}
         <div className="rule-card">
           <span className="rule-badge">4</span>
           <h2 className="rule-card__title">
-            {isPt ? 'Norte, Sul, Este e Oeste' : 'North, South, East, and West'}
+            {isPt ? 'Direções, Diagonais e Cantos' : 'Directions, Diagonals & Corners'}
           </h2>
           <div className="rule-compass-row">
-            <CompassMiniGrid />
+            <div className="rule-compass-diagrams">
+              <div className="rule-mini-caption-col">
+                <CompassMiniGrid isPt={isPt} />
+                <span className="rule-mini-caption">{isPt ? 'N / S / E / O' : 'N / S / E / W'}</span>
+              </div>
+              <div className="rule-mini-caption-col">
+                <DiagonalMiniGrid />
+                <span className="rule-mini-caption">{isPt ? 'Diagonal 45°' : '45° Diagonal'}</span>
+              </div>
+            </div>
             <p className="rule-card__body">
               {isPt ? (
                 <>
-                  <strong>Norte de B</strong> significa qualquer quadrado numa linha acima de B —{' '}
-                  <em>não precisa de estar na mesma coluna</em>. O mesmo vale para <strong>Sul</strong>,{' '}
-                  <strong>Este</strong> e <strong>Oeste</strong>. Outras divisões podem ter 0, 1, 2 ou mais pessoas.
+                  <strong>Norte/Sul/Este/Oeste</strong> vale para qualquer linha/coluna nessa direção (mesmo noutra
+                  divisão). <strong>Mesma diagonal</strong> significa qualquer quadrado a 45° (↖↗↙↘) na mesma grelha.{' '}
+                  <strong>Num canto</strong> toca 2 paredes perpendiculares da divisão.
                 </>
               ) : (
                 <>
-                  <strong>North of B</strong> means any square in a higher row than B —{' '}
-                  <em>not necessarily the same column</em>. The same applies to <strong>South</strong>,{' '}
-                  <strong>East</strong>, and <strong>West</strong>. Other rooms may hold 0, 1, 2, or more people.
+                  <strong>North/South/East/West</strong> means any row or column in that direction (even across rooms).{' '}
+                  <strong>Same diagonal</strong> means any square along a 45° diagonal (↖↗↙↘) in the same grid.{' '}
+                  <strong>In a corner</strong> touches 2 perpendicular walls of that room.
                 </>
               )}
             </p>

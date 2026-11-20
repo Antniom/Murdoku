@@ -6,22 +6,47 @@
 .rules-page {
   display: flex;
   flex-direction: column;
-  gap: 11px;
+  gap: 10px;
   justify-content: space-between;
-  padding: 54px 22px 30px !important;
+  padding: calc(var(--topbar-clearance) + 6px) 22px calc(max(18px, env(safe-area-inset-bottom)) + 10px);
   overflow-y: auto;
 }
 
 .rules-page--left {
-  padding-right: 28px !important;
+  padding-left: calc(22px + env(safe-area-inset-left));
+  padding-right: 28px;
 }
 
 .rules-page--right {
-  padding-left: 28px !important;
+  padding-left: 28px;
+  padding-right: calc(22px + env(safe-area-inset-right));
 }
 
 .rules-page .page-number {
   color: #ece2ce;
+}
+
+.rule-compass-diagrams {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.rule-mini-caption-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+
+.rule-mini-caption {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 9.5px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #364154;
 }
 
 /* Cream Rounded Rule Card with Dark Navy Number Badge */
