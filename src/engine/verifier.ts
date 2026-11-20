@@ -313,6 +313,50 @@ export function verifyCaseIntegrity(murdokuCase: MurdokuCase): CaseIntegrityResu
   const presentObjects = collectPresentObjectTypes(board);
   const suspectsById = Object.fromEntries(suspects.map((s) => [s.id, s]));
 
+  // 0. Every room must have a unique name (EN & PT) and be a single contiguous connected component!
+  const seenEnNames = new Set<string>();
+  const seenPtNames = new Set<string>();
+  const adjDirs = [
+    [-1, 0],
+    [1, 0],
+    [0, -1],
+    [0, 1],
+  ];
+  for (const rm of rooms) {
+    const enNorm = rm.name.en.trim().toUpperCase();
+    const ptNorm = rm.name.pt.trim().toUpperCase();
+    if (seenEnNames.has(enNorm)) {
+      errors.push(`Duplicate EN room name "${rm.name.en}" on floorplan.`);
+    }
+    if (seenPtNames.has(ptNorm)) {
+      errors.push(`Duplicate PT room name "${rm.name.pt}" on floorplan.`);
+    }
+    seenEnNames.add(enNorm);
+    seenPtNames.add(ptNorm);
+
+    const activeCells = rm.cells.filter((c) => !board.voidMask[c.r]?.[c.c]);
+    if (activeCells.length === 0) {
+      errors.push(`Room "${rm.id}" (${rm.name.en}) has 0 active cells.`);
+      continue;
+    }
+    const cellSet = new Set(activeCells.map((c) => `${c.r},${c.c}`));
+    const visited = new Set<string>([`${activeCells[0].r},${activeCells[0].c}`]);
+    const queue = [activeCells[0]];
+    while (queue.length > 0) {
+      const cur = queue.shift()!;
+      for (const [dr, dc] of adjDirs) {
+        const nk = `${cur.r + dr},${cur.c + dc}`;
+        if (cellSet.has(nk) && !visited.has(nk)) {
+          visited.add(nk);
+          queue.push({ r: cur.r + dr, c: cur.c + dc });
+        }
+      }
+    }
+    if (visited.size !== activeCells.length) {
+      errors.push(`Room "${rm.id}" (${rm.name.en}) is split into multiple disconnected parts.`);
+    }
+  }
+
   // 1. Exact Unique Solution via CSP solver
   const cspSolutions = solveCSP(
     { rows, cols, voidCells, rooms, objects, suspects, twist },

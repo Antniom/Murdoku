@@ -19,9 +19,49 @@ function key(r: number, c: number): string {
   return `${r},${c}`;
 }
 
+function isGridContiguous(grid: number[][], rows: number, cols: number): boolean {
+  const byId = new Map<number, GridCoord[]>();
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const id = grid[r][c];
+      if (id < 0) continue;
+      if (!byId.has(id)) byId.set(id, []);
+      byId.get(id)!.push({ r, c });
+    }
+  }
+  const dirs = [
+    [-1, 0],
+    [1, 0],
+    [0, -1],
+    [0, 1],
+  ];
+  for (const [id, cells] of byId.entries()) {
+    if (cells.length < 2) return false;
+    const seen = new Set<string>([key(cells[0].r, cells[0].c)]);
+    const queue: GridCoord[] = [cells[0]];
+    while (queue.length > 0) {
+      const cur = queue.shift()!;
+      for (const [dr, dc] of dirs) {
+        const nr = cur.r + dr;
+        const nc = cur.c + dc;
+        if (nr < 0 || nr >= rows || nc < 0 || nc >= cols) continue;
+        if (grid[nr][nc] !== id) continue;
+        const nk = key(nr, nc);
+        if (!seen.has(nk)) {
+          seen.add(nk);
+          queue.push({ r: nr, c: nc });
+        }
+      }
+    }
+    if (seen.size !== cells.length) return false;
+  }
+  return true;
+}
+
 /**
  * Generates a contiguous room partition using recursive BSP + optional central nested room
  * (like the iconic STORAGE room in "9. The Laboratory") for authentic Murdoku floorplans.
+ * Guarantees strictly unique room names (never exceeding roomBriefs.length) and 100% single-piece rooms.
  */
 function partitionRooms(
   rows: number,
@@ -30,7 +70,9 @@ function partitionRooms(
   roomBriefs: CreativeRoomBrief[],
   rng: PRNG
 ): RoomDef[] {
-  const targetRooms = Math.min(Math.max(4, roomBriefs.length), rows >= 7 ? 6 : 5);
+  // Never create more rooms than unique roomBriefs available, and keep small sub-grids spacious!
+  const maxForSize = rows <= 3 ? 3 : rows <= 4 ? 3 : rows <= 5 ? 4 : rows <= 6 ? 5 : 6;
+  const targetRooms = Math.max(2, Math.min(roomBriefs.length, maxForSize));
   const grid: number[][] = Array.from({ length: rows }, () => Array(cols).fill(-1));
 
   // Recursive rectangle split
@@ -41,19 +83,25 @@ function partitionRooms(
     w: number;
   }
 
-  let rects: Rect[] = [{ r0: 0, c0: 0, h: rows, w: cols }];
+  const rects: Rect[] = [{ r0: 0, c0: 0, h: rows, w: cols }];
 
   while (rects.length < targetRooms) {
-    // Pick largest splittable rect
+    // Pick largest splittable rect (never split a 1-wide or 1-tall strip into 1x1 rooms!)
     rects.sort((a, b) => b.h * b.w - a.h * a.w);
-    const idx = rects.findIndex((r) => r.h >= 3 || r.w >= 3);
+    const idx = rects.findIndex((r) => (r.h >= 3 && r.w >= 2) || (r.w >= 3 && r.h >= 2));
     if (idx === -1) break;
     const rect = rects.splice(idx, 1)[0];
 
-    const canSplitH = rect.h >= 3 && (rect.h >= 4 || rect.w < 4);
-    const canSplitV = rect.w >= 3 && (rect.w >= 4 || rect.h < 4);
+    const canSplitH = rect.h >= 3 && rect.w >= 2;
+    const canSplitV = rect.w >= 3 && rect.h >= 2;
     const splitHoriz =
-      canSplitH && canSplitV ? (rect.h > rect.w ? true : rect.w > rect.h ? false : rng.chance(0.5)) : canSplitH;
+      canSplitH && canSplitV
+        ? rect.h > rect.w
+          ? true
+          : rect.w > rect.h
+            ? false
+            : rng.chance(0.5)
+        : canSplitH;
 
     if (splitHoriz) {
       const minCut = rect.h >= 4 ? 2 : 1;
@@ -81,19 +129,28 @@ function partitionRooms(
     }
   });
 
-  // On 7x7+ grids, occasionally carve an iconic central 2x2 nested room (like STORAGE in The Laboratory)
-  if (rows >= 7 && cols >= 7 && rects.length < 6 && rng.chance(0.55)) {
+  // On 7x7+ grids, occasionally carve an iconic central 2x2 nested room ONLY if we have a spare unique brief
+  // AND stamping it keeps every existing room a single connected component!
+  if (rows >= 7 && cols >= 7 && rects.length < Math.min(6, roomBriefs.length) && rng.chance(0.55)) {
     const cr = rng.int(1, rows - 4);
     const cc = rng.int(1, cols - 4);
     const newId = rects.length;
+    const testGrid = grid.map((row) => row.slice());
     for (let r = cr; r < cr + 2; r++) {
       for (let c = cc; c < cc + 2; c++) {
         if (!voidSet.has(key(r, c))) {
-          grid[r][c] = newId;
+          testGrid[r][c] = newId;
         }
       }
     }
-    rects.push({ r0: cr, c0: cc, h: 2, w: 2 });
+    if (isGridContiguous(testGrid, rows, cols)) {
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          grid[r][c] = testGrid[r][c];
+        }
+      }
+      rects.push({ r0: cr, c0: cc, h: 2, w: 2 });
+    }
   }
 
   // Collect cells per room id, dropping any empty rooms
@@ -112,7 +169,8 @@ function partitionRooms(
   let i = 0;
   for (const [, cells] of roomCells.entries()) {
     if (cells.length === 0) continue;
-    const brief = roomBriefs[i % roomBriefs.length];
+    const brief = roomBriefs[i];
+    if (!brief) break;
     const safeTex = (VALID_FLOOR_TEXTURES as readonly string[]).includes(brief.texture)
       ? brief.texture
       : 'squaretile';
@@ -361,9 +419,19 @@ export function generateSplitFloorplan(params: {
   walkableOverrides?: string[];
 }): GeneratedFloorplan & { sizeA: number; sizeB: number; colOffsetB: number } {
   const { sizeA, sizeB, roomBriefs, rng, walkableOverrides = [] } = params;
-  const half = Math.max(2, Math.ceil(roomBriefs.length / 2));
-  const briefsA = roomBriefs.slice(0, half);
-  const briefsB = roomBriefs.slice(half).length >= 2 ? roomBriefs.slice(half) : roomBriefs.slice(0, 2);
+  // Deduplicate roomBriefs by name so no room name can ever repeat across Grid A and Grid B
+  const uniqueBriefs: CreativeRoomBrief[] = [];
+  const seenNames = new Set<string>();
+  for (const b of roomBriefs) {
+    const k = `${b.name.en.trim().toUpperCase()}|${b.name.pt.trim().toUpperCase()}`;
+    if (!seenNames.has(k)) {
+      seenNames.add(k);
+      uniqueBriefs.push(b);
+    }
+  }
+  const countA = Math.min(3, Math.max(2, Math.ceil(uniqueBriefs.length / 2)));
+  const briefsA = uniqueBriefs.slice(0, countA);
+  const briefsB = uniqueBriefs.slice(countA, countA + 3);
 
   const fpA = generateFloorplan({
     rows: sizeA,
