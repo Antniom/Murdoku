@@ -6,6 +6,7 @@ import './styles/polaroid.css';
 import './styles/map.css';
 import './styles/pencil.css';
 import './styles/rules.css';
+import './styles/cover.css';
 import { App } from './App';
 
 if ('serviceWorker' in navigator && import.meta.env.PROD) {
