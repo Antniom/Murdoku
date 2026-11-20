@@ -30,7 +30,8 @@ import {
 } from './predicates';
 import { solveCSP } from './solver';
 import { formatRoleClue, formatSuspectClue, type ClueFormatExtras } from './clues';
-import { generateDeductionProof } from './prover';
+import { generateDeductionProof, simulateHumanDeduction } from './prover';
+import { areClausesCompatibleOnSuspect, verifyCaseIntegrity } from './verifier';
 
 export interface GenerateCaseOptions {
   id: string;
@@ -267,18 +268,26 @@ function harvestFalseClauses(
   placements: Record<string, GridCoord>,
   rooms: RoomDef[]
 ): ClueClause[] {
+  const presentObjects = new Set<string>();
+  for (const objs of board.objectsAt.values()) {
+    for (const o of objs) presentObjects.add(o.type);
+  }
+
   const candidates: ClueClause[] = [];
   for (const rm of rooms) {
     const cl: ClueClause = { kind: 'in_room', roomId: rm.id };
     if (!evaluateClauseFull(board, suspectId, cl, placements)) candidates.push(cl);
   }
-  const checkObjs = ['table', 'chair', 'tv', 'shelf', 'plant', 'barrel', 'statue', 'painting'];
+  const checkObjs = ['table', 'chair', 'tv', 'shelf', 'plant', 'barrel', 'statue', 'painting', 'crate', 'box', 'horse', 'boat'];
   for (const obj of checkObjs) {
+    if (!presentObjects.has(obj)) continue;
     const cl: ClueClause = { kind: 'beside_object', objectType: obj };
     if (!evaluateClauseFull(board, suspectId, cl, placements)) candidates.push(cl);
   }
-  const sit: ClueClause = { kind: 'sitting_in_chair' };
-  if (!evaluateClauseFull(board, suspectId, sit, placements)) candidates.push(sit);
+  if (presentObjects.has('chair')) {
+    const sit: ClueClause = { kind: 'sitting_in_chair' };
+    if (!evaluateClauseFull(board, suspectId, sit, placements)) candidates.push(sit);
+  }
 
   for (const otherId of allSuspectIds) {
     if (otherId === suspectId || otherId === 'V') continue;
@@ -471,10 +480,17 @@ export function generateVerifiedCase(options: GenerateCaseOptions): MurdokuCase 
         const holder = holders[idx];
         roleAssignment![rt.id] = holder.id;
         const rCandidates = rng.shuffle(harvestRoleClauses(board, holder.id, placements, fp.rooms));
+        const chosenRoleClauses: ClueClause[] = [];
+        for (const rc of rCandidates) {
+          if (chosenRoleClauses.length >= 2) break;
+          if (areClausesCompatibleOnSuspect(chosenRoleClauses, rc)) {
+            chosenRoleClauses.push(rc);
+          }
+        }
         return {
           id: rt.id,
           title: rt.title,
-          clauses: rCandidates.slice(0, Math.min(2, rCandidates.length)),
+          clauses: chosenRoleClauses,
           clueText: { en: '', pt: '' },
         };
       });
@@ -518,11 +534,24 @@ export function generateVerifiedCase(options: GenerateCaseOptions): MurdokuCase 
 
     if (twistKind === 'uninvolved' && uninvolvedId) {
       const unSuspect = suspects.find((s) => s.id === uninvolvedId)!;
-      const sampleA = placements[activeNonVictims[0].id];
-      const sampleB = placements[activeNonVictims[1].id];
+      // Pick a row from one placed suspect and a col from another whose intersection is an OPEN square!
+      let pickedPair: [GridCoord, GridCoord] | null = null;
+      const shuffledActive = rng.shuffle(activeNonVictims);
+      outerUn: for (let i = 0; i < shuffledActive.length; i++) {
+        for (let j = 0; j < shuffledActive.length; j++) {
+          if (i === j) continue;
+          const pA = placements[shuffledActive[i].id];
+          const pB = placements[shuffledActive[j].id];
+          if (!board.voidMask[pA.r][pB.c] && !board.blockedMask[pA.r][pB.c] && board.roomGrid[pA.r][pB.c]) {
+            pickedPair = [pA, pB];
+            break outerUn;
+          }
+        }
+      }
+      if (!pickedPair) continue;
       unSuspect.clauses = [
-        { kind: 'in_row', row: sampleA.r },
-        { kind: 'in_col', col: sampleB.c },
+        { kind: 'in_row', row: pickedPair[0].r },
+        { kind: 'in_col', col: pickedPair[1].c },
       ];
     }
 
@@ -544,7 +573,7 @@ export function generateVerifiedCase(options: GenerateCaseOptions): MurdokuCase 
         }
       }
     } else if (twistKind === 'time_travel' && swappedPair) {
-      // Ensure BOTH swapped suspects have a clear Past-timeline clue + a Present clue
+      // Ensure BOTH swapped suspects have a clear Past-timeline clue + compatible Present clue
       for (const moverId of swappedPair) {
         const mover = activeNonVictims.find((s) => s.id === moverId)!;
         const pastIdx = pools[moverId].findIndex(
@@ -552,7 +581,8 @@ export function generateVerifiedCase(options: GenerateCaseOptions): MurdokuCase 
         );
         if (pastIdx !== -1) {
           const pastCl = pools[moverId].splice(pastIdx, 1)[0].clause;
-          mover.clauses = [pastCl, ...mover.clauses.slice(0, 1)];
+          const keepPresent = mover.clauses.filter((cl) => areClausesCompatibleOnSuspect([pastCl], cl)).slice(0, 1);
+          mover.clauses = [pastCl, ...keepPresent];
         }
       }
     } else if (twistKind === 'secret_identities' && secretRoles && roleAssignment) {
@@ -617,15 +647,18 @@ export function generateVerifiedCase(options: GenerateCaseOptions): MurdokuCase 
       const targetOrder = diffSuspects.length > 0 ? diffSuspects : rng.shuffle(activeNonVictims);
       for (const s of targetOrder) {
         if (s.clauses.length >= 2) continue;
+        if (s.id === liarId) continue;
         const pool = pools[s.id];
         if (!pool || pool.length === 0) continue;
 
         let chosenIdx = pool.findIndex((item) => {
-          if (s.id === liarId) return false;
+          if (!areClausesCompatibleOnSuspect(s.clauses, item.clause)) return false;
           const altTrue = evaluateClauseFull(board, s.id, item.clause, solB.placements, solBCtx);
           return !altTrue;
         });
-        if (chosenIdx === -1 && s.id !== liarId) chosenIdx = 0;
+        if (chosenIdx === -1) {
+          chosenIdx = pool.findIndex((item) => areClausesCompatibleOnSuspect(s.clauses, item.clause));
+        }
         if (chosenIdx === -1) continue;
 
         const [picked] = pool.splice(chosenIdx, 1);
@@ -635,11 +668,18 @@ export function generateVerifiedCase(options: GenerateCaseOptions): MurdokuCase 
       }
 
       if (!added) {
-        const anyS = targetOrder.find(
-          (s) => s.id !== liarId && pools[s.id]?.length > 0 && s.clauses.length < 3
-        );
-        if (!anyS) break;
-        anyS.clauses.push(pools[anyS.id].shift()!.clause);
+        for (const s of targetOrder) {
+          if (s.id === liarId || s.clauses.length >= 3) continue;
+          const pool = pools[s.id];
+          if (!pool || pool.length === 0) continue;
+          const compatIdx = pool.findIndex((item) => areClausesCompatibleOnSuspect(s.clauses, item.clause));
+          if (compatIdx !== -1) {
+            s.clauses.push(pool.splice(compatIdx, 1)[0].clause);
+            added = true;
+            break;
+          }
+        }
+        if (!added) break;
       }
 
       solutions = solveCSP(
@@ -812,7 +852,7 @@ export function generateVerifiedCase(options: GenerateCaseOptions): MurdokuCase 
       solution: verifiedSolution,
     });
 
-    return {
+    const candidateCase: MurdokuCase = {
       id,
       number,
       pageLeft,
@@ -838,6 +878,34 @@ export function generateVerifiedCase(options: GenerateCaseOptions): MurdokuCase 
       proofSteps,
       generatedBy,
     };
+
+    // Strict human-solvability preference so players never get stuck staring at an opaque grid
+    if (attempt < 28) {
+      const traceBoard =
+        twist.kind === 'missing_piece'
+          ? buildBoardIndex(fp.rows, fp.cols, fp.rooms, fp.objects, fp.voidCells, {
+              twist,
+              patch:
+                twist.patches.find((p) => p.id === verifiedSolution.correctPatchId) ??
+                twist.patches[0],
+            })
+          : board;
+      const trace = simulateHumanDeduction({
+        board: traceBoard,
+        suspects: formattedSuspects,
+        twist,
+        solution: verifiedSolution,
+      });
+      if (difficulty === 'easy' && !trace.solvedWithoutGuessing) continue;
+      if (difficulty === 'medium' && trace.branchCount > 1) continue;
+      if (difficulty === 'hard' && trace.branchCount > 2) continue;
+    }
+
+    // Mandatory full mathematical + clue clarity + resolution verification gate!
+    const integrity = verifyCaseIntegrity(candidateCase);
+    if (!integrity.valid) continue;
+
+    return candidateCase;
   }
 
   return generateVerifiedCase({

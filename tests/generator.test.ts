@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { generateVerifiedCase, getDailyScheduleForDate } from '../src/engine/generator';
-import { solveCSP } from '../src/engine/solver';
+import { areClausesCompatibleOnSuspect, verifyCaseIntegrity } from '../src/engine/verifier';
 import { FALLBACK_THEMES } from '../src/data/themes';
 import type { TwistKind } from '../src/engine/types';
 
-describe('Deterministic Puzzle Generator Stress Test', () => {
+describe('Deterministic Puzzle Generator & Integrity Verifier', () => {
   const modes: Array<{ twist: TwistKind; rows: number; cols: number }> = [
     { twist: 'classic', rows: 5, cols: 5 },
     { twist: 'classic', rows: 6, cols: 6 },
@@ -19,7 +19,7 @@ describe('Deterministic Puzzle Generator Stress Test', () => {
   ];
 
   for (const m of modes) {
-    it(`generates 5 uniquely solvable ${m.rows}x${m.cols} ${m.twist} puzzles cleanly`, () => {
+    it(`generates 5 uniquely solvable ${m.rows}x${m.cols} ${m.twist} puzzles passing full clue & resolution integrity`, () => {
       for (let i = 0; i < 5; i++) {
         const theme = FALLBACK_THEMES[i % FALLBACK_THEMES.length];
         const generated = generateVerifiedCase({
@@ -36,22 +36,69 @@ describe('Deterministic Puzzle Generator Stress Test', () => {
           brief: theme,
         });
 
-        const sols = solveCSP(
-          {
-            rows: generated.rows,
-            cols: generated.cols,
-            voidCells: generated.voidCells,
-            rooms: generated.rooms,
-            objects: generated.objects,
-            suspects: generated.suspects,
-            twist: generated.twist,
-          },
-          { limit: 2 }
-        );
-        expect(sols.length).toBe(1);
+        const check = verifyCaseIntegrity(generated);
+        expect(check.errors).toEqual([]);
+        expect(check.valid).toBe(true);
       }
     });
   }
+
+  it('forbids conflicting or confusing multi-direction clues on the same target (e.g. Blake east + north of Outlaw)', () => {
+    expect(
+      areClausesCompatibleOnSuspect([{ kind: 'east_of_outlaw' }], { kind: 'north_of_outlaw' })
+    ).toBe(false);
+    expect(
+      areClausesCompatibleOnSuspect(
+        [{ kind: 'east_of', targetId: 'A' }],
+        { kind: 'north_of', targetId: 'A' }
+      )
+    ).toBe(false);
+    expect(
+      areClausesCompatibleOnSuspect(
+        [{ kind: 'east_of_role', roleId: 'tracker' }],
+        { kind: 'south_of_role', roleId: 'tracker' }
+      )
+    ).toBe(false);
+    expect(
+      areClausesCompatibleOnSuspect([{ kind: 'in_room', roomId: 'r0' }], { kind: 'not_in_room', roomId: 'r1' })
+    ).toBe(false);
+    expect(
+      areClausesCompatibleOnSuspect([{ kind: 'sitting_in_chair' }], { kind: 'only_person_sitting' })
+    ).toBe(false);
+    // Diverse clues on different aspects remain compatible!
+    expect(
+      areClausesCompatibleOnSuspect([{ kind: 'east_of_outlaw' }], { kind: 'in_room', roomId: 'r0' })
+    ).toBe(true);
+    expect(
+      areClausesCompatibleOnSuspect(
+        [{ kind: 'east_of', targetId: 'A' }],
+        { kind: 'north_of', targetId: 'C' }
+      )
+    ).toBe(true);
+  });
+
+  it('verifies The Velvet Theatre (Outlaw) daily case produces zero contradictory or ambiguous clues', () => {
+    const velvet = FALLBACK_THEMES.find((t) => t.title.en === 'The Velvet Theatre')!;
+    for (let i = 0; i < 6; i++) {
+      const c = generateVerifiedCase({
+        id: `velvet-outlaw-${i}`,
+        number: 1,
+        pageLeft: 102,
+        pageRight: 103,
+        volume: 'daily',
+        date: `2026-11-${String(10 + i).padStart(2, '0')}`,
+        seed: `daily-velvet-outlaw-${i}`,
+        rows: 6,
+        cols: 6,
+        difficulty: 'medium',
+        twistKind: 'outlaw',
+        brief: velvet,
+      });
+      const check = verifyCaseIntegrity(c);
+      expect(check.errors).toEqual([]);
+      expect(check.valid).toBe(true);
+    }
+  });
 
   it('cycles strictly through Easy -> Medium -> Hard -> Expert every 4 days and repeats across all 8 twists', () => {
     const seq = [];

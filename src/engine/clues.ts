@@ -403,9 +403,24 @@ export function formatSuspectClue(
     };
   }
 
-  const parts = suspect.clauses.map((cl) =>
-    formatSingleClause(cl, suspect.gender, roomsById, suspectsById, rows, cols, extras)
-  );
+  const hasPastClause = suspect.clauses.some((cl) => cl.kind.startsWith('past_'));
+
+  const parts = suspect.clauses.map((cl) => {
+    const formatted = formatSingleClause(cl, suspect.gender, roomsById, suspectsById, rows, cols, extras);
+    if (
+      hasPastClause &&
+      !cl.kind.startsWith('past_') &&
+      cl.kind !== 'stayed_in_place' &&
+      cl.kind !== 'moved_in_time'
+    ) {
+      const lowerFirst = (s: string) => (s.length > 0 ? s[0].toLowerCase() + s.slice(1) : s);
+      return {
+        en: `In the **Present**, ${lowerFirst(formatted.en)}`,
+        pt: `No **Presente**, ${lowerFirst(formatted.pt)}`,
+      };
+    }
+    return formatted;
+  });
   return {
     en: parts.map((p) => p.en).join(' '),
     pt: parts.map((p) => p.pt).join(' '),

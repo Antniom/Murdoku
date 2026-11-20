@@ -223,12 +223,15 @@ function solveCoreBoard(
       // Verify all active suspects' statements
       for (const s of activeSuspects) {
         if (s.isVictim || s.clauses.length === 0) continue;
-        const allTrue = s.clauses.every((cl) =>
-          evaluateClauseFull(board, s.id, cl, placements, fullCtx)
-        );
         if (s.id === liarId) {
-          if (allTrue) return;
+          const allFalse = s.clauses.every(
+            (cl) => !evaluateClauseFull(board, s.id, cl, placements, fullCtx)
+          );
+          if (!allFalse) return;
         } else {
+          const allTrue = s.clauses.every((cl) =>
+            evaluateClauseFull(board, s.id, cl, placements, fullCtx)
+          );
           if (!allTrue) return;
         }
       }

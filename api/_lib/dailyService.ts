@@ -4,6 +4,7 @@ import {
   getDailyScheduleForDate,
   type DailyScheduleSpec,
 } from '../../src/engine/generator';
+import { verifyCaseIntegrity } from '../../src/engine/verifier';
 import type { DailyStore } from './store';
 import { generateCreativeBriefWithGemini } from './gemini';
 
@@ -25,7 +26,8 @@ export interface DailyServiceDeps {
 
 /**
  * Guarantees strictly at most ONE Gemini generation per calendar day using a
- * distributed lock + persistent cache.
+ * distributed lock + persistent cache, while validating cached cases against
+ * strict clue/resolution integrity checks.
  */
 export async function getOrCreateDailyCase(
   dateStr: string,
@@ -36,7 +38,7 @@ export async function getOrCreateDailyCase(
 
   if (!options.forceRegenerate) {
     const existing = await store.getCase(dateStr);
-    if (existing) return existing;
+    if (existing && verifyCaseIntegrity(existing).valid) return existing;
   }
 
   // Acquire distributed lock so concurrent visitors at 00:00 UTC never double-call Gemini
@@ -46,14 +48,14 @@ export async function getOrCreateDailyCase(
     for (let i = 0; i < 12; i++) {
       await new Promise((r) => setTimeout(r, 350));
       const cached = await store.getCase(dateStr);
-      if (cached) return cached;
+      if (cached && verifyCaseIntegrity(cached).valid) return cached;
     }
   }
 
   try {
     if (!options.forceRegenerate) {
       const doubleCheck = await store.getCase(dateStr);
-      if (doubleCheck) return doubleCheck;
+      if (doubleCheck && verifyCaseIntegrity(doubleCheck).valid) return doubleCheck;
     }
 
     const sched = getDailyScheduleForDate(dateStr);
