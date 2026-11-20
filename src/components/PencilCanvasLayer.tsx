@@ -103,8 +103,11 @@ export const PencilCanvasLayer: React.FC<PencilCanvasLayerProps> = ({
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const activeStrokeRef = useRef<InkStroke | null>(null);
   const activePointerIdRef = useRef<number | null>(null);
+  const activePointerTypeRef = useRef<string>('');
   const erasingRef = useRef(false);
   const hoverPointRef = useRef<{ x: number; y: number } | null>(null);
+  const strokeStartRef = useRef<{ time: number; x: number; y: number; maxDist: number } | null>(null);
+  const lastPenTapRef = useRef<{ time: number; x: number; y: number; strokeId?: string } | null>(null);
 
   // Keep latest props in refs so native capture listeners never go stale
   const settingsRef = useRef(settings);
@@ -233,7 +236,7 @@ export const PencilCanvasLayer: React.FC<PencilCanvasLayerProps> = ({
       );
       if (isStylusTouch) {
         const target = e.target as HTMLElement | null;
-        if (!target?.closest('.verdict-cta-btn, .pencil-dock, .top-bar')) {
+        if (!target?.closest('.verdict-cta-btn, .pencil-dock, .top-bar, .tap-picker')) {
           e.preventDefault();
         }
       }
@@ -253,7 +256,7 @@ export const PencilCanvasLayer: React.FC<PencilCanvasLayerProps> = ({
 
       // Keep critical UI buttons tappable even with Apple Pencil
       const target = e.target as HTMLElement | null;
-      if (target?.closest('.verdict-cta-btn, .pencil-dock, .top-bar')) {
+      if (target?.closest('.verdict-cta-btn, .pencil-dock, .top-bar, .tap-picker')) {
         return;
       }
 
@@ -267,6 +270,8 @@ export const PencilCanvasLayer: React.FC<PencilCanvasLayerProps> = ({
       e.preventDefault();
       hoverPointRef.current = null;
       activePointerIdRef.current = e.pointerId;
+      activePointerTypeRef.current = e.pointerType;
+      strokeStartRef.current = { time: Date.now(), x: e.clientX, y: e.clientY, maxDist: 0 };
       callbacksRef.current.onStrokeStart?.();
 
       const pt = toNormalizedPoint(e);
@@ -304,6 +309,16 @@ export const PencilCanvasLayer: React.FC<PencilCanvasLayerProps> = ({
       if (activePointerIdRef.current !== e.pointerId) return;
       e.preventDefault();
 
+      if (strokeStartRef.current) {
+        const d = Math.hypot(
+          e.clientX - strokeStartRef.current.x,
+          e.clientY - strokeStartRef.current.y
+        );
+        if (d > strokeStartRef.current.maxDist) {
+          strokeStartRef.current.maxDist = d;
+        }
+      }
+
       const events = typeof e.getCoalescedEvents === 'function' ? e.getCoalescedEvents() : [e];
 
       if (erasingRef.current) {
@@ -330,11 +345,61 @@ export const PencilCanvasLayer: React.FC<PencilCanvasLayerProps> = ({
 
     const finishPointer = (e: PointerEvent) => {
       if (activePointerIdRef.current !== e.pointerId) return;
+      const pointerType = activePointerTypeRef.current;
+      const startMeta = strokeStartRef.current;
       activePointerIdRef.current = null;
+      activePointerTypeRef.current = '';
+      strokeStartRef.current = null;
       erasingRef.current = false;
 
       const finished = activeStrokeRef.current;
       activeStrokeRef.current = null;
+
+      // Quick Apple Pencil tip double-tap on page -> toggle Eraser <-> active drawing tool
+      // (Since iPadOS Safari does not expose the Apple Pencil side-barrel double-tap to web pages)
+      const now = Date.now();
+      const isQuickPenTap =
+        pointerType === 'pen' &&
+        startMeta !== null &&
+        now - startMeta.time < 190 &&
+        startMeta.maxDist < 6;
+
+      if (isQuickPenTap && startMeta) {
+        const prev = lastPenTapRef.current;
+        if (
+          prev &&
+          now - prev.time < 360 &&
+          Math.hypot(startMeta.x - prev.x, startMeta.y - prev.y) < 26
+        ) {
+          lastPenTapRef.current = null;
+          if (prev.strokeId) {
+            callbacksRef.current.onEraseStrokeIds([prev.strokeId]);
+          }
+          renderAll();
+          callbacksRef.current.onToggleEraser?.();
+          return;
+        }
+
+        if (finished && finished.points.length > 0) {
+          lastPenTapRef.current = {
+            time: now,
+            x: startMeta.x,
+            y: startMeta.y,
+            strokeId: finished.id,
+          };
+          callbacksRef.current.onAddStroke(finished);
+        } else {
+          lastPenTapRef.current = {
+            time: now,
+            x: startMeta.x,
+            y: startMeta.y,
+          };
+        }
+        renderAll();
+        return;
+      }
+
+      lastPenTapRef.current = null;
       if (finished && finished.points.length > 0) {
         callbacksRef.current.onAddStroke(finished);
       }

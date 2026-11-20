@@ -24,9 +24,32 @@
   padding-bottom: 8px;
 }
 
-.torn-grid-shell {
+.torn-grid-wrap {
   position: relative;
   width: min(64%, 275px);
+}
+
+.tap-grid-banner {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 35;
+  background: rgba(27, 25, 32, 0.92);
+  color: #f6f2ea;
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 5px 10px;
+  border-radius: 999px;
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.28);
+}
+
+.torn-grid-shell {
+  position: relative;
+  width: 100%;
   background: #ffffff;
   padding: 12px;
   filter: var(--torn-shadow);
@@ -37,6 +60,11 @@
     91% 100%, 79% 98.8%, 66% 100%, 51% 99%, 37% 100%, 24% 98.9%, 11% 100%, 2% 99.2%,
     0.5% 88%, 0% 72%, 1% 56%, 0% 38%, 0.8% 20%
   );
+  transition: filter 0.16s ease;
+}
+
+.torn-grid-shell--tap-active {
+  filter: drop-shadow(0 0 8px rgba(37, 99, 171, 0.45));
 }
 
 .working-grid-svg {

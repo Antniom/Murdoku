@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
-import type { MurdokuCase } from '../engine/types';
+import type { Lang, MurdokuCase } from '../engine/types';
+import { UI_STRINGS } from '../data/i18n';
 import { IconClose, IconEraser } from './Icons';
 
 const CELL = 38;
@@ -7,9 +8,10 @@ const PAD = 4;
 
 export interface TornWorkingGridProps {
   murdokuCase: MurdokuCase;
+  lang?: Lang;
   /** Book 2/3 optional aid: faintly shade blocked furniture squares */
   showObstacleAid: boolean;
-  /** Optional Tap Assist mode for finger/mouse users */
+  /** Optional Stamp Grid mode for finger/mouse users */
   tapAssistEnabled: boolean;
   tapMarks: Record<string, string>;
   onUpdateTapMark: (cellKey: string, mark: string | null) => void;
@@ -19,6 +21,7 @@ export interface TornWorkingGridProps {
 
 export const TornWorkingGrid: React.FC<TornWorkingGridProps> = ({
   murdokuCase,
+  lang = 'en',
   showObstacleAid,
   tapAssistEnabled,
   tapMarks,
@@ -27,6 +30,7 @@ export const TornWorkingGrid: React.FC<TornWorkingGridProps> = ({
 }) => {
   const { rows, cols, rooms, objects, voidCells = [], twist, suspects } = murdokuCase;
   const [activeCell, setActiveCell] = useState<string | null>(null);
+  const t = UI_STRINGS[lang];
 
   const width = cols * CELL + PAD * 2;
   const height = rows * CELL + PAD * 2;
@@ -85,7 +89,13 @@ export const TornWorkingGrid: React.FC<TornWorkingGridProps> = ({
   };
 
   return (
-    <div className="torn-grid-shell">
+    <div className="torn-grid-wrap">
+      {tapAssistEnabled && !activeCell && (
+        <div className="tap-grid-banner" role="status">
+          {t.tapGridHint}
+        </div>
+      )}
+
       {tapAssistEnabled && activeCell && (
         <div className="tap-picker" role="menu">
           <button
@@ -126,78 +136,80 @@ export const TornWorkingGrid: React.FC<TornWorkingGridProps> = ({
         </div>
       )}
 
-      <svg className="working-grid-svg" viewBox={`0 0 ${width} ${height}`}>
-        <defs>
-          <pattern id="aid-hatch" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-            <line x1="0" y1="0" x2="0" y2="8" stroke="rgba(120,126,138,0.28)" strokeWidth="2" />
-          </pattern>
-        </defs>
+      <div className={`torn-grid-shell ${tapAssistEnabled ? 'torn-grid-shell--tap-active' : ''}`}>
+        <svg className="working-grid-svg" viewBox={`0 0 ${width} ${height}`}>
+          <defs>
+            <pattern id="aid-hatch" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+              <line x1="0" y1="0" x2="0" y2="8" stroke="rgba(120,126,138,0.28)" strokeWidth="2" />
+            </pattern>
+          </defs>
 
-        {Array.from({ length: rows }).map((_, r) =>
-          Array.from({ length: cols }).map((__, c) => {
-            if (!roomGrid[r][c]) return null;
-            const key = `${r},${c}`;
-            const isBlocked = blockedSet.has(key);
-            const mark = tapMarks[key];
-            const x = PAD + c * CELL;
-            const y = PAD + r * CELL;
+          {Array.from({ length: rows }).map((_, r) =>
+            Array.from({ length: cols }).map((__, c) => {
+              if (!roomGrid[r][c]) return null;
+              const key = `${r},${c}`;
+              const isBlocked = blockedSet.has(key);
+              const mark = tapMarks[key];
+              const x = PAD + c * CELL;
+              const y = PAD + r * CELL;
 
-            return (
-              <g key={key} onClick={() => handleCellClick(r, c)}>
-                <rect
-                  x={x}
-                  y={y}
-                  width={CELL}
-                  height={CELL}
-                  fill={showObstacleAid && isBlocked ? 'url(#aid-hatch)' : '#ffffff'}
-                  stroke="#dcdfe6"
-                  strokeWidth="1"
-                  className={
-                    tapAssistEnabled ? 'working-grid-cell working-grid-cell--interactive' : 'working-grid-cell'
-                  }
-                />
-                {activeCell === key && (
+              return (
+                <g key={key} onClick={() => handleCellClick(r, c)}>
                   <rect
-                    x={x + 1}
-                    y={y + 1}
-                    width={CELL - 2}
-                    height={CELL - 2}
-                    fill="rgba(37, 99, 171, 0.1)"
-                    stroke="#2563ab"
-                    strokeWidth="1.5"
+                    x={x}
+                    y={y}
+                    width={CELL}
+                    height={CELL}
+                    fill={showObstacleAid && isBlocked ? 'url(#aid-hatch)' : '#ffffff'}
+                    stroke="#dcdfe6"
+                    strokeWidth="1"
+                    className={
+                      tapAssistEnabled ? 'working-grid-cell working-grid-cell--interactive' : 'working-grid-cell'
+                    }
                   />
-                )}
-                {mark === 'X' && (
-                  <g stroke="#b84242" strokeWidth="2" strokeLinecap="round" opacity="0.72">
-                    <line x1={x + 10} y1={y + 10} x2={x + CELL - 10} y2={y + CELL - 10} />
-                    <line x1={x + CELL - 10} y1={y + 10} x2={x + 10} y2={y + CELL - 10} />
-                  </g>
-                )}
-                {mark && mark !== 'X' && (
-                  <text
-                    x={x + CELL / 2}
-                    y={y + CELL / 2 + 6}
-                    textAnchor="middle"
-                    fontFamily="var(--font-display)"
-                    fontWeight="800"
-                    fontSize="17"
-                    fill={mark === 'V' ? '#c63636' : '#254a8a'}
-                  >
-                    {mark}
-                  </text>
-                )}
-              </g>
-            );
-          })
-        )}
+                  {activeCell === key && (
+                    <rect
+                      x={x + 1}
+                      y={y + 1}
+                      width={CELL - 2}
+                      height={CELL - 2}
+                      fill="rgba(37, 99, 171, 0.1)"
+                      stroke="#2563ab"
+                      strokeWidth="1.5"
+                    />
+                  )}
+                  {mark === 'X' && (
+                    <g stroke="#b84242" strokeWidth="2" strokeLinecap="round" opacity="0.72">
+                      <line x1={x + 10} y1={y + 10} x2={x + CELL - 10} y2={y + CELL - 10} />
+                      <line x1={x + CELL - 10} y1={y + 10} x2={x + 10} y2={y + CELL - 10} />
+                    </g>
+                  )}
+                  {mark && mark !== 'X' && (
+                    <text
+                      x={x + CELL / 2}
+                      y={y + CELL / 2 + 6}
+                      textAnchor="middle"
+                      fontFamily="var(--font-display)"
+                      fontWeight="800"
+                      fontSize="17"
+                      fill={mark === 'V' ? '#c63636' : '#254a8a'}
+                    >
+                      {mark}
+                    </text>
+                  )}
+                </g>
+              );
+            })
+          )}
 
-        {/* Room boundary lines in soft printed graphite gray */}
-        <g stroke="#bfc4ce" strokeWidth="2.2" strokeLinecap="square" pointerEvents="none">
-          {wallSegments.map((s, idx) => (
-            <line key={idx} x1={s.x1} y1={s.y1} x2={s.x2} y2={s.y2} />
-          ))}
-        </g>
-      </svg>
+          {/* Room boundary lines in soft printed graphite gray */}
+          <g stroke="#bfc4ce" strokeWidth="2.2" strokeLinecap="square" pointerEvents="none">
+            {wallSegments.map((s, idx) => (
+              <line key={idx} x1={s.x1} y1={s.y1} x2={s.x2} y2={s.y2} />
+            ))}
+          </g>
+        </svg>
+      </div>
     </div>
   );
 };

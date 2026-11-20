@@ -5,16 +5,14 @@ import { IconPencil } from './Icons';
 
 export interface RulesSpreadProps {
   lang: Lang;
-  mobilePage: 'left' | 'right';
 }
 
-export const RulesSpread: React.FC<RulesSpreadProps> = ({ lang, mobilePage }) => {
+export const RulesSpread: React.FC<RulesSpreadProps> = ({ lang }) => {
   const t = UI_STRINGS[lang];
 
   return (
     <div
       className="book-spread"
-      data-mobile-page={mobilePage}
       style={{ ['--page-bg' as string]: '#f4efe5', ['--gutter-shadow' as string]: 'rgba(54,42,26,0.14)' }}
     >
       <div className="book-gutter" aria-hidden="true" />

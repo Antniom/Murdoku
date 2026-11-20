@@ -9,7 +9,6 @@ export interface TableOfContentsProps {
   starterCases: MurdokuCase[];
   todayDate: string;
   solvedIds: Set<string>;
-  mobilePage: 'left' | 'right';
   onSelectCase: (murdokuCase: MurdokuCase) => void;
 }
 
@@ -19,7 +18,6 @@ export const TableOfContents: React.FC<TableOfContentsProps> = ({
   starterCases,
   todayDate,
   solvedIds,
-  mobilePage,
   onSelectCase,
 }) => {
   const t = UI_STRINGS[lang];
@@ -27,7 +25,6 @@ export const TableOfContents: React.FC<TableOfContentsProps> = ({
   return (
     <div
       className="book-spread"
-      data-mobile-page={mobilePage}
       style={{ ['--page-bg' as string]: '#f4efe5', ['--gutter-shadow' as string]: 'rgba(54,42,26,0.14)' }}
     >
       <div className="book-gutter" aria-hidden="true" />

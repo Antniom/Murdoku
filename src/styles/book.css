@@ -462,67 +462,80 @@
   color: #f4efe5;
 }
 
-/* Mobile 1-page flip mode (< 900px) */
-.mobile-page-switcher {
+/* Strict Horizontal Landscape Lock Overlay (shown whenever device is held vertically) */
+.portrait-lock-overlay {
   display: none;
 }
 
-@media (max-width: 900px) {
-  .book-stage {
-    padding: 0;
+@keyframes rotateDeviceHint {
+  0%, 18% {
+    transform: rotate(0deg);
+  }
+  50%, 72% {
+    transform: rotate(-90deg);
+  }
+  100% {
+    transform: rotate(0deg);
+  }
+}
+
+@media (orientation: portrait) {
+  .top-bar,
+  .book-stage,
+  .cover-stage,
+  .pencil-dock,
+  .pencil-dock-wrap,
+  .pk-gesture-toast {
+    display: none !important;
   }
 
-  .book-spread {
-    grid-template-columns: 1fr;
-    width: 100%;
-    height: 100%;
-    max-height: none;
-    max-width: none;
-  }
-
-  .book-gutter {
-    display: none;
-  }
-
-  .book-page--left,
-  .book-page--right {
-    padding: calc(max(10px, env(safe-area-inset-top)) + 48px) calc(16px + env(safe-area-inset-right)) calc(max(14px, env(safe-area-inset-bottom)) + 108px) calc(16px + env(safe-area-inset-left));
-  }
-
-  .book-spread[data-mobile-page='left'] .book-page--right {
-    display: none;
-  }
-
-  .book-spread[data-mobile-page='right'] .book-page--left {
-    display: none;
-  }
-
-  .mobile-page-switcher {
+  .portrait-lock-overlay {
     position: fixed;
-    bottom: max(10px, env(safe-area-inset-bottom));
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 55;
+    inset: 0;
+    z-index: 200;
     display: flex;
-    background: var(--toolbar-bg);
-    border: 1px solid var(--toolbar-border);
-    backdrop-filter: blur(12px);
-    border-radius: 999px;
-    padding: 4px;
-    gap: 4px;
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 32px;
+    background: var(--desk-radial);
+    color: #f4efe5;
   }
 
-  .mobile-page-switcher button {
-    padding: 7px 16px;
-    border-radius: 999px;
-    font-size: 12.5px;
-    font-weight: 700;
-    color: #dbd6ce;
+  .portrait-lock-card {
+    max-width: 380px;
+    padding: 36px 28px;
+    border-radius: 16px;
+    background: linear-gradient(155deg, #27222b 0%, #1c1820 100%);
+    border: 1px solid rgba(255, 240, 215, 0.14);
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
   }
 
-  .mobile-page-switcher button.active {
-    background: #f4efe5;
-    color: #1a1819;
+  .portrait-lock-icon {
+    width: 68px;
+    height: 68px;
+    color: #d8b58a;
+    animation: rotateDeviceHint 2.6s ease-in-out infinite;
+  }
+
+  .portrait-lock-title {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 22px;
+    margin: 0;
+    color: #fbf7ef;
+  }
+
+  .portrait-lock-body {
+    font-family: var(--font-serif);
+    font-size: 14.5px;
+    line-height: 1.5;
+    margin: 0;
+    color: #cfc7bc;
   }
 }

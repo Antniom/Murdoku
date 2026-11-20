@@ -153,6 +153,7 @@ export const RightMapPage: React.FC<RightMapPageProps> = ({
       <div className="right-bottom">
         <TornWorkingGrid
           murdokuCase={murdokuCase}
+          lang={lang}
           showObstacleAid={showObstacleAid}
           tapAssistEnabled={tapAssistEnabled}
           tapMarks={tapMarks}

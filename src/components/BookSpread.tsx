@@ -10,7 +10,6 @@ import { PencilCanvasLayer, type PencilSettings } from './PencilCanvasLayer';
 export interface BookSpreadProps {
   murdokuCase: MurdokuCase;
   lang: Lang;
-  mobilePage: 'left' | 'right';
   solved: boolean;
   strokes: InkStroke[];
   pencilSettings: PencilSettings;
@@ -33,7 +32,6 @@ export interface BookSpreadProps {
 export const BookSpread: React.FC<BookSpreadProps> = ({
   murdokuCase,
   lang,
-  mobilePage,
   solved,
   strokes,
   pencilSettings,
@@ -131,7 +129,6 @@ export const BookSpread: React.FC<BookSpreadProps> = ({
   return (
     <main
       className="book-spread"
-      data-mobile-page={mobilePage}
       style={{
         ['--page-bg' as string]: palette.pageBg,
         ['--page-edge' as string]: palette.pageEdge,

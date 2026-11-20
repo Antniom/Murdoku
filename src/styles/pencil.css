@@ -499,7 +499,7 @@
 
 @media (max-width: 900px) {
   .pencil-dock-wrap {
-    bottom: max(64px, calc(env(safe-area-inset-bottom) + 54px));
+    bottom: max(14px, env(safe-area-inset-bottom));
     right: 12px;
   }
 

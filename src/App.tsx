@@ -50,7 +50,6 @@ export const App: React.FC = () => {
 
   const [view, setView] = useState<AppView>('cover');
   const [activeCase, setActiveCase] = useState<MurdokuCase | null>(null);
-  const [mobilePage, setMobilePage] = useState<'left' | 'right'>('left');
 
   const [solvedIds, setSolvedIds] = useState<Set<string>>(() => loadSolvedCaseIds());
   const [progress, setProgress] = useState<CaseProgressState | null>(null);
@@ -84,6 +83,16 @@ export const App: React.FC = () => {
     toastTimerRef.current = window.setTimeout(() => setGestureToast(null), 950);
   }, []);
 
+  // Best-effort landscape orientation lock for supporting browsers / installed PWAs
+  useEffect(() => {
+    const orient = screen.orientation as ScreenOrientation & {
+      lock?: (orientation: string) => Promise<void>;
+    };
+    orient?.lock?.('landscape')?.catch(() => {
+      // iPadOS Safari ignores orientation.lock; CSS portrait-lock-overlay enforces landscape cleanly
+    });
+  }, []);
+
   // Fetch daily archive on mount
   useEffect(() => {
     let mounted = true;
@@ -113,7 +122,6 @@ export const App: React.FC = () => {
     let active = true;
     setUndoStack([]);
     setRedoStack([]);
-    setMobilePage('left');
     loadCaseProgress(activeCase.id).then((loaded) => {
       if (active) setProgress(loaded);
     });
@@ -282,6 +290,29 @@ export const App: React.FC = () => {
 
   return (
     <div className="app-shell">
+      {/* Horizontal Landscape Lock Overlay (automatically shown when device is vertical) */}
+      <div className="portrait-lock-overlay" role="dialog" aria-live="polite">
+        <div className="portrait-lock-card">
+          <svg
+            className="portrait-lock-icon"
+            viewBox="0 0 64 64"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <rect x="16" y="8" width="32" height="48" rx="5" />
+            <line x1="28" y1="50" x2="36" y2="50" />
+            <path d="M54 22a22 22 0 0 1 0 20" strokeDasharray="4 4" />
+            <polyline points="50 38 54 42 58 38" />
+          </svg>
+          <h2 className="portrait-lock-title">{t.rotateTitle}</h2>
+          <p className="portrait-lock-body">{t.rotateBody}</p>
+        </div>
+      </div>
+
       {/* Whisper-thin Top Book Navigation Bar (hidden on Cover) */}
       {view !== 'cover' && (
         <nav className="top-bar" aria-label="Book navigation">
@@ -398,18 +429,16 @@ export const App: React.FC = () => {
               starterCases={starterCases}
               todayDate={todayDate}
               solvedIds={solvedIds}
-              mobilePage={mobilePage}
               onSelectCase={openCase}
             />
           )}
 
-          {view === 'rules' && <RulesSpread lang={lang} mobilePage={mobilePage} />}
+          {view === 'rules' && <RulesSpread lang={lang} />}
 
           {view === 'case' && activeCase && progress && (
             <BookSpread
               murdokuCase={activeCase}
               lang={lang}
-              mobilePage={mobilePage}
               solved={progress.solved || solvedIds.has(activeCase.id)}
               strokes={progress.strokes}
               pencilSettings={pencilSettings}
@@ -441,30 +470,6 @@ export const App: React.FC = () => {
               onOpenVerdict={() => setVerdictOpen(true)}
             />
           )}
-        </div>
-      )}
-
-      {/* Mobile 1-Page Flip Switcher (< 900px) */}
-      {view !== 'cover' && (
-        <div className="mobile-page-switcher" role="tablist">
-          <button
-            type="button"
-            className={mobilePage === 'left' ? 'active' : ''}
-            onClick={() => setMobilePage('left')}
-          >
-            {view === 'case' && activeCase
-              ? `${t.pageLabel} ${activeCase.pageLeft} · ${t.suspectsTab}`
-              : t.dailyVolume}
-          </button>
-          <button
-            type="button"
-            className={mobilePage === 'right' ? 'active' : ''}
-            onClick={() => setMobilePage('right')}
-          >
-            {view === 'case' && activeCase
-              ? `${t.pageLabel} ${activeCase.pageRight} · ${t.mapTab}`
-              : t.starterVolume}
-          </button>
         </div>
       )}
 

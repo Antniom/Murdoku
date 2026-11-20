@@ -21,6 +21,9 @@ export interface UIStrings {
   gridAidTooltip: string;
   tapAssist: string;
   tapAssistTooltip: string;
+  tapGridHint: string;
+  rotateTitle: string;
+  rotateBody: string;
   fingerDraw: string;
   penOnly: string;
   theMurdererIs: string;
@@ -101,8 +104,11 @@ export const UI_STRINGS: Record<Lang, UIStrings> = {
     backOfBook: 'Back of Book',
     gridAid: 'Grid Aid',
     gridAidTooltip: 'Faintly stencil blocked furniture on the working grid (Book 2/3 style)',
-    tapAssist: 'Tap Assist',
-    tapAssistTooltip: 'Tap working-grid squares to stamp X or suspect initials',
+    tapAssist: 'Stamp Grid',
+    tapAssistTooltip: 'Tap squares on the torn working grid to stamp ✕ or suspect initials',
+    tapGridHint: 'Tap any square below to stamp ✕ or an initial',
+    rotateTitle: 'Rotate Your iPad Horizontally',
+    rotateBody: 'Murdoku is designed as an open two-page book. Turn your device sideways to read and draw across both pages.',
     fingerDraw: 'Draw with Finger',
     penOnly: 'Apple Pencil Only',
     theMurdererIs: 'The murderer is...',
@@ -199,7 +205,7 @@ export const UI_STRINGS: Record<Lang, UIStrings> = {
     ],
     pencilTipsHeading: 'Apple Pencil & iPad Tips',
     pencilTipsBody:
-      'Draw freely anywhere across both pages — cross out clues, annotate rooms, and fill the torn working grid. Resting your palm is automatically ignored when Apple Pencil is active. Without a pencil, enable Tap Assist or Finger Draw from the toolbar.',
+      'Draw freely anywhere across both pages with Apple Pencil — resting your palm is ignored automatically. Double-tap the Pencil tip quickly on the page (or press E) to flip between your tool and the Eraser, and use 2-finger / 3-finger tap for Undo / Redo. Without a pencil, enable Stamp Grid to tap working-grid squares.',
   },
   pt: {
     appTitle: 'MURDOKU',
@@ -220,8 +226,11 @@ export const UI_STRINGS: Record<Lang, UIStrings> = {
     backOfBook: 'Soluções',
     gridAid: 'Ajuda Grelha',
     gridAidTooltip: 'Mostrar silhuetas suaves dos obstáculos na grelha de rascunho (estilo Livro 2/3)',
-    tapAssist: 'Toque Rápido',
-    tapAssistTooltip: 'Toca nos quadrados da grelha de rascunho para marcar X ou iniciais',
+    tapAssist: 'Marcar Grelha',
+    tapAssistTooltip: 'Toca nos quadrados da grelha de rascunho para marcar ✕ ou iniciais',
+    tapGridHint: 'Toca num quadrado abaixo para marcar ✕ ou uma inicial',
+    rotateTitle: 'Roda o iPad na Horizontal',
+    rotateBody: 'O Murdoku foi desenhado como um livro aberto de duas páginas. Roda o ecrã na horizontal para jogar.',
     fingerDraw: 'Desenhar c/ Dedo',
     penOnly: 'Só Apple Pencil',
     theMurdererIs: 'O assassino é...',
@@ -318,6 +327,6 @@ export const UI_STRINGS: Record<Lang, UIStrings> = {
     ],
     pencilTipsHeading: 'Dicas de Apple Pencil e iPad',
     pencilTipsBody:
-      'Desenha livremente nas duas páginas — risca pistas, anota divisões e preenche a grelha de rascunho. A palma da mão é ignorada automaticamente com Apple Pencil. Sem lápis, ativa o Toque Rápido ou Desenhar c/ Dedo na barra.',
+      'Desenha livremente nas duas páginas com o Apple Pencil — a palma da mão é ignorada automaticamente. Dá um duplo toque rápido com a ponta do Pencil na página (ou tecla E) para alternar entre a ferramenta e a Borracha, e toca com 2/3 dedos para Desfazer/Refazer. Sem Pencil, ativa Marcar Grelha para preencher os quadrados por toque.',
   },
 };
