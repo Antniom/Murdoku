@@ -50,7 +50,7 @@ class UpstashRedisStore implements DailyStore {
   }
 
   async listArchive(): Promise<MurdokuCase[]> {
-    const dates = await this.cmd<string[]>(['ZREVRANGE', 'murdoku:archive:dates', 0, 90]);
+    const dates = await this.cmd<string[]>(['ZREVRANGE', 'murdoku:archive:dates', 0, -1]);
     if (!dates || dates.length === 0) return [];
     const keys = dates.map((d) => `murdoku:daily:${d}`);
     const values = await this.cmd<(string | null)[]>(['MGET', ...keys]);

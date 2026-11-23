@@ -51,7 +51,13 @@ export const TableOfContents: React.FC<TableOfContentsProps> = ({
       {/* Left Page: Daily Mystery Volume Archive */}
       <section className="book-page book-page--left">
         <h1 className="toc-heading">{t.dailyVolume}</h1>
-        <p className="toc-sub">{t.dailyNotice}</p>
+        <p className="toc-sub">
+          {dailyCases.length > 0
+            ? lang === 'en'
+              ? `${dailyCases.length} ${dailyCases.length === 1 ? 'case' : 'cases'} in your library · ${t.dailyNotice}`
+              : `${dailyCases.length} ${dailyCases.length === 1 ? 'caso' : 'casos'} na tua biblioteca · ${t.dailyNotice}`
+            : t.dailyNotice}
+        </p>
 
         <div className="toc-list">
           {dailyCases.map((c) => {

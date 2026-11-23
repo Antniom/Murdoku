@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { Lang, MurdokuCase } from './engine/types';
 import { getStarterCaseById, getStarterSummaries } from './data/starterVolume';
 import { UI_STRINGS } from './data/i18n';
-import { fetchDailyArchive } from './services/api';
+import { fetchDailyArchive, loadCachedDailyCasesSync } from './services/api';
 import {
   createEmptyProgress,
   loadCaseProgress,
@@ -44,9 +44,11 @@ export const App: React.FC = () => {
   });
 
   const starterSummaries = useMemo(() => getStarterSummaries(), []);
-  const [dailyCases, setDailyCases] = useState<MurdokuCase[]>([]);
+  const [dailyCases, setDailyCases] = useState<MurdokuCase[]>(() => loadCachedDailyCasesSync());
   const [todayDate, setTodayDate] = useState<string>(new Date().toISOString().slice(0, 10));
   const [dailyLoading, setDailyLoading] = useState(true);
+  const todayDateRef = useRef<string>(todayDate);
+  todayDateRef.current = todayDate;
 
   const [view, setView] = useState<AppView>('cover');
   const [activeCase, setActiveCase] = useState<MurdokuCase | null>(null);
@@ -93,17 +95,32 @@ export const App: React.FC = () => {
     });
   }, []);
 
-  // Fetch daily archive on mount
+  // Fetch & merge daily archive on mount, and auto-refresh when a new UTC day starts
   useEffect(() => {
     let mounted = true;
-    fetchDailyArchive().then((res) => {
-      if (!mounted) return;
-      setDailyCases(res.cases);
-      setTodayDate(res.today);
-      setDailyLoading(false);
-    });
+    const syncDailyLibrary = () => {
+      fetchDailyArchive().then((res) => {
+        if (!mounted) return;
+        setDailyCases(res.cases);
+        setTodayDate(res.today);
+        setDailyLoading(false);
+      });
+    };
+
+    syncDailyLibrary();
+
+    const handleVisibility = () => {
+      if (document.visibilityState !== 'visible') return;
+      const nowUtc = new Date().toISOString().slice(0, 10);
+      if (nowUtc !== todayDateRef.current) {
+        syncDailyLibrary();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibility);
     return () => {
       mounted = false;
+      document.removeEventListener('visibilitychange', handleVisibility);
     };
   }, []);
 
@@ -308,7 +325,8 @@ export const App: React.FC = () => {
     updateProgress((prev) => ({ ...prev, solved: true }));
   };
 
-  const todayCase = dailyCases[0] ?? null;
+  const todayCase =
+    dailyCases.find((c) => c.date === todayDate) ?? (!dailyLoading ? dailyCases[0] ?? null : null);
 
   return (
     <div className="app-shell">

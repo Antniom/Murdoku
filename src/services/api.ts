@@ -2,6 +2,14 @@ import type { MurdokuCase } from '../engine/types';
 import { generateVerifiedCase, getDailyScheduleForDate } from '../engine/generator';
 import { FALLBACK_THEMES } from '../data/themes';
 import { hashSeed } from '../engine/prng';
+import {
+  loadCachedDailyCasesSync,
+  loadSavedDailyCases,
+  mergeDailyCases,
+  saveDailyCasesToLibrary,
+} from './dailyLibrary';
+
+export { loadCachedDailyCasesSync };
 
 export interface DailyArchiveResponse {
   today: string;
@@ -14,7 +22,7 @@ function getLocalTodayString(): string {
 
 /**
  * Generates an instant client-side fallback daily case ONLY when the backend /api/*
- * isn't running (e.g. standalone `vite dev` without Vercel serverless functions).
+ * isn't running (e.g. standalone `vite dev` without Vercel serverless functions) or offline.
  */
 function buildLocalDailyFallback(dateStr: string): MurdokuCase {
   const sched = getDailyScheduleForDate(dateStr);
@@ -38,7 +46,12 @@ function buildLocalDailyFallback(dateStr: string): MurdokuCase {
 }
 
 export async function fetchDailyArchive(): Promise<DailyArchiveResponse> {
-  const today = getLocalTodayString();
+  const localToday = getLocalTodayString();
+  const savedLocalCases = await loadSavedDailyCases();
+
+  let serverToday = localToday;
+  let remoteCases: MurdokuCase[] = [];
+
   try {
     const controller = new AbortController();
     const timer = window.setTimeout(() => controller.abort(), 5000);
@@ -49,15 +62,29 @@ export async function fetchDailyArchive(): Promise<DailyArchiveResponse> {
     window.clearTimeout(timer);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = (await res.json()) as DailyArchiveResponse;
+    if (typeof data.today === 'string' && data.today.length >= 10) {
+      serverToday = data.today;
+    }
     if (Array.isArray(data.cases) && data.cases.length > 0) {
-      return data;
+      remoteCases = data.cases;
     }
   } catch {
     // Offline, timeout, or plain `vite dev` fallback
   }
 
+  let merged = mergeDailyCases(savedLocalCases, remoteCases);
+
+  // Ensure today's daily case is always present even when offline or server returned empty
+  const hasToday = merged.some((c) => c.date === serverToday);
+  if (!hasToday) {
+    merged = mergeDailyCases(merged, [buildLocalDailyFallback(serverToday)]);
+  }
+
+  // Persist the complete accumulated library back to IndexedDB + localStorage
+  await saveDailyCasesToLibrary(merged);
+
   return {
-    today,
-    cases: [buildLocalDailyFallback(today)],
+    today: serverToday,
+    cases: merged,
   };
 }
