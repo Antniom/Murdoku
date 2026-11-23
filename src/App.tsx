@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Lang, MurdokuCase } from './engine/types';
-import { getStarterVolume } from './data/starterVolume';
+import { getStarterCaseById, getStarterSummaries } from './data/starterVolume';
 import { UI_STRINGS } from './data/i18n';
 import { fetchDailyArchive } from './services/api';
 import {
@@ -43,7 +43,7 @@ export const App: React.FC = () => {
     return 'en';
   });
 
-  const starterCases = useMemo(() => getStarterVolume(), []);
+  const starterSummaries = useMemo(() => getStarterSummaries(), []);
   const [dailyCases, setDailyCases] = useState<MurdokuCase[]>([]);
   const [todayDate, setTodayDate] = useState<string>(new Date().toISOString().slice(0, 10));
   const [dailyLoading, setDailyLoading] = useState(true);
@@ -149,15 +149,37 @@ export const App: React.FC = () => {
     setView('case');
   };
 
-  // Volume navigation list (Daily or Starter) for Prev/Next spread flipping
-  const currentList = useMemo(() => {
-    if (!activeCase) return [];
-    return activeCase.volume === 'daily' ? dailyCases : starterCases;
-  }, [activeCase, dailyCases, starterCases]);
+  const openStarterById = (id: string) => {
+    const resolved = getStarterCaseById(id);
+    if (resolved) openCase(resolved);
+  };
 
-  const currentIndex = activeCase ? currentList.findIndex((c) => c.id === activeCase.id) : -1;
-  const prevCase = currentIndex > 0 ? currentList[currentIndex - 1] : null;
-  const nextCase = currentIndex >= 0 && currentIndex < currentList.length - 1 ? currentList[currentIndex + 1] : null;
+  // Volume navigation list (Daily or Starter) for Prev/Next spread flipping
+  const { hasPrev, hasNext, openPrev, openNext } = useMemo(() => {
+    if (!activeCase) {
+      return { hasPrev: false, hasNext: false, openPrev: () => {}, openNext: () => {} };
+    }
+    if (activeCase.volume === 'daily') {
+      const idx = dailyCases.findIndex((c) => c.id === activeCase.id);
+      const prev = idx > 0 ? dailyCases[idx - 1] : null;
+      const next = idx >= 0 && idx < dailyCases.length - 1 ? dailyCases[idx + 1] : null;
+      return {
+        hasPrev: !!prev,
+        hasNext: !!next,
+        openPrev: () => prev && openCase(prev),
+        openNext: () => next && openCase(next),
+      };
+    }
+    const idx = starterSummaries.findIndex((c) => c.id === activeCase.id);
+    const prevId = idx > 0 ? starterSummaries[idx - 1].id : null;
+    const nextId = idx >= 0 && idx < starterSummaries.length - 1 ? starterSummaries[idx + 1].id : null;
+    return {
+      hasPrev: !!prevId,
+      hasNext: !!nextId,
+      openPrev: () => prevId && openStarterById(prevId),
+      openNext: () => nextId && openStarterById(nextId),
+    };
+  }, [activeCase, dailyCases, starterSummaries]);
 
   // Stroke handlers with undo/redo
   const handleAddStroke = useCallback(
@@ -343,8 +365,8 @@ export const App: React.FC = () => {
               <button
                 type="button"
                 className="top-btn"
-                disabled={!prevCase}
-                onClick={() => prevCase && openCase(prevCase)}
+                disabled={!hasPrev}
+                onClick={openPrev}
               >
                 <IconChevronLeft size={14} />
                 <span>{t.prevSpread}</span>
@@ -352,8 +374,8 @@ export const App: React.FC = () => {
               <button
                 type="button"
                 className="top-btn"
-                disabled={!nextCase}
-                onClick={() => nextCase && openCase(nextCase)}
+                disabled={!hasNext}
+                onClick={openNext}
               >
                 <span>{t.nextSpread}</span>
                 <IconChevronRight size={14} />
@@ -413,8 +435,8 @@ export const App: React.FC = () => {
           lang={lang}
           todayCase={todayCase}
           dailyLoading={dailyLoading}
-          solvedCount={starterCases.filter((c) => solvedIds.has(c.id)).length}
-          totalStarter={starterCases.length}
+          solvedCount={starterSummaries.filter((c) => solvedIds.has(c.id)).length}
+          totalStarter={starterSummaries.length}
           onOpenToday={() => todayCase && openCase(todayCase)}
           onOpenToc={() => setView('toc')}
           onOpenRules={() => setView('rules')}
@@ -426,10 +448,11 @@ export const App: React.FC = () => {
             <TableOfContents
               lang={lang}
               dailyCases={dailyCases}
-              starterCases={starterCases}
+              starterSummaries={starterSummaries}
               todayDate={todayDate}
               solvedIds={solvedIds}
-              onSelectCase={openCase}
+              onSelectDailyCase={openCase}
+              onSelectStarterId={openStarterById}
             />
           )}
 
@@ -511,7 +534,7 @@ export const App: React.FC = () => {
           onClose={() => setVerdictOpen(false)}
           onSolved={handleMarkSolved}
           onOpenBackOfBook={() => setBackOfBookOpen(true)}
-          onNextCase={nextCase ? () => openCase(nextCase) : undefined}
+          onNextCase={hasNext ? openNext : undefined}
         />
       )}
 

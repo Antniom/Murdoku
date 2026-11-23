@@ -1082,27 +1082,83 @@ const STARTER_SPECS: StarterSpec[] = [
   },
 ];
 
-let cachedStarterVolume: MurdokuCase[] | null = null;
+export interface StarterCaseSummary {
+  id: string;
+  number: number;
+  pageLeft: number;
+  pageRight: number;
+  title: CreativeBrief['title'];
+  rows: number;
+  cols: number;
+  gridLabel: string;
+  difficulty: Difficulty;
+  twistKind: TwistKind;
+  edition: 'vol1' | 'vol2' | 'vol3';
+  chapterLabel?: CreativeBrief['chapterLabel'];
+}
 
-export function getStarterVolume(): MurdokuCase[] {
-  if (cachedStarterVolume) return cachedStarterVolume;
-  cachedStarterVolume = STARTER_SPECS.map((spec, idx) =>
-    generateVerifiedCase({
+const cachedById = new Map<string, MurdokuCase>();
+
+function buildSpecCase(spec: StarterSpec, idx: number): MurdokuCase {
+  const existing = cachedById.get(spec.id);
+  if (existing) return existing;
+  const built = generateVerifiedCase({
+    id: spec.id,
+    number: spec.number,
+    pageLeft: 8 + idx * 2,
+    pageRight: 9 + idx * 2,
+    volume: 'starter',
+    seed: spec.seed,
+    rows: spec.rows,
+    cols: spec.cols,
+    difficulty: spec.difficulty,
+    twistKind: spec.twistKind,
+    allowIrregularVoid: spec.allowIrregularVoid,
+    preferredSuspectIds: spec.preferredSuspectIds,
+    brief: spec.brief,
+    generatedBy: 'starter',
+  });
+  cachedById.set(spec.id, built);
+  return built;
+}
+
+/** Instant (<0.1ms) metadata list for BookCover & Table of Contents without blocking main thread */
+export function getStarterSummaries(): StarterCaseSummary[] {
+  return STARTER_SPECS.map((spec, idx) => {
+    const gridLabel =
+      spec.twistKind === 'split_grids'
+        ? spec.rows >= 7
+          ? '4×4+3×3'
+          : '3×3+3×3'
+        : `${spec.rows}×${spec.cols}`;
+    return {
       id: spec.id,
       number: spec.number,
       pageLeft: 8 + idx * 2,
       pageRight: 9 + idx * 2,
-      volume: 'starter',
-      seed: spec.seed,
+      title: spec.brief.title,
       rows: spec.rows,
       cols: spec.cols,
+      gridLabel,
       difficulty: spec.difficulty,
       twistKind: spec.twistKind,
-      allowIrregularVoid: spec.allowIrregularVoid,
-      preferredSuspectIds: spec.preferredSuspectIds,
-      brief: spec.brief,
-      generatedBy: 'starter',
-    })
-  );
+      edition: spec.brief.edition ?? 'vol1',
+      chapterLabel: spec.brief.chapterLabel,
+    };
+  });
+}
+
+/** Lazily generates and caches ONLY the single requested starter case on demand */
+export function getStarterCaseById(id: string): MurdokuCase | null {
+  const idx = STARTER_SPECS.findIndex((s) => s.id === id);
+  if (idx === -1) return null;
+  return buildSpecCase(STARTER_SPECS[idx], idx);
+}
+
+let cachedStarterVolume: MurdokuCase[] | null = null;
+
+export function getStarterVolume(): MurdokuCase[] {
+  if (cachedStarterVolume) return cachedStarterVolume;
+  cachedStarterVolume = STARTER_SPECS.map((spec, idx) => buildSpecCase(spec, idx));
   return cachedStarterVolume;
 }

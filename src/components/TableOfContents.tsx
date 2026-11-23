@@ -1,15 +1,17 @@
 import React, { useMemo, useState } from 'react';
 import type { BookEdition, Lang, MurdokuCase } from '../engine/types';
+import type { StarterCaseSummary } from '../data/starterVolume';
 import { UI_STRINGS } from '../data/i18n';
 import { IconCheck } from './Icons';
 
 export interface TableOfContentsProps {
   lang: Lang;
   dailyCases: MurdokuCase[];
-  starterCases: MurdokuCase[];
+  starterSummaries: StarterCaseSummary[];
   todayDate: string;
   solvedIds: Set<string>;
-  onSelectCase: (murdokuCase: MurdokuCase) => void;
+  onSelectDailyCase: (murdokuCase: MurdokuCase) => void;
+  onSelectStarterId: (id: string) => void;
 }
 
 type VolumeFilter = 'all' | BookEdition;
@@ -17,27 +19,27 @@ type VolumeFilter = 'all' | BookEdition;
 export const TableOfContents: React.FC<TableOfContentsProps> = ({
   lang,
   dailyCases,
-  starterCases,
+  starterSummaries,
   todayDate,
   solvedIds,
-  onSelectCase,
+  onSelectDailyCase,
+  onSelectStarterId,
 }) => {
   const t = UI_STRINGS[lang];
   const [volFilter, setVolFilter] = useState<VolumeFilter>('all');
 
   const volCounts = useMemo(() => {
-    const counts = { all: starterCases.length, vol1: 0, vol2: 0, vol3: 0 };
-    for (const c of starterCases) {
-      const ed = c.edition ?? 'vol1';
-      counts[ed] += 1;
+    const counts = { all: starterSummaries.length, vol1: 0, vol2: 0, vol3: 0 };
+    for (const c of starterSummaries) {
+      counts[c.edition] += 1;
     }
     return counts;
-  }, [starterCases]);
+  }, [starterSummaries]);
 
   const filteredStarter = useMemo(() => {
-    if (volFilter === 'all') return starterCases;
-    return starterCases.filter((c) => (c.edition ?? 'vol1') === volFilter);
-  }, [starterCases, volFilter]);
+    if (volFilter === 'all') return starterSummaries;
+    return starterSummaries.filter((c) => c.edition === volFilter);
+  }, [starterSummaries, volFilter]);
 
   return (
     <div
@@ -56,7 +58,7 @@ export const TableOfContents: React.FC<TableOfContentsProps> = ({
             const isToday = c.date === todayDate;
             const isSolved = solvedIds.has(c.id);
             return (
-              <button key={c.id} type="button" className="toc-item" onClick={() => onSelectCase(c)}>
+              <button key={c.id} type="button" className="toc-item" onClick={() => onSelectDailyCase(c)}>
                 <div className="toc-item__main">
                   <span className="toc-item__title">
                     {c.number}. {c.title[lang]}
@@ -96,8 +98,8 @@ export const TableOfContents: React.FC<TableOfContentsProps> = ({
           <h2 className="toc-heading">{t.starterVolume}</h2>
           <p className="toc-sub" style={{ marginBottom: 10 }}>
             {lang === 'en'
-              ? `${starterCases.length} curated cases spanning Classic Vol. 1, Vol. 2 Back in Time, and Vol. 3 Around the World.`
-              : `${starterCases.length} casos curados abrangendo Vol. 1 Clássico, Vol. 2 No Tempo e Vol. 3 Volta ao Mundo.`}
+              ? `${starterSummaries.length} curated cases spanning Classic Vol. 1, Vol. 2 Back in Time, and Vol. 3 Around the World.`
+              : `${starterSummaries.length} casos curados abrangendo Vol. 1 Clássico, Vol. 2 No Tempo e Vol. 3 Volta ao Mundo.`}
           </p>
 
           <div className="toc-vol-tabs" role="tablist" aria-label="Book volumes">
@@ -123,24 +125,20 @@ export const TableOfContents: React.FC<TableOfContentsProps> = ({
           <div className="toc-list">
             {filteredStarter.map((c) => {
               const isSolved = solvedIds.has(c.id);
-              const gridLabel =
-                c.twist.kind === 'split_grids'
-                  ? `${c.twist.grids[0].rows}×${c.twist.grids[0].cols}+${c.twist.grids[1].rows}×${c.twist.grids[1].cols}`
-                  : `${c.rows}×${c.cols}`;
               return (
-                <button key={c.id} type="button" className="toc-item" onClick={() => onSelectCase(c)}>
+                <button key={c.id} type="button" className="toc-item" onClick={() => onSelectStarterId(c.id)}>
                   <div className="toc-item__main">
                     <span className="toc-item__title">
                       {c.number}. {c.title[lang]}
                     </span>
                     <div className="toc-item__meta">
-                      <span>{gridLabel}</span>
+                      <span>{c.gridLabel}</span>
                       <span className="toc-badge">{t.difficultyLabels[c.difficulty]}</span>
                       {c.chapterLabel && (
                         <span className="toc-badge toc-badge--chapter">{c.chapterLabel[lang]}</span>
                       )}
-                      {c.twist.kind !== 'classic' && (
-                        <span className="toc-badge toc-badge--twist">{t.twistBadges[c.twist.kind]}</span>
+                      {c.twistKind !== 'classic' && (
+                        <span className="toc-badge toc-badge--twist">{t.twistBadges[c.twistKind]}</span>
                       )}
                       {isSolved && (
                         <span className="toc-badge toc-badge--solved" style={{ display: 'inline-flex', alignItems: 'center' }}>

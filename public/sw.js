@@ -1,9 +1,9 @@
-const CACHE_NAME = 'murdoku-book-v14';
+const CACHE_NAME = 'murdoku-book-v15';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(['/manifest.webmanifest?v=14']))
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(['/manifest.webmanifest?v=15']))
   );
 });
 
@@ -15,19 +15,23 @@ self.addEventListener('activate', (event) => {
         Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
       )
       .then(() => self.clients.claim())
-      .then(() => self.clients.matchAll({ type: 'window', includeUncontrolled: true }))
-      .then((clients) =>
-        Promise.all(
-          clients.map((client) => {
-            if ('navigate' in client) {
-              return client.navigate(client.url).catch(() => {});
-            }
-            return Promise.resolve();
-          })
-        )
-      )
   );
 });
+
+function fetchWithTimeout(request, timeoutMs) {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error('SW fetch timeout')), timeoutMs);
+    fetch(request)
+      .then((res) => {
+        clearTimeout(timer);
+        resolve(res);
+      })
+      .catch((err) => {
+        clearTimeout(timer);
+        reject(err);
+      });
+  });
+}
 
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
@@ -36,7 +40,7 @@ self.addEventListener('fetch', (event) => {
   }
   if (event.request.method !== 'GET') return;
 
-  // Network-first for HTML navigations & root shell so new deployments appear immediately!
+  // Network-first with fast 3.5s timeout for HTML navigations so flaky Wi-Fi never stalls on a black screen
   const isNavigation =
     event.request.mode === 'navigate' ||
     url.pathname === '/' ||
@@ -44,7 +48,7 @@ self.addEventListener('fetch', (event) => {
 
   if (isNavigation) {
     event.respondWith(
-      fetch(event.request)
+      fetchWithTimeout(event.request, 3500)
         .then((res) => {
           if (res.ok) {
             const copy = res.clone();

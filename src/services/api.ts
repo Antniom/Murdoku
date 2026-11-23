@@ -40,14 +40,20 @@ function buildLocalDailyFallback(dateStr: string): MurdokuCase {
 export async function fetchDailyArchive(): Promise<DailyArchiveResponse> {
   const today = getLocalTodayString();
   try {
-    const res = await fetch('/api/archive', { headers: { Accept: 'application/json' } });
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => controller.abort(), 5000);
+    const res = await fetch('/api/archive', {
+      headers: { Accept: 'application/json' },
+      signal: controller.signal,
+    });
+    window.clearTimeout(timer);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = (await res.json()) as DailyArchiveResponse;
     if (Array.isArray(data.cases) && data.cases.length > 0) {
       return data;
     }
   } catch {
-    // Offline or plain `vite dev` fallback
+    // Offline, timeout, or plain `vite dev` fallback
   }
 
   return {

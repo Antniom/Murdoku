@@ -15,7 +15,7 @@
       content="Murdoku — Authentic open-book murder mystery logic puzzles with Apple Pencil support, Classic & Book 2/3 twists, and a new daily case."
     />
     <title>Murdoku — Murder Mystery Logic Puzzles</title>
-    <link rel="manifest" href="/manifest.webmanifest?v=14" />
+    <link rel="manifest" href="/manifest.webmanifest?v=15" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -23,8 +23,17 @@
       rel="stylesheet"
     />
   </head>
-  <body>
-    <div id="root"></div>
+  <body style="margin:0;background:#1e1b1c;">
+    <div id="root">
+      <div
+        style="width:100vw;height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(circle at 50% 42%,#2d2531 0%,#1a161e 65%,#120f15 100%);color:#f5efe3;font-family:-apple-system,BlinkMacSystemFont,'Outfit',sans-serif;gap:10px;"
+      >
+        <div style="font-size:11px;letter-spacing:0.24em;text-transform:uppercase;color:#d8b58a;font-weight:700;">
+          VOLUMES I–III
+        </div>
+        <div style="font-size:38px;font-weight:800;letter-spacing:0.08em;">MURDOKU</div>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
