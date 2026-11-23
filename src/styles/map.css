@@ -1,16 +1,25 @@
-/* Right Page: Crime Scene Floorplan + Torn Working Grid + Verdict Slip */
+/* Right Page: Crime Scene Floorplan + Torn Working Grid + Verdict Slip (strictly fits fixed page) */
 .floorplan-wrap {
   width: 100%;
+  flex: 1 1 auto;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
 }
 
 .floorplan-svg {
-  width: min(100%, 420px);
+  width: auto;
+  max-width: min(100%, 420px);
+  max-height: min(46vh, 390px);
   height: auto;
   display: block;
   filter: drop-shadow(0 2px 6px rgba(20, 20, 30, 0.12));
+}
+
+.floorplan-wrap--with-patches .floorplan-svg {
+  max-height: min(35vh, 300px);
 }
 
 /* Volume 3 Occupancy Stamps Strip (colored tile badges removing walkability ambiguity) */
@@ -18,8 +27,9 @@
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 6px;
-  margin-top: 6px;
+  gap: 5px;
+  margin-top: 5px;
+  flex-shrink: 0;
 }
 
 .occ-stamp {
@@ -59,15 +69,20 @@
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
-  gap: 14px;
+  gap: 12px;
   width: 100%;
+  flex: 0 1 auto;
+  min-height: 0;
   margin-top: auto;
-  padding-bottom: 8px;
+  padding-bottom: 4px;
 }
 
 .torn-grid-wrap {
   position: relative;
-  width: min(64%, 275px);
+  width: min(62%, 260px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .tap-grid-banner {
@@ -92,7 +107,7 @@
   position: relative;
   width: 100%;
   background: #ffffff;
-  padding: 12px;
+  padding: 9px;
   filter: var(--torn-shadow);
   /* Organic torn-paper deckled clip path */
   clip-path: polygon(
@@ -109,8 +124,11 @@
 }
 
 .working-grid-svg {
-  width: 100%;
+  width: auto;
+  max-width: 100%;
+  max-height: min(30vh, 240px);
   height: auto;
+  margin: 0 auto;
   display: block;
 }
 

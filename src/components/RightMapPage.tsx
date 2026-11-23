@@ -210,7 +210,11 @@ export const RightMapPage: React.FC<RightMapPageProps> = ({
 
   return (
     <>
-      <div className="floorplan-wrap">
+      <div
+        className={`floorplan-wrap ${
+          murdokuCase.twist.kind === 'missing_piece' ? 'floorplan-wrap--with-patches' : ''
+        }`}
+      >
         <FloorplanSVG
           murdokuCase={murdokuCase}
           lang={lang}

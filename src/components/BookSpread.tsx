@@ -131,7 +131,7 @@ export const BookSpread: React.FC<BookSpreadProps> = ({
 
   return (
     <main
-      className={`book-spread ${visualTheme !== 'classic' ? `book-spread--theme-${visualTheme}` : ''}`}
+      className={`book-spread book-spread--case ${visualTheme !== 'classic' ? `book-spread--theme-${visualTheme}` : ''}`}
       style={{
         ['--page-bg' as string]: palette.pageBg,
         ['--page-edge' as string]: palette.pageEdge,
