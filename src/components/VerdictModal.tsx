@@ -1,13 +1,17 @@
 import React, { useState } from 'react';
 import type { Lang, MurdokuCase } from '../engine/types';
+import type { SavedVerdictRecord } from '../services/inkStorage';
 import { UI_STRINGS } from '../data/i18n';
 
 export interface VerdictModalProps {
   murdokuCase: MurdokuCase;
   lang: Lang;
   initialPatchId?: 'A' | 'B' | 'C' | 'D';
+  savedVerdict?: SavedVerdictRecord;
+  alreadySolved?: boolean;
   onClose: () => void;
-  onSolved: () => void;
+  onSolved: (verdict: SavedVerdictRecord) => void;
+  onWrongAttempt?: () => void;
   onOpenBackOfBook: () => void;
   onNextCase?: () => void;
 }
@@ -16,17 +20,24 @@ export const VerdictModal: React.FC<VerdictModalProps> = ({
   murdokuCase,
   lang,
   initialPatchId,
+  savedVerdict,
+  alreadySolved = false,
   onClose,
   onSolved,
+  onWrongAttempt,
   onOpenBackOfBook,
   onNextCase,
 }) => {
   const t = UI_STRINGS[lang];
   const nonVictims = murdokuCase.suspects.filter((s) => !s.isVictim);
-  const [murdererId, setMurdererId] = useState<string>('');
-  const [twistAnswer, setTwistAnswer] = useState<string>(initialPatchId ?? '');
-  const [swapPair, setSwapPair] = useState<string[]>([]);
-  const [status, setStatus] = useState<'idle' | 'correct' | 'wrong'>('idle');
+  const [murdererId, setMurdererId] = useState<string>(savedVerdict?.murdererId ?? '');
+  const [twistAnswer, setTwistAnswer] = useState<string>(
+    savedVerdict?.twistAnswer ?? initialPatchId ?? ''
+  );
+  const [swapPair, setSwapPair] = useState<string[]>(savedVerdict?.swapPair ?? []);
+  const [status, setStatus] = useState<'idle' | 'correct' | 'wrong'>(
+    alreadySolved && savedVerdict ? 'correct' : 'idle'
+  );
 
   const twist = murdokuCase.twist;
   const needsSingleTwist =
@@ -81,9 +92,14 @@ export const VerdictModal: React.FC<VerdictModalProps> = ({
 
     if (ok) {
       setStatus('correct');
-      onSolved();
+      onSolved({
+        murdererId,
+        twistAnswer: needsSingleTwist ? twistAnswer : undefined,
+        swapPair: needsSwapPair ? [...swapPair].sort() : undefined,
+      });
     } else {
       setStatus('wrong');
+      onWrongAttempt?.();
     }
   };
 

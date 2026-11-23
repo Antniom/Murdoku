@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import type { Lang, MurdokuCase, ProofStepKind, SuspectDef } from '../engine/types';
+import type { CaseProgressState, InkStroke } from '../services/inkStorage';
 import { buildVisualHintTimeline, type VisualHintStep } from '../engine/hintVisualizer';
 import { UI_STRINGS } from '../data/i18n';
 import { FloorplanSVG } from './FloorplanSVG';
@@ -7,17 +8,18 @@ import { TornWorkingGrid } from './TornWorkingGrid';
 import { RichText } from './RichText';
 import {
   IconBookOpen,
+  IconCheck,
   IconChevronLeft,
   IconChevronRight,
   IconClose,
   IconLightbulb,
+  IconPencil,
 } from './Icons';
 
 export interface BackOfBookDrawerProps {
   murdokuCase: MurdokuCase;
   lang: Lang;
-  revealedHints: number;
-  tapMarks: Record<string, string>;
+  progress: CaseProgressState;
   onRevealNextHint: () => void;
   onClose: () => void;
 }
@@ -178,14 +180,61 @@ const VisualStepCard: React.FC<{
   );
 };
 
+function strokeToSvgPath(stroke: InkStroke, w: number, h: number): string {
+  const pts = stroke.points;
+  if (pts.length === 0) return '';
+  if (pts.length === 1) {
+    const x = pts[0].x * w;
+    const y = pts[0].y * h;
+    return `M ${x.toFixed(1)} ${y.toFixed(1)} L ${(x + 0.5).toFixed(1)} ${(y + 0.5).toFixed(1)}`;
+  }
+  return pts
+    .map((pt, i) => `${i === 0 ? 'M' : 'L'} ${(pt.x * w).toFixed(1)} ${(pt.y * h).toFixed(1)}`)
+    .join(' ');
+}
+
+const InkPagePreview: React.FC<{ strokes: InkStroke[]; label: string }> = ({ strokes, label }) => {
+  const W = 200;
+  const H = 250;
+  return (
+    <div className="ink-preview-page">
+      <svg className="ink-preview-svg" viewBox={`0 0 ${W} ${H}`} aria-label={label}>
+        {strokes.map((s) => (
+          <path
+            key={s.id}
+            d={strokeToSvgPath(s, W, H)}
+            fill="none"
+            stroke={s.color}
+            strokeWidth={s.tool === 'highlighter' ? Math.max(4, s.size * 1.8) : Math.max(1.1, s.size * 0.65)}
+            strokeOpacity={s.tool === 'highlighter' ? 0.38 : 0.88}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        ))}
+      </svg>
+      <span className="ink-preview-page__label">{label}</span>
+    </div>
+  );
+};
+
 export const BackOfBookDrawer: React.FC<BackOfBookDrawerProps> = ({
   murdokuCase,
   lang,
-  revealedHints,
-  tapMarks,
+  progress,
   onRevealNextHint,
   onClose,
 }) => {
+  const revealedHints = progress.revealedHints;
+  const tapMarks = progress.tapMarks;
+  const leftStrokes = useMemo(
+    () => progress.strokes.filter((s) => s.page === 'left'),
+    [progress.strokes]
+  );
+  const rightStrokes = useMemo(
+    () => progress.strokes.filter((s) => s.page === 'right'),
+    [progress.strokes]
+  );
+
   const [tab, setTab] = useState<'hints' | 'solution'>('hints');
   const [selectedHintIdx, setSelectedHintIdx] = useState<number>(() =>
     Math.max(0, revealedHints - 1)
@@ -401,6 +450,67 @@ export const BackOfBookDrawer: React.FC<BackOfBookDrawerProps> = ({
           </div>
         ) : (
           <div>
+            {/* Your Saved Investigation Record (status, how solved, saved notes) */}
+            {(() => {
+              const hintsUsed = progress.hintsUsedAtSolve ?? progress.revealedHints;
+              const tries = (progress.wrongAttempts ?? 0) + (progress.solved ? 1 : 0);
+              const stampCount = Object.keys(tapMarks).length;
+              const strokeCount = progress.strokes.length;
+              const dateLabel = progress.solvedAt
+                ? new Date(progress.solvedAt).toLocaleDateString(
+                    lang === 'pt' ? 'pt-PT' : 'en-US',
+                    { month: 'short', day: 'numeric', year: 'numeric' }
+                  )
+                : null;
+              return (
+                <div className={`record-banner ${progress.solved ? 'record-banner--solved' : ''}`}>
+                  <div className="record-banner__status">
+                    {progress.solved ? <IconCheck size={15} /> : <IconPencil size={14} />}
+                    <span>
+                      {progress.solved
+                        ? lang === 'en'
+                          ? `Solved${dateLabel ? ` · ${dateLabel}` : ''}`
+                          : `Resolvido${dateLabel ? ` · ${dateLabel}` : ''}`
+                        : lang === 'en'
+                          ? 'In Progress · Saved on this device'
+                          : 'Em Curso · Guardado neste dispositivo'}
+                    </span>
+                  </div>
+                  <div className="record-banner__chips">
+                    {progress.solved && (
+                      <span
+                        className={`record-chip ${hintsUsed === 0 ? 'record-chip--pure' : ''}`}
+                      >
+                        {hintsUsed === 0
+                          ? lang === 'en'
+                            ? '★ Pure Deduction (0 hints)'
+                            : '★ Dedução Pura (0 pistas)'
+                          : lang === 'en'
+                            ? `${hintsUsed} ${hintsUsed === 1 ? 'hint' : 'hints'} used`
+                            : `${hintsUsed} ${hintsUsed === 1 ? 'pista usada' : 'pistas usadas'}`}
+                      </span>
+                    )}
+                    {progress.solved && tries > 0 && (
+                      <span className="record-chip">
+                        {tries === 1
+                          ? lang === 'en'
+                            ? '1st try'
+                            : '1.ª tentativa'
+                          : lang === 'en'
+                            ? `${tries} tries`
+                            : `${tries} tentativas`}
+                      </span>
+                    )}
+                    <span className="record-chip">
+                      {lang === 'en'
+                        ? `${strokeCount} ${strokeCount === 1 ? 'stroke' : 'strokes'} · ${stampCount} ${stampCount === 1 ? 'stamp' : 'stamps'}`
+                        : `${strokeCount} ${strokeCount === 1 ? 'traço' : 'traços'} · ${stampCount} ${stampCount === 1 ? 'marca' : 'marcas'}`}
+                    </span>
+                  </div>
+                </div>
+              );
+            })()}
+
             <div className="solution-compare">
               <div className="solution-box">
                 <div className="solution-box__hdr">
@@ -444,6 +554,43 @@ export const BackOfBookDrawer: React.FC<BackOfBookDrawerProps> = ({
                 </div>
               </div>
             </div>
+
+            {/* Your Saved Handwritten Notes across both book pages */}
+            {progress.strokes.length > 0 && (
+              <div className="ink-preview-box">
+                <div className="ink-preview-box__hdr">
+                  <h4>
+                    <IconPencil size={13} />
+                    <span>
+                      {lang === 'en' ? 'Your Saved Written Notes' : 'As Tuas Anotações Guardadas'}
+                    </span>
+                  </h4>
+                  <span>
+                    {lang === 'en'
+                      ? 'Automatically saved on this device'
+                      : 'Guardado automaticamente neste dispositivo'}
+                  </span>
+                </div>
+                <div className="ink-preview-spread">
+                  <InkPagePreview
+                    strokes={leftStrokes}
+                    label={
+                      lang === 'en'
+                        ? `Left Page · Suspects (${leftStrokes.length})`
+                        : `Página Esq. · Suspeitos (${leftStrokes.length})`
+                    }
+                  />
+                  <InkPagePreview
+                    strokes={rightStrokes}
+                    label={
+                      lang === 'en'
+                        ? `Right Page · Map & Grid (${rightStrokes.length})`
+                        : `Página Dir. · Planta e Grelha (${rightStrokes.length})`
+                    }
+                  />
+                </div>
+              </div>
+            )}
 
             <div className="solution-proof-hdr">
               <h4>{t.completeProof}</h4>

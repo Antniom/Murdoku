@@ -11,6 +11,7 @@ export interface LeftCasePageProps {
   lang: Lang;
   solved: boolean;
   solvedLabel: string;
+  solvedMeta?: string;
 }
 
 export const LeftCasePage: React.FC<LeftCasePageProps> = ({
@@ -18,6 +19,7 @@ export const LeftCasePage: React.FC<LeftCasePageProps> = ({
   lang,
   solved,
   solvedLabel,
+  solvedMeta,
 }) => {
   const t = UI_STRINGS[lang];
   const resolvedTheme = resolveCaseVisualTheme(murdokuCase);
@@ -48,7 +50,12 @@ export const LeftCasePage: React.FC<LeftCasePageProps> = ({
 
   return (
     <div className="left-case-content">
-      {solved && <div className="solved-ribbon">{solvedLabel}</div>}
+      {solved && (
+        <div className="solved-ribbon">
+          <div>{solvedLabel}</div>
+          {solvedMeta && <div className="solved-ribbon__meta">{solvedMeta}</div>}
+        </div>
+      )}
 
       <header className="case-header">
         {murdokuCase.chapterLabel && (

@@ -12,6 +12,7 @@ export interface BookSpreadProps {
   murdokuCase: MurdokuCase;
   lang: Lang;
   solved: boolean;
+  solvedMeta?: string;
   strokes: InkStroke[];
   pencilSettings: PencilSettings;
   showObstacleAid: boolean;
@@ -34,6 +35,7 @@ export const BookSpread: React.FC<BookSpreadProps> = ({
   murdokuCase,
   lang,
   solved,
+  solvedMeta,
   strokes,
   pencilSettings,
   showObstacleAid,
@@ -153,6 +155,7 @@ export const BookSpread: React.FC<BookSpreadProps> = ({
           lang={lang}
           solved={solved}
           solvedLabel={t.solvedStamp}
+          solvedMeta={solvedMeta}
         />
         <PencilCanvasLayer
           page="left"

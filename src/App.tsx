@@ -5,11 +5,19 @@ import { UI_STRINGS } from './data/i18n';
 import { fetchDailyArchive, loadCachedDailyCasesSync } from './services/api';
 import {
   createEmptyProgress,
+  loadAllProgressSummaries,
   loadCaseProgress,
+  loadCaseProgressSync,
+  loadProgressIndexSync,
   loadSolvedCaseIds,
+  mergeProgressStates,
+  requestPersistentDeviceStorage,
   saveCaseProgress,
+  summarizeProgress,
   type CaseProgressState,
+  type CaseProgressSummary,
   type InkStroke,
+  type SavedVerdictRecord,
 } from './services/inkStorage';
 import { BookCover } from './components/BookCover';
 import { TableOfContents } from './components/TableOfContents';
@@ -53,6 +61,9 @@ export const App: React.FC = () => {
   const [view, setView] = useState<AppView>('cover');
   const [activeCase, setActiveCase] = useState<MurdokuCase | null>(null);
 
+  const [progressMap, setProgressMap] = useState<Record<string, CaseProgressSummary>>(() =>
+    loadProgressIndexSync()
+  );
   const [solvedIds, setSolvedIds] = useState<Set<string>>(() => loadSolvedCaseIds());
   const [progress, setProgress] = useState<CaseProgressState | null>(null);
   const [undoStack, setUndoStack] = useState<InkStroke[][]>([]);
@@ -77,13 +88,62 @@ export const App: React.FC = () => {
   const toastTimerRef = useRef<number | null>(null);
 
   const saveTimerRef = useRef<number | null>(null);
+  const pendingSaveRef = useRef<CaseProgressState | null>(null);
   const t = UI_STRINGS[lang];
+
+  const flushPendingSave = useCallback(() => {
+    if (saveTimerRef.current) {
+      window.clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = null;
+    }
+    const pending = pendingSaveRef.current;
+    if (pending) {
+      pendingSaveRef.current = null;
+      void saveCaseProgress(pending);
+    }
+  }, []);
 
   const showGestureToast = useCallback((label: string) => {
     setGestureToast(label);
     if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
     toastTimerRef.current = window.setTimeout(() => setGestureToast(null), 950);
   }, []);
+
+  // Request persistent storage & hydrate full IndexedDB progress summary map on mount
+  useEffect(() => {
+    requestPersistentDeviceStorage();
+    let mounted = true;
+    loadAllProgressSummaries().then((all) => {
+      if (!mounted) return;
+      setProgressMap((prev) => ({ ...prev, ...all }));
+      setSolvedIds((prev) => {
+        const next = new Set(prev);
+        for (const [cid, s] of Object.entries(all)) {
+          if (s.solved) next.add(cid);
+        }
+        return next;
+      });
+    });
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  // Flush any unsaved strokes/progress immediately on PWA backgrounding or tab close
+  useEffect(() => {
+    const onHide = () => {
+      if (document.visibilityState === 'hidden') flushPendingSave();
+    };
+    const onPageHide = () => flushPendingSave();
+    document.addEventListener('visibilitychange', onHide);
+    window.addEventListener('pagehide', onPageHide);
+    window.addEventListener('beforeunload', onPageHide);
+    return () => {
+      document.removeEventListener('visibilitychange', onHide);
+      window.removeEventListener('pagehide', onPageHide);
+      window.removeEventListener('beforeunload', onPageHide);
+    };
+  }, [flushPendingSave]);
 
   // Best-effort landscape orientation lock for supporting browsers / installed PWAs
   useEffect(() => {
@@ -133,36 +193,75 @@ export const App: React.FC = () => {
     }
   }, [lang]);
 
-  // Load ink & progress whenever activeCase changes
+  // Load full IndexedDB ink & progress whenever activeCase changes (merge-safe so fast strokes never clobber)
   useEffect(() => {
     if (!activeCase) return;
     let active = true;
     setUndoStack([]);
     setRedoStack([]);
     loadCaseProgress(activeCase.id).then((loaded) => {
-      if (active) setProgress(loaded);
+      if (!active) return;
+      setProgress((cur) => {
+        if (!cur || cur.caseId !== activeCase.id) return loaded;
+        // If user already drew while IDB was loading, merge rather than overwriting!
+        if (cur.updatedAt > 0) {
+          return mergeProgressStates(loaded, cur);
+        }
+        return loaded;
+      });
+      setProgressMap((prev) => ({
+        ...prev,
+        [loaded.caseId]: summarizeProgress(loaded),
+      }));
     });
     return () => {
       active = false;
     };
   }, [activeCase]);
 
-  // Debounced persist of progress
-  const updateProgress = useCallback((updater: (prev: CaseProgressState) => CaseProgressState) => {
-    setProgress((prev) => {
-      if (!prev) return prev;
-      const next = updater(prev);
-      if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current);
-      saveTimerRef.current = window.setTimeout(() => {
-        saveCaseProgress(next);
-      }, 250);
-      return next;
-    });
-  }, []);
+  // Persist progress (debounced 120ms for continuous strokes, or immediate for verdicts/hints/clear)
+  const updateProgress = useCallback(
+    (updater: (prev: CaseProgressState) => CaseProgressState, immediate = false) => {
+      setProgress((prev) => {
+        if (!prev) return prev;
+        const next: CaseProgressState = { ...updater(prev), updatedAt: Date.now() };
+        setProgressMap((m) => ({
+          ...m,
+          [next.caseId]: summarizeProgress(next),
+        }));
+
+        if (saveTimerRef.current) {
+          window.clearTimeout(saveTimerRef.current);
+          saveTimerRef.current = null;
+        }
+
+        if (immediate) {
+          pendingSaveRef.current = null;
+          void saveCaseProgress(next);
+        } else {
+          pendingSaveRef.current = next;
+          saveTimerRef.current = window.setTimeout(() => {
+            saveTimerRef.current = null;
+            const toSave = pendingSaveRef.current;
+            pendingSaveRef.current = null;
+            if (toSave) void saveCaseProgress(toSave);
+          }, 120);
+        }
+        return next;
+      });
+    },
+    []
+  );
+
+  const navigateView = (nextView: AppView) => {
+    flushPendingSave();
+    setView(nextView);
+  };
 
   const openCase = (c: MurdokuCase) => {
+    flushPendingSave();
     setActiveCase(c);
-    setProgress(createEmptyProgress(c.id));
+    setProgress(loadCaseProgressSync(c.id) ?? createEmptyProgress(c.id));
     setView('case');
   };
 
@@ -256,10 +355,13 @@ export const App: React.FC = () => {
     if (!progress || progress.strokes.length === 0) return;
     setUndoStack((u) => [...u.slice(-49), progress.strokes]);
     setRedoStack([]);
-    updateProgress((prev) => ({
-      ...prev,
-      strokes: scope === 'both' ? [] : prev.strokes.filter((s) => s.page !== scope),
-    }));
+    updateProgress(
+      (prev) => ({
+        ...prev,
+        strokes: scope === 'both' ? [] : prev.strokes.filter((s) => s.page !== scope),
+      }),
+      true
+    );
   };
 
   // Automatically detect Apple Pencil (hover or touch) WITHOUT turning on Draw with Finger
@@ -315,18 +417,58 @@ export const App: React.FC = () => {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [view, handleGestureUndo, handleGestureRedo, handleToggleEraser]);
 
-  const handleMarkSolved = () => {
+  const handleMarkSolved = (verdict: SavedVerdictRecord) => {
     if (!activeCase) return;
     setSolvedIds((prev) => {
       const next = new Set(prev);
       next.add(activeCase.id);
       return next;
     });
-    updateProgress((prev) => ({ ...prev, solved: true }));
+    updateProgress(
+      (prev) => ({
+        ...prev,
+        solved: true,
+        solvedAt: prev.solvedAt ?? Date.now(),
+        hintsUsedAtSolve: prev.hintsUsedAtSolve ?? prev.revealedHints,
+        savedVerdict: verdict,
+      }),
+      true
+    );
+  };
+
+  const handleWrongAttempt = () => {
+    updateProgress(
+      (prev) => ({
+        ...prev,
+        wrongAttempts: (prev.wrongAttempts ?? 0) + 1,
+      }),
+      true
+    );
   };
 
   const todayCase =
     dailyCases.find((c) => c.date === todayDate) ?? (!dailyLoading ? dailyCases[0] ?? null : null);
+
+  const activeSolvedMeta = useMemo(() => {
+    if (!progress || !progress.solved) return undefined;
+    const hints = progress.hintsUsedAtSolve ?? progress.revealedHints;
+    const how =
+      hints === 0
+        ? lang === 'en'
+          ? 'PURE DEDUCTION'
+          : 'DEDUÇÃO PURA'
+        : lang === 'en'
+          ? `${hints} ${hints === 1 ? 'HINT' : 'HINTS'}`
+          : `${hints} ${hints === 1 ? 'PISTA' : 'PISTAS'}`;
+    if (progress.solvedAt) {
+      const dateLbl = new Date(progress.solvedAt).toLocaleDateString(
+        lang === 'pt' ? 'pt-PT' : 'en-US',
+        { month: 'short', day: 'numeric' }
+      );
+      return `${how} · ${dateLbl}`;
+    }
+    return how;
+  }, [progress, lang]);
 
   return (
     <div className="app-shell">
@@ -356,14 +498,14 @@ export const App: React.FC = () => {
       {/* Whisper-thin Top Book Navigation Bar (hidden on Cover) */}
       {view !== 'cover' && (
         <nav className="top-bar" aria-label="Book navigation">
-          <button type="button" className="top-btn" onClick={() => setView('cover')}>
+          <button type="button" className="top-btn" onClick={() => navigateView('cover')}>
             <IconBookClosed size={14} />
             <span>{t.backToCover}</span>
           </button>
           <button
             type="button"
             className={`top-btn ${view === 'toc' ? 'active' : ''}`}
-            onClick={() => setView('toc')}
+            onClick={() => navigateView('toc')}
           >
             <IconContents size={14} />
             <span>{t.tableOfContents}</span>
@@ -371,7 +513,7 @@ export const App: React.FC = () => {
           <button
             type="button"
             className={`top-btn ${view === 'rules' ? 'active' : ''}`}
-            onClick={() => setView('rules')}
+            onClick={() => navigateView('rules')}
           >
             <IconRules size={14} />
             <span>{t.howToPlay}</span>
@@ -428,7 +570,10 @@ export const App: React.FC = () => {
               <button
                 type="button"
                 className="top-btn"
-                onClick={() => setBackOfBookOpen(true)}
+                onClick={() => {
+                  flushPendingSave();
+                  setBackOfBookOpen(true);
+                }}
               >
                 <IconBookOpen size={14} />
                 <span>{t.backOfBook}</span>
@@ -456,8 +601,8 @@ export const App: React.FC = () => {
           solvedCount={starterSummaries.filter((c) => solvedIds.has(c.id)).length}
           totalStarter={starterSummaries.length}
           onOpenToday={() => todayCase && openCase(todayCase)}
-          onOpenToc={() => setView('toc')}
-          onOpenRules={() => setView('rules')}
+          onOpenToc={() => navigateView('toc')}
+          onOpenRules={() => navigateView('rules')}
           onToggleLang={() => setLang((l) => (l === 'en' ? 'pt' : 'en'))}
         />
       ) : (
@@ -469,6 +614,7 @@ export const App: React.FC = () => {
               starterSummaries={starterSummaries}
               todayDate={todayDate}
               solvedIds={solvedIds}
+              progressMap={progressMap}
               onSelectDailyCase={openCase}
               onSelectStarterId={openStarterById}
             />
@@ -481,6 +627,7 @@ export const App: React.FC = () => {
               murdokuCase={activeCase}
               lang={lang}
               solved={progress.solved || solvedIds.has(activeCase.id)}
+              solvedMeta={activeSolvedMeta}
               strokes={progress.strokes}
               pencilSettings={pencilSettings}
               showObstacleAid={showObstacleAid}
@@ -495,20 +642,29 @@ export const App: React.FC = () => {
               onGestureUndo={handleGestureUndo}
               onGestureRedo={handleGestureRedo}
               onUpdateTapMark={(cellKey, mark) =>
-                updateProgress((prev) => {
-                  const nextMarks = { ...prev.tapMarks };
-                  if (mark === null) delete nextMarks[cellKey];
-                  else nextMarks[cellKey] = mark;
-                  return { ...prev, tapMarks: nextMarks };
-                })
+                updateProgress(
+                  (prev) => {
+                    const nextMarks = { ...prev.tapMarks };
+                    if (mark === null) delete nextMarks[cellKey];
+                    else nextMarks[cellKey] = mark;
+                    return { ...prev, tapMarks: nextMarks };
+                  },
+                  true
+                )
               }
               onSelectPatch={(patchId) =>
-                updateProgress((prev) => ({
-                  ...prev,
-                  selectedPatchId: prev.selectedPatchId === patchId ? undefined : patchId,
-                }))
+                updateProgress(
+                  (prev) => ({
+                    ...prev,
+                    selectedPatchId: prev.selectedPatchId === patchId ? undefined : patchId,
+                  }),
+                  true
+                )
               }
-              onOpenVerdict={() => setVerdictOpen(true)}
+              onOpenVerdict={() => {
+                flushPendingSave();
+                setVerdictOpen(true);
+              }}
             />
           )}
         </div>
@@ -549,8 +705,11 @@ export const App: React.FC = () => {
           murdokuCase={activeCase}
           lang={lang}
           initialPatchId={progress?.selectedPatchId}
+          savedVerdict={progress?.savedVerdict}
+          alreadySolved={Boolean(progress?.solved || solvedIds.has(activeCase.id))}
           onClose={() => setVerdictOpen(false)}
           onSolved={handleMarkSolved}
+          onWrongAttempt={handleWrongAttempt}
           onOpenBackOfBook={() => setBackOfBookOpen(true)}
           onNextCase={hasNext ? openNext : undefined}
         />
@@ -561,13 +720,15 @@ export const App: React.FC = () => {
         <BackOfBookDrawer
           murdokuCase={activeCase}
           lang={lang}
-          revealedHints={progress.revealedHints}
-          tapMarks={progress.tapMarks}
+          progress={progress}
           onRevealNextHint={() =>
-            updateProgress((prev) => ({
-              ...prev,
-              revealedHints: Math.min(activeCase.proofSteps.length, prev.revealedHints + 1),
-            }))
+            updateProgress(
+              (prev) => ({
+                ...prev,
+                revealedHints: Math.min(activeCase.proofSteps.length, prev.revealedHints + 1),
+              }),
+              true
+            )
           }
           onClose={() => setBackOfBookOpen(false)}
         />

@@ -218,9 +218,19 @@
   letter-spacing: 0.14em;
   border-radius: 4px;
   transform: rotate(6deg);
-  opacity: 0.85;
+  opacity: 0.88;
   pointer-events: none;
   z-index: 16;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.solved-ribbon__meta {
+  font-size: 8.5px;
+  letter-spacing: 0.04em;
+  font-weight: 700;
+  opacity: 0.85;
+  margin-top: 1px;
 }
 
 /* Standalone / Fullscreen PWA (iPadOS / iOS): place top-bar neatly below native status bar with zero page overlap */
@@ -462,6 +472,23 @@
 .toc-badge--solved {
   background: #d8eee0;
   color: #1f6b3e;
+}
+
+.toc-badge--how {
+  background: #eef6ec;
+  color: #24603a;
+  border: 1px solid rgba(36, 96, 58, 0.22);
+}
+
+.toc-badge--progress {
+  background: #fdf0d5;
+  color: #8f4d08;
+  border: 1px solid rgba(180, 102, 16, 0.25);
+}
+
+.toc-badge--notes {
+  background: rgba(24, 24, 34, 0.07);
+  color: #3a3845;
 }
 
 .toc-badge--today {
