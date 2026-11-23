@@ -805,7 +805,7 @@ const STARTER_SPECS: StarterSpec[] = [
       themeAccessory: 'masquerade_mask',
       edition: 'vol3',
       chapterLabel: { en: 'Europe · Italy', pt: 'Europa · Itália' },
-      cardTheme: 'around_world',
+      cardTheme: 'europe',
       walkableOverrides: ['rowboat'],
       rooms: [
         { name: { en: 'CANAL DOCK', pt: 'CAIS' }, texture: 'water', floorColor: '#dceef4', preferredObjects: ['rowboat', 'boat', 'barrel'] },
@@ -1005,7 +1005,7 @@ const STARTER_SPECS: StarterSpec[] = [
       themeAccessory: 'none',
       edition: 'vol3',
       chapterLabel: { en: 'Antarctica', pt: 'Antártida' },
-      cardTheme: 'around_world',
+      cardTheme: 'antarctica',
       subGridNames: [
         { en: 'NORTH LAB', pt: 'LAB NORTE' },
         { en: 'ICE DOCK', pt: 'CAIS GELO' },
@@ -1037,7 +1037,7 @@ const STARTER_SPECS: StarterSpec[] = [
       themeAccessory: 'none',
       edition: 'vol3',
       chapterLabel: { en: 'Asia · Japan', pt: 'Ásia · Japão' },
-      cardTheme: 'around_world',
+      cardTheme: 'asia',
       subGridNames: [
         { en: 'WEST PAVILION', pt: 'PAVILHÃO OESTE' },
         { en: 'EAST GARDEN', pt: 'JARDIM ESTE' },
@@ -1070,7 +1070,7 @@ const STARTER_SPECS: StarterSpec[] = [
       themeAccessory: 'none',
       edition: 'vol3',
       chapterLabel: { en: 'Africa · Tanzania', pt: 'África · Tanzânia' },
-      cardTheme: 'around_world',
+      cardTheme: 'africa',
       rooms: [
         { name: { en: 'SAVANNA CAMP', pt: 'ACAMPAMENTO' }, texture: 'sand', floorColor: '#f3ead5', preferredObjects: ['bed', 'chair', 'crate'] },
         { name: { en: 'WATERHOLE', pt: 'BEBEDOURO' }, texture: 'water', floorColor: '#dceef2', preferredObjects: ['elephant', 'crocodile', 'puddle'] },

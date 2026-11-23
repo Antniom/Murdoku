@@ -6,6 +6,7 @@ import { UI_STRINGS } from '../data/i18n';
 import { LeftCasePage } from './LeftCasePage';
 import { RightMapPage } from './RightMapPage';
 import { PencilCanvasLayer, type PencilSettings } from './PencilCanvasLayer';
+import { resolveCaseVisualTheme, SpreadThemeBackdrop } from './SpreadThemeBackdrop';
 
 export interface BookSpreadProps {
   murdokuCase: MurdokuCase;
@@ -126,9 +127,11 @@ export const BookSpread: React.FC<BookSpreadProps> = ({
     }
   };
 
+  const visualTheme = resolveCaseVisualTheme(murdokuCase);
+
   return (
     <main
-      className="book-spread"
+      className={`book-spread ${visualTheme !== 'classic' ? `book-spread--theme-${visualTheme}` : ''}`}
       style={{
         ['--page-bg' as string]: palette.pageBg,
         ['--page-edge' as string]: palette.pageEdge,
@@ -141,6 +144,7 @@ export const BookSpread: React.FC<BookSpreadProps> = ({
         multiTapRef.current = null;
       }}
     >
+      <SpreadThemeBackdrop theme={visualTheme} />
       <div className="book-gutter" aria-hidden="true" />
 
       <section className="book-page book-page--left">

@@ -250,72 +250,104 @@
   text-align: center;
 }
 
-/* Volume 2: Historical Era & Volume 3: Postcard Card Frame Themes (matching Vol. 2 Back in Time!) */
+.polaroid-ornament {
+  position: absolute;
+  pointer-events: none;
+  z-index: 4;
+}
+
+.polaroid-ornament--top {
+  top: -7px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 68%;
+  height: 13px;
+}
+
+.polaroid-ornament--corners {
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* Volume 2: Historical Era & Volume 3: Continent Card Frame Themes */
 .suspect-card--wild_west .polaroid-frame:not(.polaroid-frame--victim) {
-  background: #e8dabf;
-  border-color: #6b4b2a;
+  background: linear-gradient(180deg, #ecdcc0 0%, #dfc9a2 100%);
+  border: 2px solid #6b4322;
+  border-radius: 3px;
+  box-shadow: 0 3px 6px rgba(58, 32, 12, 0.22), inset 0 0 0 1.5px rgba(107, 67, 34, 0.28);
 }
 .suspect-card--wild_west .polaroid-name {
   font-family: var(--font-badge);
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: #4a2e16;
+  color: #4a2a12;
 }
 .suspect-card--wild_west .clue-pill:not(.clue-pill--victim) {
-  background: #dfca9f;
-  border-radius: 8px;
-  border: 1px solid rgba(107, 75, 42, 0.35);
+  background: #ebd8b4;
+  border-radius: 7px;
+  border: 1.2px solid rgba(107, 67, 34, 0.42);
 }
 
 .suspect-card--pirate .polaroid-frame:not(.polaroid-frame--victim) {
-  background: #e9e0cc;
-  border-color: #36525c;
-  border-style: double;
-  border-width: 3px;
+  background: linear-gradient(180deg, #eee5cf 0%, #dfd2b5 100%);
+  border: 3px double #2f4f5c;
+  border-radius: 4px;
+  box-shadow: 0 3px 7px rgba(28, 42, 48, 0.22);
+}
+.suspect-card--pirate .polaroid-name {
+  font-family: var(--font-serif);
+  font-weight: 700;
+  color: #213740;
 }
 .suspect-card--pirate .clue-pill:not(.clue-pill--victim) {
-  background: #eef2ee;
-  border: 1px solid rgba(54, 82, 92, 0.25);
+  background: #f1ede2;
+  border: 1.2px dashed rgba(47, 79, 92, 0.45);
+  border-radius: 10px;
 }
 
 .suspect-card--egypt .polaroid-frame:not(.polaroid-frame--victim) {
-  background: #efe0b4;
-  border-color: #2d4c7a;
-  border-width: 2px;
+  background: linear-gradient(180deg, #f5e6bd 0%, #e7cf96 100%);
+  border: 2px solid #2d4c7a;
+  border-radius: 8px 8px 4px 4px;
+  box-shadow: 0 3px 7px rgba(72, 50, 16, 0.22), inset 0 0 0 2px rgba(196, 152, 58, 0.45);
 }
 .suspect-card--egypt .polaroid-name {
   font-family: var(--font-display);
   font-weight: 800;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.07em;
   text-transform: uppercase;
   font-size: clamp(11px, 1.08vw, 13px);
-  color: #3a2a14;
+  color: #3a270d;
 }
 .suspect-card--egypt .clue-pill:not(.clue-pill--victim) {
-  background: #f5ebd0;
-  border-radius: 10px;
-  border: 1px solid rgba(182, 138, 56, 0.45);
+  background: #f7edd4;
+  border-radius: 8px;
+  border: 1.2px solid rgba(182, 138, 52, 0.55);
 }
 
 .suspect-card--medieval .polaroid-frame:not(.polaroid-frame--victim) {
-  background: #dce0e6;
-  border-color: #3b4252;
-  border-radius: 8px 8px 18px 18px;
+  background: linear-gradient(180deg, #e5e8ee 0%, #d4d9e4 100%);
+  border: 2px solid #364059;
+  border-radius: 6px 6px 18px 18px;
+  box-shadow: 0 3px 7px rgba(24, 30, 48, 0.22), inset 0 0 0 1.5px rgba(196, 162, 84, 0.4);
 }
 .suspect-card--medieval .polaroid-name {
   font-family: var(--font-serif);
   font-weight: 700;
+  color: #232a3d;
 }
 .suspect-card--medieval .clue-pill:not(.clue-pill--victim) {
-  background: #eef0f4;
+  background: #f2f1ed;
   border-radius: 10px;
-  border: 1px solid rgba(59, 66, 82, 0.28);
+  border: 1.2px solid rgba(54, 64, 89, 0.35);
 }
 
 .suspect-card--stone_age .polaroid-frame:not(.polaroid-frame--victim) {
-  background: #d8cfc0;
-  border-color: #5b4d3e;
-  border-radius: 10px 6px 12px 8px;
+  background: linear-gradient(175deg, #dcd2c1 0%, #c9bca7 100%);
+  border: 2.2px solid #594836;
+  border-radius: 12px 5px 14px 7px;
+  box-shadow: 0 3px 6px rgba(48, 36, 24, 0.24);
 }
 .suspect-card--stone_age .polaroid-name {
   font-family: var(--font-display);
@@ -323,10 +355,100 @@
   letter-spacing: 0.06em;
   text-transform: uppercase;
   font-size: clamp(11px, 1.05vw, 13px);
+  color: #3b2b1b;
 }
 .suspect-card--stone_age .clue-pill:not(.clue-pill--victim) {
-  background: #d7e8d2;
-  border-radius: 22px 6px 22px 6px;
+  background: #dce8d4;
+  border: 1.2px solid rgba(89, 72, 54, 0.32);
+  border-radius: 20px 6px 20px 6px;
+}
+
+/* Volume 3: Dedicated Continent Suspect Frames */
+.suspect-card--antarctica .polaroid-frame:not(.polaroid-frame--victim) {
+  background: linear-gradient(180deg, #f5fbff 0%, #dceef9 100%);
+  border: 2px solid #2a638f;
+  border-radius: 6px;
+  box-shadow: 0 3px 7px rgba(22, 62, 96, 0.18), inset 0 0 0 1.5px rgba(140, 198, 236, 0.55);
+}
+.suspect-card--antarctica .polaroid-name {
+  color: #163a59;
+}
+.suspect-card--antarctica .clue-pill:not(.clue-pill--victim) {
+  background: #f4faff;
+  border: 1.2px solid rgba(42, 99, 143, 0.3);
+}
+
+.suspect-card--asia .polaroid-frame:not(.polaroid-frame--victim) {
+  background: #fbf7ef;
+  border: 2px solid #9c2e2e;
+  border-radius: 3px;
+  box-shadow: 0 3px 6px rgba(54, 24, 24, 0.18), inset 0 0 0 1.5px rgba(212, 166, 90, 0.45);
+}
+.suspect-card--asia .polaroid-name {
+  color: #3a1f1f;
+}
+.suspect-card--asia .clue-pill:not(.clue-pill--victim) {
+  background: #fcfaf4;
+  border: 1.2px solid rgba(156, 46, 46, 0.28);
+  border-radius: 12px;
+}
+
+.suspect-card--africa .polaroid-frame:not(.polaroid-frame--victim) {
+  background: linear-gradient(180deg, #f6e7c8 0%, #e9cfa0 100%);
+  border: 2px solid #8f461f;
+  border-radius: 6px;
+  box-shadow: 0 3px 6px rgba(72, 36, 14, 0.22), inset 0 0 0 1.5px rgba(212, 148, 56, 0.45);
+}
+.suspect-card--africa .polaroid-name {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(11.5px, 1.1vw, 13.5px);
+  color: #4a2410;
+}
+.suspect-card--africa .clue-pill:not(.clue-pill--victim) {
+  background: #faf0da;
+  border: 1.2px solid rgba(143, 70, 31, 0.38);
+  border-radius: 12px;
+}
+
+.suspect-card--europe .polaroid-frame:not(.polaroid-frame--victim) {
+  background: linear-gradient(180deg, #faf7fc 0%, #ebe3f2 100%);
+  border: 2px solid #523b75;
+  border-radius: 8px;
+  box-shadow: 0 3px 7px rgba(42, 28, 66, 0.2), inset 0 0 0 2px rgba(196, 160, 86, 0.45);
+}
+.suspect-card--europe .polaroid-name {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-weight: 700;
+  color: #2f2047;
+}
+.suspect-card--europe .clue-pill:not(.clue-pill--victim) {
+  background: #faf7fe;
+  border: 1.2px solid rgba(82, 59, 117, 0.28);
+}
+
+.suspect-card--americas .polaroid-frame:not(.polaroid-frame--victim) {
+  background: linear-gradient(180deg, #f5ede0 0%, #e7dac4 100%);
+  border: 2px solid #1e6d78;
+  border-radius: 5px;
+  box-shadow: 0 3px 6px rgba(24, 62, 68, 0.2), inset 0 0 0 1.5px rgba(204, 118, 72, 0.42);
+}
+.suspect-card--americas .clue-pill:not(.clue-pill--victim) {
+  background: #faf5eb;
+  border: 1.2px solid rgba(30, 109, 120, 0.34);
+  border-radius: 10px;
+}
+
+.suspect-card--oceania .polaroid-frame:not(.polaroid-frame--victim) {
+  background: linear-gradient(180deg, #effbfb 0%, #d8f0f0 100%);
+  border: 2px solid #1a737d;
+  border-radius: 10px;
+  box-shadow: 0 3px 6px rgba(20, 74, 82, 0.18), inset 0 0 0 1.5px rgba(224, 146, 102, 0.45);
+}
+.suspect-card--oceania .clue-pill:not(.clue-pill--victim) {
+  background: #f4fcfc;
+  border: 1.2px solid rgba(26, 115, 125, 0.32);
 }
 
 .suspect-card--around_world .polaroid-frame:not(.polaroid-frame--victim) {

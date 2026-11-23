@@ -26,7 +26,13 @@ export type CardThemeId =
   | 'egypt'
   | 'medieval'
   | 'stone_age'
-  | 'around_world';
+  | 'around_world'
+  | 'antarctica'
+  | 'asia'
+  | 'africa'
+  | 'europe'
+  | 'americas'
+  | 'oceania';
 
 export type PaperThemeId =
   | 'lilac'

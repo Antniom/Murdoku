@@ -37,6 +37,12 @@ const VALID_CARD_THEMES: CardThemeId[] = [
   'medieval',
   'stone_age',
   'around_world',
+  'antarctica',
+  'asia',
+  'africa',
+  'europe',
+  'americas',
+  'oceania',
 ];
 
 const VALID_EDITIONS: BookEdition[] = ['vol1', 'vol2', 'vol3'];
@@ -68,12 +74,12 @@ export async function generateCreativeBriefWithGemini(
     sched.twistKind === 'time_travel'
       ? '- Today is a VOLUME 2 (Back in Time) Time Travel case! Set it in a vivid historical era (Stone Age, Ancient Egypt, Middle Ages, Golden Age of Piracy, or Wild West) and pick matching edition="vol2", chapterLabel, and cardTheme ("stone_age"|"egypt"|"medieval"|"pirate"|"wild_west").'
       : sched.twistKind === 'split_grids'
-        ? '- Today is a VOLUME 3 (Around the World) Split Crime Scenes case! Pick a memorable world destination with TWO side-by-side buildings/wings (provide "subGridNames": [wingA, wingB]), edition="vol3", chapterLabel (e.g. "Asia · Japan" / "Ásia · Japão"), and cardTheme="around_world".'
+        ? '- Today is a VOLUME 3 (Around the World) Split Crime Scenes case! Pick a memorable world destination with TWO side-by-side buildings/wings (provide "subGridNames": [wingA, wingB]), edition="vol3", chapterLabel (e.g. "Asia · Japan" / "Ásia · Japão"), and matching continent cardTheme ("antarctica"|"asia"|"africa"|"europe"|"americas"|"oceania").'
         : sched.twistKind === 'secret_identities'
-          ? '- Today is a VOLUME 3 (Around the World) Secret Identities case! Pick a memorable international expedition/landmark setting with edition="vol3", chapterLabel, and cardTheme="around_world".'
+          ? '- Today is a VOLUME 3 (Around the World) Secret Identities case! Pick a memorable international expedition/landmark setting with edition="vol3", chapterLabel, and matching continent cardTheme ("antarctica"|"asia"|"africa"|"europe"|"americas"|"oceania").'
           : sched.twistKind === 'outlaw'
             ? '- Today is an Outlaw case (great fit for Volume 2 Wild West, Pirate, or Medieval era with edition="vol2" and matching cardTheme).'
-            : '- Pick any fresh cozy-noir setting (Classic Vol. 1, historical Vol. 2 era, or global Vol. 3 destination).';
+            : '- Pick any fresh cozy-noir setting (Classic Vol. 1, historical Vol. 2 era, or global Vol. 3 destination with matching cardTheme).';
 
   const prompt = `You are the Creative Director for a Murdoku murder-mystery logic puzzle book (in the witty, cozy-noir style of Manuel Garand).
 Create ONE original crime-scene setting for date ${dateStr}.

@@ -138,7 +138,7 @@ export const FALLBACK_THEMES: CreativeBrief[] = [
     themeAccessory: 'none',
     edition: 'vol3',
     chapterLabel: { en: 'Antarctica', pt: 'Antártida' },
-    cardTheme: 'around_world',
+    cardTheme: 'antarctica',
     subGridNames: [
       { en: 'WEST LAB', pt: 'LAB OESTE' },
       { en: 'EAST DOCK', pt: 'CAIS ESTE' },

@@ -1,0 +1,146 @@
+/* Volume 2 (Historical Eras) & Volume 3 (Continents) Full-Spread Page Themes */
+
+.spread-backdrop {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  overflow: hidden;
+}
+
+.spread-backdrop__svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* Keep page contents cleanly above backdrop watermark */
+.book-page > .left-case-content,
+.book-page > .right-map-top,
+.book-page > .right-map-bottom,
+.book-page > .page-number {
+  position: relative;
+  z-index: 2;
+}
+
+/* ── Volume 2: Historical Era Book Page Stock & Typography Accents ─────────── */
+
+.book-spread--theme-stone_age {
+  background:
+    radial-gradient(circle at 18% 22%, rgba(164, 134, 92, 0.18), transparent 44%),
+    radial-gradient(circle at 82% 78%, rgba(112, 136, 98, 0.16), transparent 46%),
+    linear-gradient(135deg, #ebe0cd 0%, #e5d6be 52%, #dfd1b8 100%) !important;
+}
+.book-spread--theme-stone_age .case-title { color: #3a2b1c; }
+.book-spread--theme-stone_age .case-chapter-stamp { background: #c9b594; color: #3c2a18; border: 1px solid rgba(74, 54, 34, 0.35); }
+.book-spread--theme-stone_age .twist-banner { background: rgba(247, 240, 226, 0.9); border-color: #6b5239; color: #3c2a18; }
+
+.book-spread--theme-egypt {
+  background:
+    radial-gradient(circle at 20% 15%, rgba(222, 178, 86, 0.22), transparent 46%),
+    radial-gradient(circle at 80% 85%, rgba(56, 118, 152, 0.14), transparent 48%),
+    linear-gradient(140deg, #f6ead0 0%, #f1dfb9 54%, #ecdbb3 100%) !important;
+}
+.book-spread--theme-egypt .case-title { color: #3d2a0f; }
+.book-spread--theme-egypt .case-chapter-stamp { background: #2d4c7a; color: #f7e4b2; border: 1px solid #b88a34; }
+.book-spread--theme-egypt .twist-banner { background: rgba(252, 245, 224, 0.92); border-color: #b5842a; color: #47300e; }
+
+.book-spread--theme-medieval {
+  background:
+    radial-gradient(circle at 24% 20%, rgba(118, 132, 162, 0.16), transparent 45%),
+    radial-gradient(circle at 78% 82%, rgba(146, 86, 82, 0.12), transparent 46%),
+    linear-gradient(142deg, #eee9df 0%, #e6e0d4 52%, #e0dae2 100%) !important;
+}
+.book-spread--theme-medieval .case-title { color: #242938; font-family: var(--font-serif); }
+.book-spread--theme-medieval .case-chapter-stamp { background: #36415c; color: #f2e5c6; border: 1px solid #b5944c; }
+.book-spread--theme-medieval .twist-banner { background: rgba(248, 244, 236, 0.92); border-color: #5b3a3a; color: #2d2024; }
+
+.book-spread--theme-pirate {
+  background:
+    radial-gradient(circle at 18% 80%, rgba(52, 118, 136, 0.18), transparent 46%),
+    radial-gradient(circle at 80% 18%, rgba(188, 146, 86, 0.2), transparent 46%),
+    linear-gradient(138deg, #eee5cf 0%, #e6dcc2 52%, #dce5e2 100%) !important;
+}
+.book-spread--theme-pirate .case-title { color: #1f333a; }
+.book-spread--theme-pirate .case-chapter-stamp { background: #264854; color: #f3e4c3; border: 1px solid #b88b44; }
+.book-spread--theme-pirate .twist-banner { background: rgba(248, 243, 230, 0.92); border-color: #2c525e; color: #1e353d; }
+
+.book-spread--theme-wild_west {
+  background:
+    radial-gradient(circle at 22% 24%, rgba(206, 134, 72, 0.2), transparent 46%),
+    radial-gradient(circle at 82% 82%, rgba(164, 92, 54, 0.15), transparent 48%),
+    linear-gradient(140deg, #f3e5cc 0%, #ebd7b6 54%, #e6cea7 100%) !important;
+}
+.book-spread--theme-wild_west .case-title { color: #472912; letter-spacing: 0.02em; }
+.book-spread--theme-wild_west .case-chapter-stamp { background: #7c4420; color: #f7e9cf; border: 1px solid #4d2911; }
+.book-spread--theme-wild_west .twist-banner { background: rgba(250, 240, 220, 0.92); border-color: #82441e; color: #472610; }
+
+/* ── Volume 3: Continent Book Page Stock & Typography Accents ──────────────── */
+
+.book-spread--theme-antarctica {
+  background:
+    radial-gradient(circle at 22% 18%, rgba(126, 186, 232, 0.24), transparent 48%),
+    radial-gradient(circle at 82% 80%, rgba(164, 212, 240, 0.22), transparent 48%),
+    linear-gradient(142deg, #eaf4fb 0%, #dfeef8 52%, #d7e8f5 100%) !important;
+}
+.book-spread--theme-antarctica .case-title { color: #16324c; }
+.book-spread--theme-antarctica .case-chapter-stamp { background: #245780; color: #edf7ff; border: 1px solid #7fb4dc; }
+.book-spread--theme-antarctica .twist-banner { background: rgba(245, 250, 255, 0.92); border-color: #2b628f; color: #15344f; }
+
+.book-spread--theme-asia {
+  background:
+    radial-gradient(circle at 20% 22%, rgba(235, 168, 178, 0.18), transparent 44%),
+    radial-gradient(circle at 82% 76%, rgba(122, 182, 146, 0.2), transparent 48%),
+    linear-gradient(140deg, #edf4ec 0%, #e6f0e5 52%, #f1ebe7 100%) !important;
+}
+.book-spread--theme-asia .case-title { color: #1e362a; }
+.book-spread--theme-asia .case-chapter-stamp { background: #9c2e2e; color: #faf2e8; border: 1px solid #d4a65a; }
+.book-spread--theme-asia .twist-banner { background: rgba(252, 249, 244, 0.92); border-color: #9c3434; color: #361d1d; }
+
+.book-spread--theme-africa {
+  background:
+    radial-gradient(circle at 22% 20%, rgba(226, 152, 74, 0.22), transparent 46%),
+    radial-gradient(circle at 80% 80%, rgba(196, 108, 62, 0.16), transparent 48%),
+    linear-gradient(140deg, #f5e8d2 0%, #efdcb9 52%, #ead1a9 100%) !important;
+}
+.book-spread--theme-africa .case-title { color: #472811; }
+.book-spread--theme-africa .case-chapter-stamp { background: #9c4a20; color: #faf0dc; border: 1px solid #d99b44; }
+.book-spread--theme-africa .twist-banner { background: rgba(252, 244, 228, 0.92); border-color: #9c4b22; color: #472410; }
+.book-spread--theme-africa .secret-dossier { background: #fbf4e4; border-color: #8f4720; }
+.book-spread--theme-africa .secret-dossier__title { color: #8f4720; }
+
+.book-spread--theme-europe {
+  background:
+    radial-gradient(circle at 20% 18%, rgba(164, 142, 206, 0.2), transparent 46%),
+    radial-gradient(circle at 82% 82%, rgba(214, 176, 128, 0.18), transparent 46%),
+    linear-gradient(140deg, #f2edf7 0%, #ebe4f2 52%, #f1e9e2 100%) !important;
+}
+.book-spread--theme-europe .case-title { color: #2d2042; font-family: var(--font-serif); }
+.book-spread--theme-europe .case-chapter-stamp { background: #4c3770; color: #f6ebd4; border: 1px solid #c8a258; }
+.book-spread--theme-europe .twist-banner { background: rgba(251, 248, 254, 0.92); border-color: #5b4082; color: #2e1f45; }
+
+.book-spread--theme-americas {
+  background:
+    radial-gradient(circle at 20% 24%, rgba(62, 162, 168, 0.18), transparent 46%),
+    radial-gradient(circle at 80% 78%, rgba(212, 126, 82, 0.18), transparent 46%),
+    linear-gradient(140deg, #f2eadc 0%, #e7ece8 54%, #efdfd0 100%) !important;
+}
+.book-spread--theme-americas .case-title { color: #1d3c42; }
+.book-spread--theme-americas .case-chapter-stamp { background: #1e6b75; color: #f7efe2; border: 1px solid #c97b4c; }
+.book-spread--theme-americas .twist-banner { background: rgba(250, 247, 240, 0.92); border-color: #1e6b75; color: #183e45; }
+
+.book-spread--theme-oceania {
+  background:
+    radial-gradient(circle at 20% 20%, rgba(72, 186, 192, 0.22), transparent 46%),
+    radial-gradient(circle at 82% 80%, rgba(232, 164, 124, 0.18), transparent 46%),
+    linear-gradient(140deg, #e6f4f4 0%, #dcf0ef 52%, #f1ebe0 100%) !important;
+}
+.book-spread--theme-oceania .case-title { color: #164047; }
+.book-spread--theme-oceania .case-chapter-stamp { background: #1b727d; color: #f2fbfb; border: 1px solid #e09266; }
+.book-spread--theme-oceania .twist-banner { background: rgba(244, 252, 252, 0.92); border-color: #1c737d; color: #143f45; }
+
+.book-spread--theme-around_world {
+  background:
+    radial-gradient(circle at 22% 20%, rgba(124, 158, 210, 0.18), transparent 46%),
+    linear-gradient(140deg, #eef2f7 0%, #e6edf5 55%, #eceae2 100%) !important;
+}

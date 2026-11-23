@@ -4,6 +4,7 @@ import { formatTwistBanner } from '../engine/clues';
 import { UI_STRINGS } from '../data/i18n';
 import { PolaroidCard } from './PolaroidCard';
 import { RichText } from './RichText';
+import { resolveCaseVisualTheme } from './SpreadThemeBackdrop';
 
 export interface LeftCasePageProps {
   murdokuCase: MurdokuCase;
@@ -19,6 +20,7 @@ export const LeftCasePage: React.FC<LeftCasePageProps> = ({
   solvedLabel,
 }) => {
   const t = UI_STRINGS[lang];
+  const resolvedTheme = resolveCaseVisualTheme(murdokuCase);
   const twistBanner = formatTwistBanner(
     murdokuCase.twist,
     murdokuCase.rows,
@@ -88,17 +90,17 @@ export const LeftCasePage: React.FC<LeftCasePageProps> = ({
       <div className={`polaroid-grid ${isDense ? 'polaroid-grid--dense' : ''}`}>
         <div className="polaroid-col">
           {cols[0].map((s) => (
-            <PolaroidCard key={s.id} suspect={s} lang={lang} cardTheme={murdokuCase.cardTheme} />
+            <PolaroidCard key={s.id} suspect={s} lang={lang} cardTheme={resolvedTheme} />
           ))}
         </div>
         <div className="polaroid-col polaroid-col--middle">
           {cols[1].map((s) => (
-            <PolaroidCard key={s.id} suspect={s} lang={lang} cardTheme={murdokuCase.cardTheme} />
+            <PolaroidCard key={s.id} suspect={s} lang={lang} cardTheme={resolvedTheme} />
           ))}
         </div>
         <div className="polaroid-col">
           {cols[2].map((s) => (
-            <PolaroidCard key={s.id} suspect={s} lang={lang} cardTheme={murdokuCase.cardTheme} />
+            <PolaroidCard key={s.id} suspect={s} lang={lang} cardTheme={resolvedTheme} />
           ))}
         </div>
       </div>
