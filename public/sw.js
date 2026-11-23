@@ -1,9 +1,9 @@
-const CACHE_NAME = 'murdoku-book-v15';
+const CACHE_NAME = 'murdoku-book-v16';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(['/manifest.webmanifest?v=15']))
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(['/manifest.webmanifest?v=16', '/icons/icon-192.png']))
   );
 });
 
@@ -61,13 +61,13 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Cache-first for static SVG & Vite-hashed assets
+  // Cache-first for static SVG, PWA icons & Vite-hashed assets
   event.respondWith(
     caches.match(event.request).then((cached) => {
       if (cached) return cached;
       return fetch(event.request)
         .then((res) => {
-          if (res.ok && url.pathname.startsWith('/assets/')) {
+          if (res.ok && (url.pathname.startsWith('/assets/') || url.pathname.startsWith('/icons/'))) {
             const copy = res.clone();
             caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
           }

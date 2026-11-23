@@ -35,7 +35,7 @@
       "destination": "/api/$1"
     },
     {
-      "source": "/((?!assets/|manifest\\.webmanifest|sw\\.js|api/).*)",
+      "source": "/((?!assets/|icons/|manifest\\.webmanifest|sw\\.js|api/).*)",
       "destination": "/index.html"
     }
   ]
