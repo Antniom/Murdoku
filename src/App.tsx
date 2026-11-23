@@ -36,6 +36,7 @@ import {
   IconContents,
   IconGrid,
   IconRules,
+  IconSparkles,
 } from './components/Icons';
 
 type AppView = 'cover' | 'toc' | 'rules' | 'case';
@@ -50,6 +51,29 @@ export const App: React.FC = () => {
     }
     return 'en';
   });
+
+  const [animationsEnabled, setAnimationsEnabled] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem('murdoku_animations');
+      if (saved === '0') return false;
+      if (saved === '1') return true;
+    } catch {
+      // ignore
+    }
+    return true;
+  });
+
+  const toggleAnimations = useCallback(() => {
+    setAnimationsEnabled((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem('murdoku_animations', next ? '1' : '0');
+      } catch {
+        // ignore
+      }
+      return next;
+    });
+  }, []);
 
   const starterSummaries = useMemo(() => getStarterSummaries(), []);
   const [dailyCases, setDailyCases] = useState<MurdokuCase[]>(() => loadCachedDailyCasesSync());
@@ -471,7 +495,7 @@ export const App: React.FC = () => {
   }, [progress, lang]);
 
   return (
-    <div className="app-shell">
+    <div className={`app-shell ${animationsEnabled ? '' : 'animations-off'}`}>
       {/* Horizontal Landscape Lock Overlay (automatically shown when device is vertical) */}
       <div className="portrait-lock-overlay" role="dialog" aria-live="polite">
         <div className="portrait-lock-card">
@@ -584,6 +608,24 @@ export const App: React.FC = () => {
           <span className="top-divider" />
           <button
             type="button"
+            className={`top-btn ${animationsEnabled ? 'active' : ''}`}
+            onClick={toggleAnimations}
+            aria-pressed={animationsEnabled}
+            title={
+              lang === 'en'
+                ? animationsEnabled
+                  ? 'Animations On — tap to pause background & character motion'
+                  : 'Animations Off — tap to enable background & character motion'
+                : animationsEnabled
+                  ? 'Animações Ativas — toca para pausar'
+                  : 'Animações Desligadas — toca para ativar'
+            }
+          >
+            <IconSparkles size={13} />
+            <span>{lang === 'en' ? (animationsEnabled ? 'Live' : 'Still') : animationsEnabled ? 'Vivo' : 'Fixo'}</span>
+          </button>
+          <button
+            type="button"
             className="lang-pill"
             onClick={() => setLang((l) => (l === 'en' ? 'pt' : 'en'))}
           >
@@ -600,10 +642,12 @@ export const App: React.FC = () => {
           dailyLoading={dailyLoading}
           solvedCount={starterSummaries.filter((c) => solvedIds.has(c.id)).length}
           totalStarter={starterSummaries.length}
+          animationsEnabled={animationsEnabled}
           onOpenToday={() => todayCase && openCase(todayCase)}
           onOpenToc={() => navigateView('toc')}
           onOpenRules={() => navigateView('rules')}
           onToggleLang={() => setLang((l) => (l === 'en' ? 'pt' : 'en'))}
+          onToggleAnimations={toggleAnimations}
         />
       ) : (
         <div className="book-stage">
@@ -628,6 +672,7 @@ export const App: React.FC = () => {
               lang={lang}
               solved={progress.solved || solvedIds.has(activeCase.id)}
               solvedMeta={activeSolvedMeta}
+              animationsEnabled={animationsEnabled}
               strokes={progress.strokes}
               pencilSettings={pencilSettings}
               showObstacleAid={showObstacleAid}

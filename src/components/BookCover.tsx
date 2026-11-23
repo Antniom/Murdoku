@@ -1,7 +1,7 @@
 import React from 'react';
 import type { Lang, MurdokuCase } from '../engine/types';
 import { UI_STRINGS } from '../data/i18n';
-import { IconCheck, IconChevronRight, IconRules } from './Icons';
+import { IconCheck, IconChevronRight, IconRules, IconSparkles } from './Icons';
 import { CoverDiorama } from './CoverDiorama';
 
 export interface BookCoverProps {
@@ -10,10 +10,12 @@ export interface BookCoverProps {
   dailyLoading: boolean;
   solvedCount: number;
   totalStarter: number;
+  animationsEnabled: boolean;
   onOpenToday: () => void;
   onOpenToc: () => void;
   onOpenRules: () => void;
   onToggleLang: () => void;
+  onToggleAnimations: () => void;
 }
 
 export const BookCover: React.FC<BookCoverProps> = ({
@@ -22,10 +24,12 @@ export const BookCover: React.FC<BookCoverProps> = ({
   dailyLoading,
   solvedCount,
   totalStarter,
+  animationsEnabled,
   onOpenToday,
   onOpenToc,
   onOpenRules,
   onToggleLang,
+  onToggleAnimations,
 }) => {
   const t = UI_STRINGS[lang];
 
@@ -84,10 +88,35 @@ export const BookCover: React.FC<BookCoverProps> = ({
             </div>
 
             <div className="cover-footer">
-              <span>iPad &amp; Apple Pencil Ready · v2.3.7</span>
-              <button type="button" className="lang-pill" onClick={onToggleLang}>
-                {lang === 'en' ? 'EN · Português' : 'PT · English'}
-              </button>
+              <span>iPad &amp; Apple Pencil Ready · v2.3.8</span>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                <button
+                  type="button"
+                  className="lang-pill"
+                  onClick={onToggleAnimations}
+                  aria-pressed={animationsEnabled}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 4,
+                    opacity: animationsEnabled ? 1 : 0.62,
+                  }}
+                >
+                  <IconSparkles size={12} />
+                  <span>
+                    {lang === 'en'
+                      ? animationsEnabled
+                        ? 'Motion: On'
+                        : 'Motion: Off'
+                      : animationsEnabled
+                        ? 'Animações: Sim'
+                        : 'Animações: Não'}
+                  </span>
+                </button>
+                <button type="button" className="lang-pill" onClick={onToggleLang}>
+                  {lang === 'en' ? 'EN · Português' : 'PT · English'}
+                </button>
+              </div>
             </div>
           </div>
         </div>

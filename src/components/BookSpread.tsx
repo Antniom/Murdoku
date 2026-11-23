@@ -13,6 +13,7 @@ export interface BookSpreadProps {
   lang: Lang;
   solved: boolean;
   solvedMeta?: string;
+  animationsEnabled?: boolean;
   strokes: InkStroke[];
   pencilSettings: PencilSettings;
   showObstacleAid: boolean;
@@ -36,6 +37,7 @@ export const BookSpread: React.FC<BookSpreadProps> = ({
   lang,
   solved,
   solvedMeta,
+  animationsEnabled = true,
   strokes,
   pencilSettings,
   showObstacleAid,
@@ -146,7 +148,7 @@ export const BookSpread: React.FC<BookSpreadProps> = ({
         multiTapRef.current = null;
       }}
     >
-      <SpreadThemeBackdrop theme={visualTheme} />
+      <SpreadThemeBackdrop theme={visualTheme} animationsEnabled={animationsEnabled} />
       <div className="book-gutter" aria-hidden="true" />
 
       <section className="book-page book-page--left">

@@ -161,3 +161,13 @@ export const IconClose: React.FC<IconProps> = ({ size = 14, className }) => (
     <line x1="6" y1="6" x2="18" y2="18" />
   </svg>
 );
+
+export const IconSparkles: React.FC<IconProps> = ({ size = 14, className }) => (
+  <svg {...baseProps(size, className)}>
+    <path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9L12 3z" />
+    <path d="M19 3v4" />
+    <path d="M21 5h-4" />
+    <path d="M5 17v3" />
+    <path d="M6.5 18.5h-3" />
+  </svg>
+);

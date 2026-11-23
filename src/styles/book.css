@@ -11,6 +11,14 @@
   overflow: hidden;
 }
 
+/* Global Animations-Off Mode (freezes backgrounds, characters, accessories & cover diorama) */
+.animations-off *,
+.animations-off *::before,
+.animations-off *::after {
+  animation: none !important;
+  transition-duration: 0.01ms !important;
+}
+
 /* Whisper-thin top book-edge navigation bar */
 .top-bar {
   position: fixed;
