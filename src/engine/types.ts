@@ -244,10 +244,22 @@ export interface SuspectDef {
   clueText: LocalizedText;
 }
 
+export type ProofStepKind =
+  | 'twist'
+  | 'unary_single'
+  | 'row_col_elimination'
+  | 'relational_narrowing'
+  | 'hidden_single'
+  | 'liar_elimination'
+  | 'contradiction_elim'
+  | 'final_verdict';
+
 export interface ProofStep {
   stepNumber: number;
+  kind?: ProofStepKind;
   focusSuspectId?: string;
   focusRoomId?: string;
+  placedCoord?: GridCoord;
   text: LocalizedText;
 }
 

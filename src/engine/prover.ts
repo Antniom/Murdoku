@@ -500,6 +500,7 @@ export function generateDeductionProof(params: {
     const others = (['A', 'B', 'C', 'D'] as const).filter((id) => id !== solution.correctPatchId);
     steps.push({
       stepNumber: stepNum++,
+      kind: 'twist',
       text: {
         en: `Test the four missing map fragments: **${others.join(', ')}** lead to contradictions with the clues and grid rules, leaving **Fragment ${solution.correctPatchId}** as the only valid completion.`,
         pt: `Testa os quatro fragmentos: **${others.join(', ')}** geram contradições com as pistas e a grelha, deixando o **Fragmento ${solution.correctPatchId}** como única opção válida.`,
@@ -509,6 +510,7 @@ export function generateDeductionProof(params: {
     const un = suspectsById[solution.uninvolvedId];
     steps.push({
       stepNumber: stepNum++,
+      kind: 'twist',
       focusSuspectId: un.id,
       text: {
         en: `There are ${suspects.length} suspects for a ${rows}×${cols} grid. Eliminating each suspect in turn reveals that only **${un.name}** can be uninvolved without breaking the remaining clues.`,
@@ -519,6 +521,7 @@ export function generateDeductionProof(params: {
     const liar = suspectsById[solution.liarId];
     steps.push({
       stepNumber: stepNum++,
+      kind: 'twist',
       focusSuspectId: liar.id,
       text: {
         en: `Assuming every statement is true leads to a contradiction. **${liar.name}** is the only suspect whose false statement makes the entire grid consistent.`,
@@ -531,6 +534,7 @@ export function generateDeductionProof(params: {
     const rId = board.roomGrid[pos.r][pos.c]!;
     steps.push({
       stepNumber: stepNum++,
+      kind: 'twist',
       focusSuspectId: outlaw.id,
       focusRoomId: rId,
       text: {
@@ -544,6 +548,7 @@ export function generateDeductionProof(params: {
     const sb = suspectsById[bId];
     steps.push({
       stepNumber: stepNum++,
+      kind: 'twist',
       focusSuspectId: aId,
       text: {
         en: `Comparing Past and Present clues reveals that **${sa.name}** and **${sb.name}** are the exact two suspects who swapped positions across time; everyone else stayed in place.`,
@@ -566,6 +571,7 @@ export function generateDeductionProof(params: {
       .map((s) => s.name);
     steps.push({
       stepNumber: stepNum++,
+      kind: 'twist',
       text: {
         en: `Balance headcounts across the two independent grids: **${gA.name.en}** (${gA.rows} people: ${inA.join(', ')}) and **${gB.name.en}** (${gB.rows} people: ${inB.join(', ')}).`,
         pt: `Equilibra as duas grelhas independentes: **${gA.name.pt}** (${gA.rows} pessoas: ${inA.join(', ')}) e **${gB.name.pt}** (${gB.rows} pessoas: ${inB.join(', ')}).`,
@@ -580,6 +586,7 @@ export function generateDeductionProof(params: {
       .join(', ');
     steps.push({
       stepNumber: stepNum++,
+      kind: 'twist',
       text: {
         en: `Cross-referencing named clues with the Secret Identities dossier uniquely unmasks the roles: ${pairsEn}.`,
         pt: `Cruzando as pistas dos suspeitos com o dossier de Identidades Secretas revela-se: ${pairsPt}.`,
@@ -643,8 +650,10 @@ export function generateDeductionProof(params: {
 
     steps.push({
       stepNumber: stepNum++,
+      kind: rec.reason,
       focusSuspectId: suspect.id,
       focusRoomId: rId,
+      placedCoord: pos,
       text,
     });
   }
@@ -658,8 +667,10 @@ export function generateDeductionProof(params: {
 
   steps.push({
     stepNumber: stepNum++,
+    kind: 'final_verdict',
     focusSuspectId: killer.id,
     focusRoomId: solution.victimRoomId,
+    placedCoord: vPos,
     text: {
       en: `The last open row and column place **${victim.name} (The Victim)** at **${coordLabel(vPos, twist)}** in **${vRoomEn}**, alone with **${killer.name}** — making **${killer.name}** the murderer!`,
       pt: `A última linha e coluna livres colocam **${victim.name} (A Vítima)** em **${coordLabel(vPos, twist)}** em **${vRoomPt}**, a sós com **${killer.name}** — **${killer.name}** é o assassino!`,
